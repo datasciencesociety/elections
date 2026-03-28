@@ -30,8 +30,8 @@ services:
     ports:
       - "${QWEN_PORT:-4012}:8000"
     volumes:
-      - ${QWEN_MODEL_PATH:-~/models/qwen35-7b}:/models/qwen35:ro
-      - vllm-cache:/root/.cache
+      - ${QWEN_MODEL_PATH:-/mnt/nvme0n1p1/election-protocols/models/qwen35-7b}:/models/qwen35:ro
+      - ${VLLM_CACHE_PATH:-/mnt/nvme0n1p1/election-protocols/.cache/vllm}:/root/.cache
     environment:
       HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
     command:
@@ -49,6 +49,3 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-
-volumes:
-  vllm-cache:
