@@ -1,1 +1,1 @@
-# Protocol teams project space
+# Protocol team project space
