@@ -4,9 +4,9 @@ on:
   push:
     branches: [protocols]
     paths:
-      - "backend/election-protocols-be/**"
-      - "backend/pyproject.toml"
-      - "backend/uv.lock"
+      - "protocols/backend/election-protocols-be/**"
+      - "protocols/backend/pyproject.toml"
+      - "protocols/backend/uv.lock"
   workflow_dispatch:
 
 env:
@@ -31,10 +31,11 @@ jobs:
           username: ${{ secrets.PROTOCOLS_VM_USERNAME }}
           password: ${{ secrets.PROTOCOLS_VM_PASSWORD }}
           port: ${{ secrets.PROTOCOLS_VM_PORT }}
-          source: "backend/pyproject.toml,backend/uv.lock,backend/election-protocols-be/"
+          source: "protocols/backend/pyproject.toml,protocols/backend/uv.lock,protocols/backend/election-protocols-be/"
           target: ${{ env.DEPLOY_DIR }}
           overwrite: true
           rm: true
+          strip_components: 1
 
       - name: Build and deploy container
         uses: appleboy/ssh-action@v1
