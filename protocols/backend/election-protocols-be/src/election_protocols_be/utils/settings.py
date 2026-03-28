@@ -12,7 +12,10 @@ load_dotenv()
 
 def get_package_version() -> str:
     """Get the version of the election-protocols-be package."""
-    return version("election-protocols-be")
+    try:
+        return version("election-protocols-be")
+    except Exception:
+        return "0.0.0"
 
 
 class Settings(BaseSettings):

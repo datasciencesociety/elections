@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, UploadFile
 
 from election_protocols_be.models.protocol import (
     ALLOWED_CONTENT_TYPES,
-    ProtocolCheckResponse,
+    Protocol,
 )
 from election_protocols_be.services import protocol_service
 
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/protocol", tags=["protocol"])
         "Accepted formats: JPEG, PNG, TIFF, WebP, PDF."
     ),
     status_code=200,
-    response_model=ProtocolCheckResponse,
+    response_model=Protocol,
     responses={
         200: {
             "description": "Protocol check completed successfully.",
@@ -55,7 +55,7 @@ router = APIRouter(prefix="/protocol", tags=["protocol"])
         },
     },
 )
-async def protocol_check(files: list[UploadFile]) -> ProtocolCheckResponse:
+async def protocol_check(files: list[UploadFile]) -> Protocol:
     for file in files:
         if file.content_type not in ALLOWED_CONTENT_TYPES:
             raise HTTPException(
