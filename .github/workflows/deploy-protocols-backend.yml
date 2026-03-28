@@ -13,7 +13,6 @@ on:
   workflow_dispatch:
 
 env:
-  DEPLOY_DIR: ~/elections/protocols
   STACK_DIR: ~/elections/protocols
   BACKEND_PORT: 4010
   FRONTEND_PORT: 4011
@@ -35,7 +34,7 @@ jobs:
           password: ${{ secrets.PROTOCOLS_VM_PASSWORD }}
           port: ${{ secrets.PROTOCOLS_VM_PORT }}
           source: "protocols/docker-compose.yml,protocols/frontend/,protocols/backend/pyproject.toml,protocols/backend/uv.lock,protocols/backend/election-protocols-be/"
-          target: ${{ env.DEPLOY_DIR }}
+          target: /home/${{ secrets.PROTOCOLS_VM_USERNAME }}/elections/protocols
           overwrite: true
           rm: true
           strip_components: 1
