@@ -16,7 +16,7 @@ env:
   DEPLOY_DIR: ~/elections/protocols
   STACK_DIR: ~/elections/protocols
   BACKEND_PORT: 4010
-  FRONTEND_PORT: 80
+  FRONTEND_PORT: 4011
 
 jobs:
   deploy:
