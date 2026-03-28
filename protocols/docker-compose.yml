@@ -20,32 +20,32 @@ services:
     ports:
       - "${FRONTEND_PORT:-4011}:80"
 
-  qwen:
-    profiles: ["gpu"]
-    image: vllm/vllm-openai:${VLLM_IMAGE_TAG:-latest}
-    container_name: election-protocols-qwen
-    restart: unless-stopped
-    ipc: host
-    shm_size: "16gb"
-    ports:
-      - "${QWEN_PORT:-4012}:8000"
-    volumes:
-      - ${QWEN_MODEL_PATH:-/mnt/nvme0n1p1/election-protocols/models/qwen35-7b}:/models/qwen35:ro
-      - ${VLLM_CACHE_PATH:-/mnt/nvme0n1p1/election-protocols/.cache/vllm}:/root/.cache
-    environment:
-      HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
-    command:
-      - --model=/models/qwen35
-      - --served-model-name=${QWEN_MODEL_NAME:-qwen3.5-7b}
-      - --max-model-len=${QWEN_MAX_MODEL_LEN:-16384}
-      - --gpu-memory-utilization=0.90
-      - --enable-prefix-caching
-      - --reasoning-parser=qwen3
-      - --kv-cache-dtype=fp8
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+  # qwen:
+  #   profiles: ["gpu"]
+  #   image: vllm/vllm-openai:${VLLM_IMAGE_TAG:-latest}
+  #   container_name: election-protocols-qwen
+  #   restart: unless-stopped
+  #   ipc: host
+  #   shm_size: "16gb"
+  #   ports:
+  #     - "${QWEN_PORT:-4012}:8000"
+  #   volumes:
+  #     - ${QWEN_MODEL_PATH:-/mnt/nvme0n1p1/election-protocols/models/qwen35-7b}:/models/qwen35:ro
+  #     - ${VLLM_CACHE_PATH:-/mnt/nvme0n1p1/election-protocols/.cache/vllm}:/root/.cache
+  #   environment:
+  #     HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
+  #   command:
+  #     - --model=/models/qwen35
+  #     - --served-model-name=${QWEN_MODEL_NAME:-qwen3.5-7b}
+  #     - --max-model-len=${QWEN_MAX_MODEL_LEN:-16384}
+  #     - --gpu-memory-utilization=0.90
+  #     - --enable-prefix-caching
+  #     - --reasoning-parser=qwen3
+  #     - --kv-cache-dtype=fp8
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all
+  #             capabilities: [gpu]
