@@ -191,7 +191,7 @@ def main():
     parser.add_argument(
         "html_dir",
         nargs="?",
-        default="/Users/vasilena.krazheva/Documents/Other/hackathon/elections/output_v2/122400005.0",
+        default="elections/data/chandra_output_per_page",
         help="Directory containing per-page HTML files (e.g. output from pdf_to_html.py)."
     )
     parser.add_argument(
