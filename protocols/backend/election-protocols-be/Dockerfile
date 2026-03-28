@@ -1,4 +1,4 @@
-# Stihia API Dockerfile
+# Election Protocols Backend Dockerfile
 # Multi-stage build for optimized production image
 
 # --- Build Stage ---

@@ -50,6 +50,7 @@ jobs:
           envs: ENVIRONMENT,LOGGING_LEVEL
           script: |
             set -e
+            export PATH="/usr/local/bin:/usr/bin:$PATH"
 
             cd ${{ env.DEPLOY_DIR }}
 
@@ -84,6 +85,7 @@ jobs:
           port: ${{ secrets.PROTOCOLS_VM_PORT }}
           script: |
             set -e
+            export PATH="/usr/local/bin:/usr/bin:$PATH"
 
             echo "Waiting for container to start..."
             sleep 5
