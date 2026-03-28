@@ -80,7 +80,7 @@ jobs:
             docker compose down --remove-orphans || true
 
             echo "Building and deploying frontend and backend with Docker Compose..."
-            docker compose up --build -d backend frontend qwen
+            docker compose up --build -d backend frontend
 
             echo "Cleaning up dangling images..."
             docker image prune -f
