@@ -1,0 +1,21 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/election-protocols-be/Dockerfile
+    container_name: election-protocols-backend
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      LOGGING_LEVEL: ${LOGGING_LEVEL:-INFO}
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-4010}:4010"
+
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    container_name: election-protocols-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
