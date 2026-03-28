@@ -6,5 +6,5 @@
 brew install uv
 cd protocols/backend
 uv venv
-uv sync --all-packages
+uv sync
 ```
