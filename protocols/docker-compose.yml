@@ -21,15 +21,17 @@ services:
       - "${FRONTEND_PORT:-4011}:80"
 
   qwen:
+    profiles: ["gpu"]
     image: vllm/vllm-openai:${VLLM_IMAGE_TAG:-latest}
     container_name: election-protocols-qwen
     restart: unless-stopped
     ipc: host
     shm_size: "16gb"
     ports:
-      - "127.0.0.1:${QWEN_PORT:-4012}:4012"
+      - "${QWEN_PORT:-4012}:8000"
     volumes:
       - ${QWEN_MODEL_PATH:-~/models/qwen35-7b}:/models/qwen35:ro
+      - vllm-cache:/root/.cache
     environment:
       HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
     command:
@@ -47,3 +49,6 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+
+volumes:
+  vllm-cache:
