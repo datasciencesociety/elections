@@ -12,7 +12,6 @@ on:
 env:
   CONTAINER_NAME: election-protocols-be
   IMAGE_NAME: election-protocols-be:latest
-  DEPLOY_DIR: ~/elections
   APP_PORT: 4010
 
 jobs:
@@ -32,7 +31,7 @@ jobs:
           password: ${{ secrets.PROTOCOLS_VM_PASSWORD }}
           port: ${{ secrets.PROTOCOLS_VM_PORT }}
           source: "protocols/backend/pyproject.toml,protocols/backend/uv.lock,protocols/backend/election-protocols-be/"
-          target: ${{ env.DEPLOY_DIR }}
+          target: ~/elections
           overwrite: true
           rm: true
           strip_components: 1
@@ -51,7 +50,7 @@ jobs:
           script: |
             set -e
 
-            cd ${{ env.DEPLOY_DIR }}
+            cd ~/elections
 
             echo "Building Docker image..."
             docker build \
