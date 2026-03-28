@@ -77,10 +77,10 @@ jobs:
 
             echo "Stopping and removing existing containers..."
             export ENVIRONMENT LOGGING_LEVEL BACKEND_PORT FRONTEND_PORT
-            docker compose down --remove-orphans || true
+            docker compose --profile gpu down --remove-orphans || true
 
             echo "Building and deploying frontend and backend with Docker Compose..."
-            docker compose up --build -d backend frontend
+            docker compose --profile gpu up --build -d backend frontend qwen
 
             echo "Cleaning up dangling images..."
             docker image prune -f
