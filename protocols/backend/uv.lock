@@ -215,13 +215,23 @@ source = { editable = "election-protocol-experiments" }
 dependencies = [
     { name = "ipykernel" },
     { name = "ipywidgets" },
+    { name = "pydantic" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "ipykernel" },
     { name = "ipywidgets" },
+    { name = "pydantic", specifier = ">=2.0" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9.0.2" }]
 
 [[package]]
 name = "executing"
