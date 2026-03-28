@@ -1,19 +1,21 @@
-name: Deploy Protocols Backend
+name: Deploy Protocols Stack
 
 on:
   push:
     branches: [protocols]
     paths:
+      - ".github/workflows/deploy-protocols-backend.yml"
+      - "protocols/docker-compose.yml"
+      - "protocols/frontend/**"
       - "protocols/backend/election-protocols-be/**"
       - "protocols/backend/pyproject.toml"
       - "protocols/backend/uv.lock"
   workflow_dispatch:
 
 env:
-  CONTAINER_NAME: election-protocols-be
-  IMAGE_NAME: election-protocols-be:latest
-  DEPLOY_DIR: ~/elections
-  APP_PORT: 4010
+  STACK_DIR: ~/elections/protocols
+  BACKEND_PORT: 4010
+  FRONTEND_PORT: 4011
 
 jobs:
   deploy:
@@ -31,83 +33,94 @@ jobs:
           username: ${{ secrets.PROTOCOLS_VM_USERNAME }}
           password: ${{ secrets.PROTOCOLS_VM_PASSWORD }}
           port: ${{ secrets.PROTOCOLS_VM_PORT }}
-          source: "protocols/backend/pyproject.toml,protocols/backend/uv.lock,protocols/backend/election-protocols-be/"
-          target: ${{ env.DEPLOY_DIR }}
+          source: "protocols/docker-compose.yml,protocols/frontend/,protocols/backend/pyproject.toml,protocols/backend/uv.lock,protocols/backend/election-protocols-be/"
+          target: /home/${{ secrets.PROTOCOLS_VM_USERNAME }}/elections
           overwrite: true
           rm: true
           strip_components: 1
+          debug: true
 
-      - name: Build and deploy container
+      - name: Build and deploy stack
         uses: appleboy/ssh-action@v1
         env:
           ENVIRONMENT: ${{ secrets.PROTOCOLS_APP_ENVIRONMENT || 'production' }}
           LOGGING_LEVEL: ${{ secrets.PROTOCOLS_APP_LOGGING_LEVEL || 'INFO' }}
+          BACKEND_PORT: ${{ vars.PROTOCOLS_BACKEND_PORT || env.BACKEND_PORT }}
+          FRONTEND_PORT: ${{ vars.PROTOCOLS_FRONTEND_PORT || env.FRONTEND_PORT }}
         with:
           host: ${{ secrets.PROTOCOLS_VM_HOST }}
           username: ${{ secrets.PROTOCOLS_VM_USERNAME }}
           password: ${{ secrets.PROTOCOLS_VM_PASSWORD }}
           port: ${{ secrets.PROTOCOLS_VM_PORT }}
-          envs: ENVIRONMENT,LOGGING_LEVEL
+          envs: ENVIRONMENT,LOGGING_LEVEL,BACKEND_PORT,FRONTEND_PORT
           script: |
             set -e
             export PATH="/usr/local/bin:/usr/bin:$PATH"
 
-            cd ${{ env.DEPLOY_DIR }}
+            # Ensure Docker Compose V2 is available (v1 has known bugs with modern Docker)
+            if ! docker compose version >/dev/null 2>&1; then
+              echo "Installing Docker Compose V2 plugin..."
+              mkdir -p ~/.docker/cli-plugins
+              ARCH=$(uname -m)
+              case "$ARCH" in
+                x86_64) ARCH="x86_64" ;;
+                aarch64|arm64) ARCH="aarch64" ;;
+              esac
+              curl -fsSL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-${ARCH}" \
+                -o ~/.docker/cli-plugins/docker-compose
+              chmod +x ~/.docker/cli-plugins/docker-compose
+              echo "Installed: $(docker compose version)"
+            fi
 
-            echo "Building Docker image..."
-            docker build \
-              -t ${{ env.IMAGE_NAME }} \
-              -f backend/election-protocols-be/Dockerfile \
-              .
+            mkdir -p ${{ env.STACK_DIR }}
+            cd ${{ env.STACK_DIR }}
 
-            echo "Stopping old container..."
-            docker stop ${{ env.CONTAINER_NAME }} 2>/dev/null || true
-            docker rm ${{ env.CONTAINER_NAME }} 2>/dev/null || true
-
-            echo "Starting new container..."
-            docker run -d \
-              --name ${{ env.CONTAINER_NAME }} \
-              --restart unless-stopped \
-              -p ${{ env.APP_PORT }}:${{ env.APP_PORT }} \
-              -e ENVIRONMENT="${ENVIRONMENT}" \
-              -e LOGGING_LEVEL="${LOGGING_LEVEL}" \
-              ${{ env.IMAGE_NAME }}
+            echo "Deploying frontend and backend with Docker Compose..."
+            export ENVIRONMENT LOGGING_LEVEL BACKEND_PORT FRONTEND_PORT
+            docker compose up --build -d --remove-orphans backend frontend
 
             echo "Cleaning up dangling images..."
             docker image prune -f
 
       - name: Health check
         uses: appleboy/ssh-action@v1
+        env:
+          BACKEND_PORT: ${{ vars.PROTOCOLS_BACKEND_PORT || env.BACKEND_PORT }}
+          FRONTEND_PORT: ${{ vars.PROTOCOLS_FRONTEND_PORT || env.FRONTEND_PORT }}
         with:
           host: ${{ secrets.PROTOCOLS_VM_HOST }}
           username: ${{ secrets.PROTOCOLS_VM_USERNAME }}
           password: ${{ secrets.PROTOCOLS_VM_PASSWORD }}
           port: ${{ secrets.PROTOCOLS_VM_PORT }}
+          envs: BACKEND_PORT,FRONTEND_PORT
           script: |
             set -e
             export PATH="/usr/local/bin:/usr/bin:$PATH"
 
-            echo "Waiting for container to start..."
-            sleep 5
+            echo "Waiting for containers to start..."
+            sleep 10
 
-            # Check container is running
-            if ! docker ps --format '{{.Names}}' | grep -q '^${{ env.CONTAINER_NAME }}$'; then
-              echo "Container is not running!"
-              docker logs ${{ env.CONTAINER_NAME }} 2>&1 || true
+            cd ${{ env.STACK_DIR }}
+
+            if ! docker ps --format '{{.Names}}' | grep -q '^election-protocols-backend$'; then
+              echo "Backend container is not running!"
+              docker compose logs backend || true
               exit 1
             fi
 
-            # Check HTTP response
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.APP_PORT }}/health 2>/dev/null || echo "000")
-            if [ "$HTTP_STATUS" = "000" ]; then
-              # No /health endpoint - just check container is responsive
-              HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.APP_PORT }}/ 2>/dev/null || echo "000")
+            if ! docker ps --format '{{.Names}}' | grep -q '^election-protocols-frontend$'; then
+              echo "Frontend container is not running!"
+              docker compose logs frontend || true
+              exit 1
             fi
 
-            if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 500 ]; then
-              echo "Health check passed (HTTP $HTTP_STATUS)"
+            BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${BACKEND_PORT}/health 2>/dev/null || echo "000")
+            FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${FRONTEND_PORT}/ 2>/dev/null || echo "000")
+
+            if [ "$BACKEND_STATUS" = "200" ] && [ "$FRONTEND_STATUS" = "200" ]; then
+              echo "Health check passed (frontend HTTP $FRONTEND_STATUS, backend HTTP $BACKEND_STATUS)"
             else
-              echo "Health check failed (HTTP $HTTP_STATUS)"
-              docker logs --tail 50 ${{ env.CONTAINER_NAME }} 2>&1 || true
+              echo "Health check failed (frontend HTTP $FRONTEND_STATUS, backend HTTP $BACKEND_STATUS)"
+              docker compose logs --tail 50 || true
               exit 1
             fi
