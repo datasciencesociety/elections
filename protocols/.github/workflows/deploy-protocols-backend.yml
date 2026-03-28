@@ -1,0 +1,110 @@
+name: Deploy Protocols Backend
+
+on:
+  push:
+    branches: [protocols]
+    paths:
+      - "backend/election-protocols-be/**"
+      - "backend/pyproject.toml"
+      - "backend/uv.lock"
+  workflow_dispatch:
+
+env:
+  CONTAINER_NAME: election-protocols-be
+  IMAGE_NAME: election-protocols-be:latest
+  DEPLOY_DIR: ~/election-protocols-deploy
+  APP_PORT: 4010
+
+jobs:
+  deploy:
+    name: Deploy to VM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy files to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.PROTOCOLS_VM_HOST }}
+          username: ${{ secrets.PROTOCOLS_VM_USERNAME }}
+          password: ${{ secrets.PROTOCOLS_VM_PASSWORD }}
+          port: ${{ secrets.PROTOCOLS_VM_PORT }}
+          source: "backend/pyproject.toml,backend/uv.lock,backend/election-protocols-be/"
+          target: ${{ env.DEPLOY_DIR }}
+          overwrite: true
+          rm: true
+
+      - name: Build and deploy container
+        uses: appleboy/ssh-action@v1
+        env:
+          ENVIRONMENT: ${{ secrets.PROTOCOLS_APP_ENVIRONMENT || 'production' }}
+          LOGGING_LEVEL: ${{ secrets.PROTOCOLS_APP_LOGGING_LEVEL || 'INFO' }}
+        with:
+          host: ${{ secrets.PROTOCOLS_VM_HOST }}
+          username: ${{ secrets.PROTOCOLS_VM_USERNAME }}
+          password: ${{ secrets.PROTOCOLS_VM_PASSWORD }}
+          port: ${{ secrets.PROTOCOLS_VM_PORT }}
+          envs: ENVIRONMENT,LOGGING_LEVEL
+          script: |
+            set -e
+
+            cd ${{ env.DEPLOY_DIR }}
+
+            echo "Building Docker image..."
+            docker build \
+              -t ${{ env.IMAGE_NAME }} \
+              -f backend/election-protocols-be/Dockerfile \
+              .
+
+            echo "Stopping old container..."
+            docker stop ${{ env.CONTAINER_NAME }} 2>/dev/null || true
+            docker rm ${{ env.CONTAINER_NAME }} 2>/dev/null || true
+
+            echo "Starting new container..."
+            docker run -d \
+              --name ${{ env.CONTAINER_NAME }} \
+              --restart unless-stopped \
+              -p ${{ env.APP_PORT }}:${{ env.APP_PORT }} \
+              -e ENVIRONMENT="${ENVIRONMENT}" \
+              -e LOGGING_LEVEL="${LOGGING_LEVEL}" \
+              ${{ env.IMAGE_NAME }}
+
+            echo "Cleaning up dangling images..."
+            docker image prune -f
+
+      - name: Health check
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PROTOCOLS_VM_HOST }}
+          username: ${{ secrets.PROTOCOLS_VM_USERNAME }}
+          password: ${{ secrets.PROTOCOLS_VM_PASSWORD }}
+          port: ${{ secrets.PROTOCOLS_VM_PORT }}
+          script: |
+            set -e
+
+            echo "Waiting for container to start..."
+            sleep 5
+
+            # Check container is running
+            if ! docker ps --format '{{.Names}}' | grep -q '^${{ env.CONTAINER_NAME }}$'; then
+              echo "Container is not running!"
+              docker logs ${{ env.CONTAINER_NAME }} 2>&1 || true
+              exit 1
+            fi
+
+            # Check HTTP response
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.APP_PORT }}/health 2>/dev/null || echo "000")
+            if [ "$HTTP_STATUS" = "000" ]; then
+              # No /health endpoint - just check container is responsive
+              HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.APP_PORT }}/ 2>/dev/null || echo "000")
+            fi
+
+            if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 500 ]; then
+              echo "Health check passed (HTTP $HTTP_STATUS)"
+            else
+              echo "Health check failed (HTTP $HTTP_STATUS)"
+              docker logs --tail 50 ${{ env.CONTAINER_NAME }} 2>&1 || true
+              exit 1
+            fi
