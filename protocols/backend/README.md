@@ -18,5 +18,5 @@ source .venv/bin/activate
 uv sync --all-packages
 
 # Run the FastAPI server
-uv run --package election-protocols-be uvicorn --app-dir election-protocols-be/src election_protocols_be.main:app --port 4000 --reload
+uv run --package election-protocols-be uvicorn --app-dir election-protocols-be/src election_protocols_be.main:app --port 4010 --reload
 ```
