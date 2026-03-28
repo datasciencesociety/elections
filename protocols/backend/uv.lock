@@ -217,12 +217,14 @@ source = { editable = "election-protocols-experiments" }
 dependencies = [
     { name = "ipykernel" },
     { name = "ipywidgets" },
+    { name = "pydantic" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "ipykernel" },
     { name = "ipywidgets" },
+    { name = "pydantic", specifier = ">=2.0" },
 ]
 
 [[package]]
