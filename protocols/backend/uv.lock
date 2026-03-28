@@ -211,7 +211,7 @@ requires-dist = [
 [[package]]
 name = "election-protocols-experiments"
 version = "1.0.0"
-source = { editable = "election-protocol-experiments" }
+source = { editable = "election-protocols-experiments" }
 dependencies = [
     { name = "ipykernel" },
     { name = "ipywidgets" },
