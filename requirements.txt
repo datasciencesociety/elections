@@ -1,0 +1,10 @@
+torch>=2.0
+torchvision>=0.15
+opencv-python>=4.8
+matplotlib>=3.7
+numpy>=1.24
+pytorch-ignite>=0.4.13
+jupyter
+ipywidgets
+ipykernel
+kornia>=0.7
