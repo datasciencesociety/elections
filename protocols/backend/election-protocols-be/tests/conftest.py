@@ -9,57 +9,46 @@ from election_protocols_be.models.protocol import (
     PaperBallots,
     PartyVote,
     Protocol,
+    REGION_MAX_PREFERENCES,
 )
+
+
+def _make_votes(region: int) -> list[dict]:
+    """Generate one PartyVote dict per required party for a region (all counts zero)."""
+    prefs = [{"candidate_number": 100 + i, "count": 0} for i in range(1, REGION_MAX_PREFERENCES[region] + 1)]
+    party_numbers = list(range(1, 29)) + ([29] if region == 15 else [])
+    return [
+        {"party_number": p, "votes": 0, "preferences": [] if (region == 15 and p == 29) else prefs, "no_preferences": 0}
+        for p in party_numbers
+    ]
 
 
 @pytest.fixture
 def sample_protocol_data():
-    """Full protocol JSON from the task example."""
+    """Full protocol JSON — region 12, all 28 parties, all ballot counts zero."""
+    region = 12
+    votes = _make_votes(region)
     return {
-        "sik_no": "12020009",
-        "sik_type": "paper",
+        "sik_no": "120200009",
+        "sik_type": "paper_machine",
         "voter_count": 427,
         "additional_voter_count": 3,
-        "registered_votes": 160,
+        "registered_votes": 0,
         "paper_ballots": {
             "total": 300,
-            "unused_ballots": 217,
-            "registered_vote": 82,
-            "invalid_out_of_the_box": 1,
-            "invalid_in_the_box": 1,
+            "unused_ballots": 300,
+            "registered_vote": 0,
+            "invalid_out_of_the_box": 0,
+            "invalid_in_the_box": 0,
             "support_noone": 0,
-            "votes": [
-                {
-                    "party_number": 8,
-                    "votes": 6,
-                    "preferences": [
-                        {
-                            "candidate_number": 102,
-                            "count": 3,
-                        }
-                    ],
-                    "no_preferences": 1,
-                }
-            ],
-            "total_valid_votes": 81,
+            "votes": votes,
+            "total_valid_votes": 0,
         },
         "machine_ballots": {
-            "total_votes": 78,
-            "support_noone": 2,
-            "total_valid_votes": 76,
-            "votes": [
-                {
-                    "party_number": 1,
-                    "votes": 6,
-                    "preferences": [
-                        {
-                            "candidate_number": 101,
-                            "count": 3,
-                        }
-                    ],
-                    "no_preferences": 3,
-                }
-            ],
+            "total_votes": 0,
+            "support_noone": 0,
+            "total_valid_votes": 0,
+            "votes": votes,
         },
     }
 
@@ -87,43 +76,39 @@ def sample_party_vote():
     )
 
 
+def _make_party_votes_for_region(region: int) -> list[PartyVote]:
+    """Generate one PartyVote per required party for a given region (all counts zero)."""
+    prefs = [CandidatePreference(candidate_number=100 + i, count=0) for i in range(1, REGION_MAX_PREFERENCES[region] + 1)]
+    party_numbers = list(range(1, 29)) + ([29] if region == 15 else [])
+    return [
+        PartyVote(party_number=p, votes=0, preferences=[] if (region == 15 and p == 29) else prefs, no_preferences=0)
+        for p in party_numbers
+    ]
+
+
 @pytest.fixture
 def sample_paper_ballots():
-    """Paper ballots fixture."""
+    """Paper ballots fixture — region 12, all 28 parties, all ballot counts zero."""
     return PaperBallots(
         total=300,
-        unused_ballots=217,
-        registered_vote=82,
-        invalid_out_of_the_box=1,
-        invalid_in_the_box=1,
+        unused_ballots=300,
+        registered_vote=0,
+        invalid_out_of_the_box=0,
+        invalid_in_the_box=0,
         support_noone=0,
-        votes=[
-            PartyVote(
-                party_number=8,
-                votes=6,
-                preferences=[CandidatePreference(candidate_number=102, count=3)],
-                no_preferences=1,
-            )
-        ],
-        total_valid_votes=81,
+        votes=_make_party_votes_for_region(12),
+        total_valid_votes=0,
     )
 
 
 @pytest.fixture
 def sample_machine_ballots():
-    """Machine ballots fixture."""
+    """Machine ballots fixture — region 12, all 28 parties, all ballot counts zero."""
     return MachineBallots(
-        total_votes=78,
-        support_noone=2,
-        total_valid_votes=76,
-        votes=[
-            PartyVote(
-                party_number=1,
-                votes=6,
-                preferences=[CandidatePreference(candidate_number=101, count=3)],
-                no_preferences=3,
-            )
-        ],
+        total_votes=0,
+        support_noone=0,
+        total_valid_votes=0,
+        votes=_make_party_votes_for_region(12),
     )
 
 
