@@ -12,7 +12,7 @@ on:
 env:
   CONTAINER_NAME: election-protocols-be
   IMAGE_NAME: election-protocols-be:latest
-  DEPLOY_DIR: ~/election-protocols-deploy
+  DEPLOY_DIR: ~/elections
   APP_PORT: 4010
 
 jobs:
