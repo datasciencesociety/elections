@@ -11,15 +11,51 @@ ALLOWED_CONTENT_TYPES = {
 }
 
 
-class ProtocolCheckResponse(BaseModel):
-    """Response from a protocol check operation."""
+class CandidatePreference(BaseModel):
+    """Преференция за конкретен кандидат."""
 
-    model_config = {
-        "json_schema_extra": {
-            "examples": [
-                {"test": 1},
-            ]
-        }
-    }
+    candidate_number: int
+    count: int
 
-    test: int
+
+class PartyVote(BaseModel):
+    """Глас за партия/коалиция с преференции."""
+
+    party_number: int
+    votes: int
+    preferences: list[CandidatePreference] = []
+    no_preferences: int = 0
+
+
+class PaperBallots(BaseModel):
+    """Данни за хартиени бюлетини."""
+
+    total: int
+    unused_ballots: int
+    registered_vote: int
+    invalid_out_of_the_box: int
+    invalid_in_the_box: int
+    support_noone: int
+    votes: list[PartyVote] = []
+    total_valid_votes: int
+
+
+class MachineBallots(BaseModel):
+    """Данни за машинни бюлетини."""
+
+    total_votes: int
+    support_noone: int
+    total_valid_votes: int
+    votes: list[PartyVote] = []
+
+
+class Protocol(BaseModel):
+    """Протокол от СИК за избори."""
+
+    sik_no: str
+    sik_type: str
+    voter_count: int
+    additional_voter_count: int
+    registered_votes: int
+    paper_ballots: PaperBallots
+    machine_ballots: MachineBallots
