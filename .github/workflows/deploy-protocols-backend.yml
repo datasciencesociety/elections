@@ -34,7 +34,7 @@ jobs:
           password: ${{ secrets.PROTOCOLS_VM_PASSWORD }}
           port: ${{ secrets.PROTOCOLS_VM_PORT }}
           source: "protocols/docker-compose.yml,protocols/frontend/,protocols/backend/pyproject.toml,protocols/backend/uv.lock,protocols/backend/election-protocols-be/"
-          target: /home/${{ secrets.PROTOCOLS_VM_USERNAME }}/elections
+          target: /home/${{ secrets.PROTOCOLS_VM_USERNAME }}/elections/protocols/
           overwrite: true
           rm: true
           strip_components: 1
