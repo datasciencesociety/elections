@@ -48,8 +48,8 @@ markers = [
 
 [tool.coverage.run]
 source = [
-    "election-protocols-be/src/elections_protocols_be",
-    "election-protocols-experiments/src/elections_protocols_experiments",
+    "election-protocols-be/src/election_protocols_be",
+    "election-protocols-experiments/src/election_protocols_experiments",
 ]
 
 [tool.ruff]

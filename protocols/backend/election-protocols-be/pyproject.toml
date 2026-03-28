@@ -8,6 +8,7 @@ dependencies = [
     "fastapi",
     "pydantic-settings",
     "python-dotenv",
+    "python-multipart"
 ]
 
 [build-system]
