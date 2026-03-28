@@ -1,14 +1,15 @@
 [project]
 name = "election-protocols-be"
 version = "1.0.0"
-requires-python = ">=3.14"
+requires-python = ">=3.11"
 dependencies = [
     "uvicorn[standard]",
     "gunicorn",
     "fastapi",
     "pydantic-settings",
     "python-dotenv",
-    "python-multipart"
+    "python-multipart",
+    "google-genai"
 ]
 
 [build-system]

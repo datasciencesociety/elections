@@ -1,0 +1,512 @@
+{
+  "sik_no": 1210068,
+  "voter_count": 398,
+  "additional_voter_count": 6,
+  "registered_votes": 164,
+  "paper_ballots": {
+    "total": 400,
+    "unused_ballots": 295,
+    "registered_vote": 104,
+    "invalid_out_of_the_box": 1,
+    "invalid_in_the_box": null,
+    "support_noone": null,
+    "votes": [
+      {
+        "party_number": 1,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 2,
+        "votes": 1,
+        "preferences": [],
+        "no_preferences": 1
+      },
+      {
+        "party_number": 4,
+        "votes": 1,
+        "preferences": [],
+        "no_preferences": 1
+      },
+      {
+        "party_number": 5,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 6,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 7,
+        "votes": 4,
+        "preferences": [
+          {
+            "candidate_number": 106,
+            "count": 1
+          },
+          {
+            "candidate_number": 107,
+            "count": 1
+          }
+        ],
+        "no_preferences": 2
+      },
+      {
+        "party_number": 8,
+        "votes": 33,
+        "preferences": [
+          {
+            "candidate_number": 101,
+            "count": 5
+          },
+          {
+            "candidate_number": 103,
+            "count": 4
+          },
+          {
+            "candidate_number": 106,
+            "count": 9
+          },
+          {
+            "candidate_number": 108,
+            "count": 11
+          }
+        ],
+        "no_preferences": 4
+      },
+      {
+        "party_number": 9,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 10,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 11,
+        "votes": 1,
+        "preferences": [
+          {
+            "candidate_number": 101,
+            "count": 1
+          }
+        ],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 12,
+        "votes": 21,
+        "preferences": [
+          {
+            "candidate_number": 101,
+            "count": 1
+          },
+          {
+            "candidate_number": 104,
+            "count": 3
+          },
+          {
+            "candidate_number": 105,
+            "count": 1
+          },
+          {
+            "candidate_number": 106,
+            "count": 1
+          }
+        ],
+        "no_preferences": 15
+      },
+      {
+        "party_number": 13,
+        "votes": 1,
+        "preferences": [],
+        "no_preferences": 1
+      },
+      {
+        "party_number": 14,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": null
+      },
+      {
+        "party_number": 15,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": null
+      },
+      {
+        "party_number": 16,
+        "votes": 2,
+        "preferences": [],
+        "no_preferences": null
+      },
+      {
+        "party_number": 17,
+        "votes": 5,
+        "preferences": [
+          {
+            "candidate_number": 101,
+            "count": 2
+          },
+          {
+            "candidate_number": 103,
+            "count": 1
+          },
+          {
+            "candidate_number": 104,
+            "count": 1
+          }
+        ],
+        "no_preferences": 1
+      },
+      {
+        "party_number": 18,
+        "votes": 11,
+        "preferences": [
+          {
+            "candidate_number": 102,
+            "count": 5
+          },
+          {
+            "candidate_number": 107,
+            "count": 2
+          }
+        ],
+        "no_preferences": 4
+      },
+      {
+        "party_number": 19,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 20,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 21,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 22,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 23,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 24,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 25,
+        "votes": 2,
+        "preferences": [
+          {
+            "candidate_number": 101,
+            "count": 1
+          }
+        ],
+        "no_preferences": 1
+      },
+      {
+        "party_number": 26,
+        "votes": 9,
+        "preferences": [
+          {
+            "candidate_number": 106,
+            "count": 1
+          },
+          {
+            "candidate_number": 108,
+            "count": 4
+          }
+        ],
+        "no_preferences": 4
+      },
+      {
+        "party_number": 27,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 28,
+        "votes": 8,
+        "preferences": [
+          {
+            "candidate_number": 101,
+            "count": 1
+          },
+          {
+            "candidate_number": 102,
+            "count": 3
+          }
+        ],
+        "no_preferences": 4
+      }
+    ],
+    "total_valid_votes": -1
+  },
+  "machine_ballots": {
+    "total_votes": 60,
+    "support_noone": 0,
+    "total_valid_votes": 60,
+    "votes": [
+      {
+        "party_number": 1,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 2,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 4,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 5,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 6,
+        "votes": 1,
+        "preferences": [],
+        "no_preferences": 1
+      },
+      {
+        "party_number": 7,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 8,
+        "votes": 3,
+        "preferences": [
+          {
+            "candidate_number": 101,
+            "count": 2
+          }
+        ],
+        "no_preferences": 1
+      },
+      {
+        "party_number": 9,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 10,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 11,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 12,
+        "votes": 15,
+        "preferences": [
+          {
+            "candidate_number": 101,
+            "count": 1
+          },
+          {
+            "candidate_number": 102,
+            "count": 1
+          },
+          {
+            "candidate_number": 104,
+            "count": 3
+          }
+        ],
+        "no_preferences": 10
+      },
+      {
+        "party_number": 13,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 14,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 15,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 16,
+        "votes": 4,
+        "preferences": [
+          {
+            "candidate_number": 101,
+            "count": 2
+          },
+          {
+            "candidate_number": 102,
+            "count": 2
+          }
+        ],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 17,
+        "votes": 5,
+        "preferences": [
+          {
+            "candidate_number": 101,
+            "count": 1
+          },
+          {
+            "candidate_number": 102,
+            "count": 1
+          }
+        ],
+        "no_preferences": 3
+      },
+      {
+        "party_number": 18,
+        "votes": 4,
+        "preferences": [
+          {
+            "candidate_number": 101,
+            "count": 1
+          },
+          {
+            "candidate_number": 102,
+            "count": 1
+          }
+        ],
+        "no_preferences": 2
+      },
+      {
+        "party_number": 19,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 20,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 21,
+        "votes": 1,
+        "preferences": [],
+        "no_preferences": 1
+      },
+      {
+        "party_number": 22,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 23,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 24,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 25,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 26,
+        "votes": 23,
+        "preferences": [
+          {
+            "candidate_number": 101,
+            "count": 3
+          },
+          {
+            "candidate_number": 104,
+            "count": 1
+          },
+          {
+            "candidate_number": 106,
+            "count": 2
+          },
+          {
+            "candidate_number": 107,
+            "count": 1
+          }
+        ],
+        "no_preferences": 16
+      },
+      {
+        "party_number": 27,
+        "votes": 0,
+        "preferences": [],
+        "no_preferences": 0
+      },
+      {
+        "party_number": 28,
+        "votes": 4,
+        "preferences": [
+          {
+            "candidate_number": 101,
+            "count": 1
+          },
+          {
+            "candidate_number": 102,
+            "count": 1
+          }
+        ],
+        "no_preferences": 2
+      }
+    ]
+  }
+}

@@ -30,6 +30,10 @@ class Settings(BaseSettings):
 
     ELECTION_PROTOCOLS_BE_VERSION: str = Field(default_factory=get_package_version)
 
+    # Gemini settings
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+
 
 @lru_cache
 def get_settings() -> Settings:
