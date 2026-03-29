@@ -1,0 +1,20 @@
+# Data files (too large for git)
+data/
+*.mp4
+*.mp3
+*.wav
+
+# Output audio files
+output/**/*.wav
+output/**/*.mp3
+
+# Dashboard HTML (contains embedded audio)
+output/**/dashboard.html
+
+# Temp files
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# API keys
+.env

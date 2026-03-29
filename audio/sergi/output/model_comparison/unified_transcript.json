@@ -1,0 +1,1556 @@
+{
+  "video_file": "pe202410_real_100774_234602045_20241027_200420_71.mp4",
+  "segment": "6:00 - 12:00",
+  "speakers": {
+    "SPEAKER_00": "Глас на устройство",
+    "SPEAKER_01": "Член на комисия"
+  },
+  "model": "Groq API (Whisper large-v3)",
+  "analysis": {
+    "speaker_roles": {
+      "SPEAKER_00": {
+        "role": "Глас на устройство",
+        "role_en": "Device voice",
+        "confidence": 0.95,
+        "reasoning": "Repeated automatic messages about device positioning and physical buttons being on top"
+      },
+      "SPEAKER_01": {
+        "role": "Член на комисия",
+        "role_en": "Commission member",
+        "confidence": 0.85,
+        "reasoning": "Counting votes and ballot papers, mentions writing down results, handling election materials"
+      }
+    },
+    "tension_scale": {
+      "overall": 3,
+      "description": "Moderate tension due to technical difficulties with voting device positioning and confusion during vote counting",
+      "tense_moments": [
+        "00:12-01:17 - Repeated device positioning errors causing interruptions",
+        "02:25-02:45 - Confusion about counting preferences and invalid votes",
+        "04:25-04:30 - Multiple interruptions and 'wait, wait, wait' expressions"
+      ]
+    },
+    "number_frequency_matrix": {
+      "description": "Numbers mentioned during vote counting process",
+      "numbers": [
+        {
+          "number": 1,
+          "total_mentions": 7,
+          "by_speaker": {
+            "SPEAKER_01": 7
+          },
+          "contexts": [
+            "Това е 1 бюлетина",
+            "3, 2, 1",
+            "24, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10"
+          ]
+        },
+        {
+          "number": 2,
+          "total_mentions": 3,
+          "by_speaker": {
+            "SPEAKER_01": 3
+          },
+          "contexts": [
+            "3, 2, 1",
+            "24, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10",
+            "9 9 10 2"
+          ]
+        },
+        {
+          "number": 3,
+          "total_mentions": 5,
+          "by_speaker": {
+            "SPEAKER_01": 5
+          },
+          "contexts": [
+            "Три, само да ги смятам",
+            "Три, четири",
+            "3, 2, 1",
+            "24, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10"
+          ]
+        },
+        {
+          "number": 4,
+          "total_mentions": 3,
+          "by_speaker": {
+            "SPEAKER_01": 3
+          },
+          "contexts": [
+            "12, 5, 4, 5, 6, 7, 8, 9, 10",
+            "Три, четири",
+            "24, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10"
+          ]
+        },
+        {
+          "number": 5,
+          "total_mentions": 4,
+          "by_speaker": {
+            "SPEAKER_01": 4
+          },
+          "contexts": [
+            "12, 5, 4, 5, 6, 7, 8, 9, 10",
+            "5, нямаме нито една",
+            "5, 6, 7, 8, 9, 10"
+          ]
+        },
+        {
+          "number": 6,
+          "total_mentions": 15,
+          "by_speaker": {
+            "SPEAKER_01": 15
+          },
+          "contexts": [
+            "12, 5, 4, 5, 6, 7, 8, 9, 10",
+            "6 6 6 6",
+            "6 бюлетини",
+            "6 листа",
+            "5, 6, 7, 8, 9, 10"
+          ]
+        },
+        {
+          "number": 7,
+          "total_mentions": 4,
+          "by_speaker": {
+            "SPEAKER_01": 4
+          },
+          "contexts": [
+            "Седем, осем, номера",
+            "12, 5, 4, 5, 6, 7, 8, 9, 10",
+            "7. Осем, седми",
+            "5, 6, 7, 8, 9, 10"
+          ]
+        },
+        {
+          "number": 8,
+          "total_mentions": 7,
+          "by_speaker": {
+            "SPEAKER_01": 7
+          },
+          "contexts": [
+            "Седем, осем, номера",
+            "Осем",
+            "Аз осем броя",
+            "А това е осмата",
+            "12, 5, 4, 5, 6, 7, 8, 9, 10",
+            "5, 6, 7, 8, 9, 10"
+          ]
+        },
+        {
+          "number": 9,
+          "total_mentions": 6,
+          "by_speaker": {
+            "SPEAKER_01": 6
+          },
+          "contexts": [
+            "Девет",
+            "Шест, девет",
+            "12, 5, 4, 5, 6, 7, 8, 9, 10",
+            "9 9 10 2",
+            "5, 6, 7, 8, 9, 10",
+            "10, 9, 10"
+          ]
+        },
+        {
+          "number": 10,
+          "total_mentions": 12,
+          "by_speaker": {
+            "SPEAKER_01": 12
+          },
+          "contexts": [
+            "12, 5, 4, 5, 6, 7, 8, 9, 10",
+            "Десет, колко тя, десет",
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "Десет има ли още някъде",
+            "Не, 10 има",
+            "5, 6, 7, 8, 9, 10",
+            "10, 9, 10"
+          ]
+        },
+        {
+          "number": 11,
+          "total_mentions": 1,
+          "by_speaker": {
+            "SPEAKER_01": 1
+          },
+          "contexts": [
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20"
+          ]
+        },
+        {
+          "number": 12,
+          "total_mentions": 8,
+          "by_speaker": {
+            "SPEAKER_01": 8
+          },
+          "contexts": [
+            "12, 5, 4, 5, 6, 7, 8, 9, 10",
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "Обявай, полека ми до 12",
+            "12"
+          ]
+        },
+        {
+          "number": 13,
+          "total_mentions": 2,
+          "by_speaker": {
+            "SPEAKER_01": 2
+          },
+          "contexts": [
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "12, 13, 14, 15, 16, 17, 18, 19, 20"
+          ]
+        },
+        {
+          "number": 14,
+          "total_mentions": 2,
+          "by_speaker": {
+            "SPEAKER_01": 2
+          },
+          "contexts": [
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "12, 13, 14, 15, 16, 17, 18, 19, 20"
+          ]
+        },
+        {
+          "number": 15,
+          "total_mentions": 2,
+          "by_speaker": {
+            "SPEAKER_01": 2
+          },
+          "contexts": [
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "12, 13, 14, 15, 16, 17, 18, 19, 20"
+          ]
+        },
+        {
+          "number": 16,
+          "total_mentions": 2,
+          "by_speaker": {
+            "SPEAKER_01": 2
+          },
+          "contexts": [
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "12, 13, 14, 15, 16, 17, 18, 19, 20"
+          ]
+        },
+        {
+          "number": 17,
+          "total_mentions": 2,
+          "by_speaker": {
+            "SPEAKER_01": 2
+          },
+          "contexts": [
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "12, 13, 14, 15, 16, 17, 18, 19, 20"
+          ]
+        },
+        {
+          "number": 18,
+          "total_mentions": 3,
+          "by_speaker": {
+            "SPEAKER_01": 2,
+            "SPEAKER_00": 1
+          },
+          "contexts": [
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "осемнадесет"
+          ]
+        },
+        {
+          "number": 19,
+          "total_mentions": 2,
+          "by_speaker": {
+            "SPEAKER_01": 2
+          },
+          "contexts": [
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "12, 13, 14, 15, 16, 17, 18, 19, 20"
+          ]
+        },
+        {
+          "number": 20,
+          "total_mentions": 3,
+          "by_speaker": {
+            "SPEAKER_01": 3
+          },
+          "contexts": [
+            "Двадесет",
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "12, 13, 14, 15, 16, 17, 18, 19, 20"
+          ]
+        },
+        {
+          "number": 24,
+          "total_mentions": 4,
+          "by_speaker": {
+            "SPEAKER_01": 4
+          },
+          "contexts": [
+            "24",
+            "Това може да бъде 24",
+            "Тука може да пишеш 24",
+            "24, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10"
+          ]
+        },
+        {
+          "number": 26,
+          "total_mentions": 4,
+          "by_speaker": {
+            "SPEAKER_01": 4
+          },
+          "contexts": [
+            "Аз 26",
+            "Аз 26 имам вече",
+            "26 е при мен",
+            "26 е за при мен"
+          ]
+        },
+        {
+          "number": 27,
+          "total_mentions": 2,
+          "by_speaker": {
+            "SPEAKER_00": 2
+          },
+          "contexts": [
+            "27",
+            "27? Кой е подвижен?"
+          ]
+        }
+      ],
+      "grand_total_mentions": 104,
+      "sum_of_all_numbers": 1386
+    },
+    "candidate_votes": {
+      "tallies": [
+        {
+          "candidate_number": 6,
+          "times_mentioned": 15,
+          "vote_count_stated": 6
+        },
+        {
+          "candidate_number": 8,
+          "times_mentioned": 7,
+          "vote_count_stated": 1
+        },
+        {
+          "candidate_number": 24,
+          "times_mentioned": 4,
+          "vote_count_stated": 24
+        },
+        {
+          "candidate_number": 26,
+          "times_mentioned": 4,
+          "vote_count_stated": 26
+        },
+        {
+          "candidate_number": 27,
+          "times_mentioned": 2,
+          "vote_count_stated": 27
+        }
+      ],
+      "total_votes_stated": 64,
+      "interpretation": "Vote counting for different candidate numbers, with ballot counting and tallying process"
+    },
+    "names_mentioned": {
+      "names": []
+    },
+    "partisan_language": {
+      "nashi_count": 0,
+      "vashi_count": 1,
+      "per_speaker": {
+        "SPEAKER_01": {
+          "nashi": 0,
+          "vashi": 1
+        }
+      },
+      "examples": [
+        "А, ваша."
+      ]
+    },
+    "invalid_votes": {
+      "nevalidni_count": 0,
+      "mentions": []
+    }
+  },
+  "transcript": [
+    {
+      "start": 360.96,
+      "end": 363.18,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Седем, осем, номера."
+    },
+    {
+      "start": 363.6,
+      "end": 363.78,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Девет."
+    },
+    {
+      "start": 364.28,
+      "end": 364.86,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Осем."
+    },
+    {
+      "start": 365.28,
+      "end": 366.26,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Аз осем броя."
+    },
+    {
+      "start": 366.44,
+      "end": 368.48,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Шест, девет."
+    },
+    {
+      "start": 368.88,
+      "end": 369.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Двадесет."
+    },
+    {
+      "start": 372.04,
+      "end": 374.48,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "Устройството не е позиционирано правилно."
+    },
+    {
+      "start": 374.98,
+      "end": 377.92,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "Завъртете го така, че физическите бутони да бъдат отгоре."
+    },
+    {
+      "start": 378.9,
+      "end": 381.76,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "А това е осмата."
+    },
+    {
+      "start": 383.6,
+      "end": 385.08,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Не е съвсем."
+    },
+    {
+      "start": 384.76,
+      "end": 389.42,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Българската е фазна."
+    },
+    {
+      "start": 385.26,
+      "end": 388.92,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "12, 5, 4, 5, 6, 7, 8, 9, 10."
+    },
+    {
+      "start": 388.92,
+      "end": 394.04,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Десет, колко тя, десет."
+    },
+    {
+      "start": 394.04,
+      "end": 395.3,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20."
+    },
+    {
+      "start": 396.1,
+      "end": 404.18,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "И може ли?"
+    },
+    {
+      "start": 404.18,
+      "end": 404.86,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "12, 13, 14, 15, 16, 17, 18, 19, 20."
+    },
+    {
+      "start": 405.06,
+      "end": 409.2,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "Ей, бай, не бъде още малко."
+    },
+    {
+      "start": 410.68,
+      "end": 412,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "Да, бай, не бъде още малко."
+    },
+    {
+      "start": 412.44,
+      "end": 414.7,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "Айде, вали, вали."
+    },
+    {
+      "start": 414.2,
+      "end": 416.2,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "Устройството не е позиционирано правилно."
+    },
+    {
+      "start": 414.7,
+      "end": 434.52,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "27."
+    },
+    {
+      "start": 416.2,
+      "end": 418.2,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "27? Кой е подвижен?"
+    },
+    {
+      "start": 418.2,
+      "end": 420.2,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "Кой е върху?"
+    },
+    {
+      "start": 420.2,
+      "end": 422.2,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "Я."
+    },
+    {
+      "start": 422.2,
+      "end": 424.2,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "Айде, вали, вали."
+    },
+    {
+      "start": 424.2,
+      "end": 426.2,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "Айде, вали, вали."
+    },
+    {
+      "start": 426.2,
+      "end": 428.2,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "Вали, вали."
+    },
+    {
+      "start": 428.2,
+      "end": 430.2,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "27."
+    },
+    {
+      "start": 430.2,
+      "end": 432.5,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "Завъртете го така, че физическите бутони"
+    },
+    {
+      "start": 434.98,
+      "end": 437.04,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "да бъдат отгоре."
+    },
+    {
+      "start": 437.04,
+      "end": 437.92,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "Като че да си обърнена насам в тези някои време."
+    },
+    {
+      "start": 444.2,
+      "end": 446.78,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "осемнадесет"
+    },
+    {
+      "start": 444.7,
+      "end": 455,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "А, да, от това."
+    },
+    {
+      "start": 446.78,
+      "end": 448.28,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Трябва да е в някакво състояние."
+    },
+    {
+      "start": 448.96000000000004,
+      "end": 450.96000000000004,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Трябва да бъде съмнение, но..."
+    },
+    {
+      "start": 450.96000000000004,
+      "end": 452.96000000000004,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Трябва да бъде в някакво състояние."
+    },
+    {
+      "start": 452.96000000000004,
+      "end": 455.5,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Ето, аз се объркв"
+    },
+    {
+      "start": 455,
+      "end": 457,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Това е много хубаво."
+    },
+    {
+      "start": 457,
+      "end": 459,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Аз 26."
+    },
+    {
+      "start": 459,
+      "end": 461,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Аз 26 имам вече."
+    },
+    {
+      "start": 461,
+      "end": 463,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "26 е при мен."
+    },
+    {
+      "start": 463,
+      "end": 465,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "26 е за при мен."
+    },
+    {
+      "start": 465,
+      "end": 467,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Десет има ли още някъде?"
+    },
+    {
+      "start": 467,
+      "end": 469,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Десет, само не е вече."
+    },
+    {
+      "start": 469,
+      "end": 471,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Десет, аз само не знам."
+    },
+    {
+      "start": 471,
+      "end": 473,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Това е това."
+    },
+    {
+      "start": 473,
+      "end": 475,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Това е тази."
+    },
+    {
+      "start": 475,
+      "end": 477,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "И сега, когато е вече,"
+    },
+    {
+      "start": 477,
+      "end": 479,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "последно ще го ви дам да ми пишете."
+    },
+    {
+      "start": 479,
+      "end": 481,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Аз ще пиша."
+    },
+    {
+      "start": 481,
+      "end": 483,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Аз ще ви го дам."
+    },
+    {
+      "start": 483,
+      "end": 485,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Значи, да почнем от най-малко ще запиша."
+    },
+    {
+      "start": 485,
+      "end": 487,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Да."
+    },
+    {
+      "start": 487,
+      "end": 489,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Добре, там, скочете върху."
+    },
+    {
+      "start": 489,
+      "end": 491,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Устройството не е"
+    },
+    {
+      "start": 491,
+      "end": 493,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "позиционирано правилно."
+    },
+    {
+      "start": 493,
+      "end": 495,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "Завъртете го така, че физическите бутони"
+    },
+    {
+      "start": 495,
+      "end": 497,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "да бъдат отгоре."
+    },
+    {
+      "start": 497,
+      "end": 499,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "Сега, сега."
+    },
+    {
+      "start": 499,
+      "end": 501,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Три, само да ги смятам."
+    },
+    {
+      "start": 501,
+      "end": 504,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Не, не, не."
+    },
+    {
+      "start": 504,
+      "end": 506,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Три, четири."
+    },
+    {
+      "start": 506,
+      "end": 508,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "За малко искате и преференциите да казвам."
+    },
+    {
+      "start": 508,
+      "end": 511,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Това няма."
+    },
+    {
+      "start": 511,
+      "end": 512,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Има ли преференции?"
+    },
+    {
+      "start": 512,
+      "end": 514,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Няма."
+    },
+    {
+      "start": 514,
+      "end": 515,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Няма малко да прави."
+    },
+    {
+      "start": 515,
+      "end": 517,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Тия са невалидните."
+    },
+    {
+      "start": 517,
+      "end": 519,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Ама тука са три само, че?"
+    },
+    {
+      "start": 519,
+      "end": 521,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Е, три да я сброим."
+    },
+    {
+      "start": 521,
+      "end": 523,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Не, някакви са от четири."
+    },
+    {
+      "start": 523,
+      "end": 525,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "А, нали не бихме в тази?"
+    },
+    {
+      "start": 525,
+      "end": 526,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "На горе ли трябва да бъдем в горе?"
+    },
+    {
+      "start": 526,
+      "end": 528,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Добре."
+    },
+    {
+      "start": 528,
+      "end": 529,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "8, чакай 100, аз ме смали."
+    },
+    {
+      "start": 529,
+      "end": 532,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "5, нямаме нито една."
+    },
+    {
+      "start": 532,
+      "end": 535,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "6."
+    },
+    {
+      "start": 534.5,
+      "end": 535.52,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "6 6 6 6"
+    },
+    {
+      "start": 535,
+      "end": 545.38,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Имам ли някъде 6?"
+    },
+    {
+      "start": 535.7,
+      "end": 536.84,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Признавам това е 6 бюлетини."
+    },
+    {
+      "start": 538.4,
+      "end": 540.12,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Ето това е 6 бюлетини."
+    },
+    {
+      "start": 540.96,
+      "end": 542.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "А, ваша."
+    },
+    {
+      "start": 542.4,
+      "end": 542.86,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Ето това е 1,"
+    },
+    {
+      "start": 543.44,
+      "end": 544.3,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "това е 1 бюлетина."
+    },
+    {
+      "start": 544.54,
+      "end": 545.88,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Какво е това?"
+    },
+    {
+      "start": 545.6800000000001,
+      "end": 546.38,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Една 6 листа, едно."
+    },
+    {
+      "start": 546.74,
+      "end": 548.28,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "6 листа."
+    },
+    {
+      "start": 549.74,
+      "end": 550.62,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Добре."
+    },
+    {
+      "start": 551,
+      "end": 551.3199999999999,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "Устройството не е позиционирано правилно."
+    },
+    {
+      "start": 552.36,
+      "end": 554.42,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "Завъртете го така, че физическите бутони да бъдат отгоре."
+    },
+    {
+      "start": 554.94,
+      "end": 557.88,
+      "speaker": "SPEAKER_00",
+      "role": "Глас на устройство",
+      "text": "Към нещо казано."
+    },
+    {
+      "start": 558.56,
+      "end": 560.02,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Минало, че върни замка."
+    },
+    {
+      "start": 560.24,
+      "end": 562.34,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "6 листа."
+    },
+    {
+      "start": 562.34,
+      "end": 563.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Ще стигнава тук спокойно, може да си си нега."
+    },
+    {
+      "start": 562.72,
+      "end": 564.72,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Най-важно е да има физически включен."
+    },
+    {
+      "start": 563.22,
+      "end": 570.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Явно така искам."
+    },
+    {
+      "start": 564.72,
+      "end": 570.72,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Ти ще започне с този някой,"
+    },
+    {
+      "start": 570.22,
+      "end": 573.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "който е десен, някой..."
+    },
+    {
+      "start": 572.72,
+      "end": 574.72,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Добре, ако не."
+    },
+    {
+      "start": 573.22,
+      "end": 576.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Благодаря."
+    },
+    {
+      "start": 574.72,
+      "end": 576.72,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "О, ако не, това е много малко."
+    },
+    {
+      "start": 575.72,
+      "end": 576.72,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Трябва да приемем предпочитанията."
+    },
+    {
+      "start": 576.22,
+      "end": 581.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Ето."
+    },
+    {
+      "start": 576.72,
+      "end": 577.72,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Ето."
+    },
+    {
+      "start": 577.72,
+      "end": 578.72,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Ето."
+    },
+    {
+      "start": 578.72,
+      "end": 581.72,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "7. Осем, седми."
+    },
+    {
+      "start": 580.72,
+      "end": 582.72,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Осем, седми."
+    },
+    {
+      "start": 581.22,
+      "end": 584.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Една стой една."
+    },
+    {
+      "start": 582.72,
+      "end": 584.72,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Няма, само това е. Една стой една."
+    },
+    {
+      "start": 583.72,
+      "end": 587.72,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Един с осмица, да."
+    },
+    {
+      "start": 584.22,
+      "end": 587.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Осмица е една."
+    },
+    {
+      "start": 586.72,
+      "end": 588.8199999999999,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Пишеш ли?"
+    },
+    {
+      "start": 587.22,
+      "end": 590.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Пиша. Едно."
+    },
+    {
+      "start": 589.5,
+      "end": 590.72,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Осмица е една."
+    },
+    {
+      "start": 590.22,
+      "end": 592.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Една."
+    },
+    {
+      "start": 592.22,
+      "end": 594.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Преференци няма."
+    },
+    {
+      "start": 602.22,
+      "end": 604.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "И с осмица."
+    },
+    {
+      "start": 604.22,
+      "end": 606.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Девета някъде има ли?"
+    },
+    {
+      "start": 606.22,
+      "end": 608.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Не, 10 има."
+    },
+    {
+      "start": 608.22,
+      "end": 610.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Не е тежи, но не е върху няма възможно."
+    },
+    {
+      "start": 610.22,
+      "end": 612.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Къде"
+    },
+    {
+      "start": 612.22,
+      "end": 614.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "9 9 10 2"
+    },
+    {
+      "start": 614.22,
+      "end": 616.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Не е върху няма."
+    },
+    {
+      "start": 616.22,
+      "end": 618.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Не е върху няма."
+    },
+    {
+      "start": 618.22,
+      "end": 620.22,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Здравейте, дете."
+    },
+    {
+      "start": 620.22,
+      "end": 622.58002,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Вие"
+    },
+    {
+      "start": 623.58002,
+      "end": 624.94,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Две"
+    },
+    {
+      "start": 623.604,
+      "end": 626.804,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "121 е добро."
+    },
+    {
+      "start": 624.94,
+      "end": 630.28,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Една претензия 121."
+    },
+    {
+      "start": 625.22,
+      "end": 635,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Този е проблем приемаме за действителни или за нея?"
+    },
+    {
+      "start": 626.804,
+      "end": 627.8240000000001,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Нея са сега по-получавани."
+    },
+    {
+      "start": 627.8240000000001,
+      "end": 629.864,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Чакайте, чакайте, чакайте."
+    },
+    {
+      "start": 629.8720000000001,
+      "end": 633.332,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Чакайте, чакайте, чакайте."
+    },
+    {
+      "start": 630.28,
+      "end": 632.0,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Чакайте."
+    },
+    {
+      "start": 632.0,
+      "end": 632.8800000000001,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Обявай, полека ми до 12."
+    },
+    {
+      "start": 632.8800000000001,
+      "end": 635.5,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Чакай по 12?.."
+    },
+    {
+      "start": 635,
+      "end": 637,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Безусловно, да."
+    },
+    {
+      "start": 637,
+      "end": 639,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Ей."
+    },
+    {
+      "start": 639,
+      "end": 643,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "12"
+    },
+    {
+      "start": 643,
+      "end": 645,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "12."
+    },
+    {
+      "start": 645,
+      "end": 647,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "3, 2, 1."
+    },
+    {
+      "start": 647,
+      "end": 649,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "24."
+    },
+    {
+      "start": 649,
+      "end": 651,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Това е двойно, трети, висока."
+    },
+    {
+      "start": 651,
+      "end": 653.44,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Айде, овая, трети, висока."
+    },
+    {
+      "start": 653.44,
+      "end": 654.8,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "24."
+    },
+    {
+      "start": 664.76,
+      "end": 666,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Куда беше?"
+    },
+    {
+      "start": 666.46,
+      "end": 667.28,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Това може да бъде 24,"
+    },
+    {
+      "start": 669.28,
+      "end": 670.1600000000001,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Тука може да пишеш 24, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10."
+    },
+    {
+      "start": 670.1600000000001,
+      "end": 670.72,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "едно без петчисло."
+    },
+    {
+      "start": 671.28,
+      "end": 672.06,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Само 24."
+    },
+    {
+      "start": 681,
+      "end": 682,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Едно без петчисло."
+    },
+    {
+      "start": 683,
+      "end": 684,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Не, още 10 имам"
+    },
+    {
+      "start": 684,
+      "end": 686,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "10, 9, 10."
+    },
+    {
+      "start": 686,
+      "end": 687,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "10."
+    },
+    {
+      "start": 689,
+      "end": 690,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "5, 6, 7, 8, 9, 10."
+    },
+    {
+      "start": 689.5,
+      "end": 691.5,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "О!"
+    },
+    {
+      "start": 690,
+      "end": 701,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Дай ме път."
+    },
+    {
+      "start": 691.5,
+      "end": 693.5,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Най-смисли."
+    },
+    {
+      "start": 693.5,
+      "end": 695.5,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Дай ме път."
+    },
+    {
+      "start": 695.5,
+      "end": 697.5,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Едно без петглед."
+    },
+    {
+      "start": 699.5,
+      "end": 701.5,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Не, още 10 мая"
+    },
+    {
+      "start": 701,
+      "end": 703,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "10, 9, 10."
+    },
+    {
+      "start": 703,
+      "end": 704,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "10."
+    },
+    {
+      "start": 704,
+      "end": 707,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "5, 6, 7, 8, 9, 10."
+    },
+    {
+      "start": 707,
+      "end": 707.98,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "О!"
+    },
+    {
+      "start": 716.48,
+      "end": 717.48,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Дай ме път."
+    },
+    {
+      "start": 716.98,
+      "end": 719.98,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Най-смисли."
+    },
+    {
+      "start": 719.0,
+      "end": 720.0,
+      "speaker": "SPEAKER_01",
+      "role": "Член на комисия",
+      "text": "Дай ме път."
+    }
+  ]
+}

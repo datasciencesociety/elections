@@ -1,0 +1,1937 @@
+{
+  "speakers": [
+    "SPEAKER_00",
+    "SPEAKER_01"
+  ],
+  "speaker_roles": {
+    "SPEAKER_00": "Глас на устройство (Device voice)",
+    "SPEAKER_01": "Член на комисия (Commission member)"
+  },
+  "diar_segments": [
+    {
+      "speaker": "SPEAKER_01",
+      "start": 2.36,
+      "end": 3.406
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 2.41,
+      "end": 3.237
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 4.486,
+      "end": 4.638
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 4.655,
+      "end": 4.672
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 4.688,
+      "end": 4.773
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 6.106,
+      "end": 7.034
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 11.287,
+      "end": 11.793
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 12.215,
+      "end": 18.02
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 18.408,
+      "end": 18.931
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 20.905,
+      "end": 21.53
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 72.273,
+      "end": 74.585
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 74.77,
+      "end": 78.01
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 93.13,
+      "end": 93.248
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 94.514,
+      "end": 94.531
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 94.548,
+      "end": 94.615
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 94.97,
+      "end": 95.037
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 104.217,
+      "end": 104.673
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 107.255,
+      "end": 114.798
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 115.422,
+      "end": 116.097
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 118.038,
+      "end": 118.139
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 121.177,
+      "end": 123.303
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 123.978,
+      "end": 124.028
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 124.214,
+      "end": 127.032
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 127.201,
+      "end": 128.028
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 128.028,
+      "end": 128.078
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 128.078,
+      "end": 128.112
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 128.197,
+      "end": 128.23
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 128.264,
+      "end": 128.416
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 129.158,
+      "end": 130.036
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 130.205,
+      "end": 130.66
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 130.677,
+      "end": 130.762
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 131.487,
+      "end": 131.521
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 131.521,
+      "end": 138.035
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 137.917,
+      "end": 138.018
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 138.035,
+      "end": 139.874
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 140.583,
+      "end": 142.287
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 152.969,
+      "end": 153.593
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 153.627,
+      "end": 153.745
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 153.965,
+      "end": 163.955
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 159.972,
+      "end": 160.023
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 160.057,
+      "end": 161.221
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 161.963,
+      "end": 162.031
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 162.976,
+      "end": 163.027
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 163.972,
+      "end": 164.039
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 164.225,
+      "end": 165.035
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 165.743,
+      "end": 167.482
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 179.969,
+      "end": 180.037
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 181.117,
+      "end": 181.758
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 182.416,
+      "end": 182.905
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 183.547,
+      "end": 185.538
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 185.825,
+      "end": 186.517
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 186.837,
+      "end": 188.356
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 192.237,
+      "end": 198.025
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 200.422,
+      "end": 216.031
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 204.522,
+      "end": 204.556
+    },
+    {
+      "speaker": "SPEAKER_00",
+      "start": 204.978,
+      "end": 212.943
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 216.2,
+      "end": 216.233
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 216.301,
+      "end": 216.959
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 230.965,
+      "end": 231.32
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 231.404,
+      "end": 231.421
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 231.438,
+      "end": 231.472
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 231.59,
+      "end": 234.509
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 258.218,
+      "end": 259.18
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 259.737,
+      "end": 260.429
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 261.442,
+      "end": 262.741
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 263.888,
+      "end": 264.85
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 265.289,
+      "end": 266.909
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 266.943,
+      "end": 269.035
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 309.35,
+      "end": 311.307
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 311.341,
+      "end": 311.611
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 311.678,
+      "end": 311.797
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 311.932,
+      "end": 312.421
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 337.97,
+      "end": 338.29
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 340.163,
+      "end": 341.092
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 341.294,
+      "end": 341.345
+    },
+    {
+      "speaker": "SPEAKER_01",
+      "start": 359.384,
+      "end": 359.975
+    }
+  ],
+  "analysis": {
+    "speaker_roles": {
+      "SPEAKER_00": {
+        "role": "Глас на устройство",
+        "role_en": "Device voice",
+        "confidence": 0.95,
+        "reasoning": "Repeated automatic messages about device positioning and physical buttons being on top"
+      },
+      "SPEAKER_01": {
+        "role": "Член на комисия",
+        "role_en": "Commission member",
+        "confidence": 0.85,
+        "reasoning": "Counting votes and ballot papers, mentions writing down results, handling election materials"
+      }
+    },
+    "tension_scale": {
+      "overall": 3,
+      "description": "Moderate tension due to technical difficulties with voting device positioning and confusion during vote counting",
+      "tense_moments": [
+        "00:12-01:17 - Repeated device positioning errors causing interruptions",
+        "02:25-02:45 - Confusion about counting preferences and invalid votes",
+        "04:25-04:30 - Multiple interruptions and 'wait, wait, wait' expressions"
+      ]
+    },
+    "number_frequency_matrix": {
+      "description": "Numbers mentioned during vote counting process",
+      "numbers": [
+        {
+          "number": 1,
+          "total_mentions": 7,
+          "by_speaker": {
+            "SPEAKER_01": 7
+          },
+          "contexts": [
+            "Това е 1 бюлетина",
+            "3, 2, 1",
+            "24, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10"
+          ]
+        },
+        {
+          "number": 2,
+          "total_mentions": 3,
+          "by_speaker": {
+            "SPEAKER_01": 3
+          },
+          "contexts": [
+            "3, 2, 1",
+            "24, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10",
+            "9 9 10 2"
+          ]
+        },
+        {
+          "number": 3,
+          "total_mentions": 5,
+          "by_speaker": {
+            "SPEAKER_01": 5
+          },
+          "contexts": [
+            "Три, само да ги смятам",
+            "Три, четири",
+            "3, 2, 1",
+            "24, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10"
+          ]
+        },
+        {
+          "number": 4,
+          "total_mentions": 3,
+          "by_speaker": {
+            "SPEAKER_01": 3
+          },
+          "contexts": [
+            "12, 5, 4, 5, 6, 7, 8, 9, 10",
+            "Три, четири",
+            "24, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10"
+          ]
+        },
+        {
+          "number": 5,
+          "total_mentions": 4,
+          "by_speaker": {
+            "SPEAKER_01": 4
+          },
+          "contexts": [
+            "12, 5, 4, 5, 6, 7, 8, 9, 10",
+            "5, нямаме нито една",
+            "5, 6, 7, 8, 9, 10"
+          ]
+        },
+        {
+          "number": 6,
+          "total_mentions": 15,
+          "by_speaker": {
+            "SPEAKER_01": 15
+          },
+          "contexts": [
+            "12, 5, 4, 5, 6, 7, 8, 9, 10",
+            "6 6 6 6",
+            "6 бюлетини",
+            "6 листа",
+            "5, 6, 7, 8, 9, 10"
+          ]
+        },
+        {
+          "number": 7,
+          "total_mentions": 4,
+          "by_speaker": {
+            "SPEAKER_01": 4
+          },
+          "contexts": [
+            "Седем, осем, номера",
+            "12, 5, 4, 5, 6, 7, 8, 9, 10",
+            "7. Осем, седми",
+            "5, 6, 7, 8, 9, 10"
+          ]
+        },
+        {
+          "number": 8,
+          "total_mentions": 7,
+          "by_speaker": {
+            "SPEAKER_01": 7
+          },
+          "contexts": [
+            "Седем, осем, номера",
+            "Осем",
+            "Аз осем броя",
+            "А това е осмата",
+            "12, 5, 4, 5, 6, 7, 8, 9, 10",
+            "5, 6, 7, 8, 9, 10"
+          ]
+        },
+        {
+          "number": 9,
+          "total_mentions": 6,
+          "by_speaker": {
+            "SPEAKER_01": 6
+          },
+          "contexts": [
+            "Девет",
+            "Шест, девет",
+            "12, 5, 4, 5, 6, 7, 8, 9, 10",
+            "9 9 10 2",
+            "5, 6, 7, 8, 9, 10",
+            "10, 9, 10"
+          ]
+        },
+        {
+          "number": 10,
+          "total_mentions": 12,
+          "by_speaker": {
+            "SPEAKER_01": 12
+          },
+          "contexts": [
+            "12, 5, 4, 5, 6, 7, 8, 9, 10",
+            "Десет, колко тя, десет",
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "Десет има ли още някъде",
+            "Не, 10 има",
+            "5, 6, 7, 8, 9, 10",
+            "10, 9, 10"
+          ]
+        },
+        {
+          "number": 11,
+          "total_mentions": 1,
+          "by_speaker": {
+            "SPEAKER_01": 1
+          },
+          "contexts": [
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20"
+          ]
+        },
+        {
+          "number": 12,
+          "total_mentions": 8,
+          "by_speaker": {
+            "SPEAKER_01": 8
+          },
+          "contexts": [
+            "12, 5, 4, 5, 6, 7, 8, 9, 10",
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "Обявай, полека ми до 12",
+            "12"
+          ]
+        },
+        {
+          "number": 13,
+          "total_mentions": 2,
+          "by_speaker": {
+            "SPEAKER_01": 2
+          },
+          "contexts": [
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "12, 13, 14, 15, 16, 17, 18, 19, 20"
+          ]
+        },
+        {
+          "number": 14,
+          "total_mentions": 2,
+          "by_speaker": {
+            "SPEAKER_01": 2
+          },
+          "contexts": [
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "12, 13, 14, 15, 16, 17, 18, 19, 20"
+          ]
+        },
+        {
+          "number": 15,
+          "total_mentions": 2,
+          "by_speaker": {
+            "SPEAKER_01": 2
+          },
+          "contexts": [
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "12, 13, 14, 15, 16, 17, 18, 19, 20"
+          ]
+        },
+        {
+          "number": 16,
+          "total_mentions": 2,
+          "by_speaker": {
+            "SPEAKER_01": 2
+          },
+          "contexts": [
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "12, 13, 14, 15, 16, 17, 18, 19, 20"
+          ]
+        },
+        {
+          "number": 17,
+          "total_mentions": 2,
+          "by_speaker": {
+            "SPEAKER_01": 2
+          },
+          "contexts": [
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "12, 13, 14, 15, 16, 17, 18, 19, 20"
+          ]
+        },
+        {
+          "number": 18,
+          "total_mentions": 3,
+          "by_speaker": {
+            "SPEAKER_01": 2,
+            "SPEAKER_00": 1
+          },
+          "contexts": [
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "осемнадесет"
+          ]
+        },
+        {
+          "number": 19,
+          "total_mentions": 2,
+          "by_speaker": {
+            "SPEAKER_01": 2
+          },
+          "contexts": [
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "12, 13, 14, 15, 16, 17, 18, 19, 20"
+          ]
+        },
+        {
+          "number": 20,
+          "total_mentions": 3,
+          "by_speaker": {
+            "SPEAKER_01": 3
+          },
+          "contexts": [
+            "Двадесет",
+            "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20",
+            "12, 13, 14, 15, 16, 17, 18, 19, 20"
+          ]
+        },
+        {
+          "number": 24,
+          "total_mentions": 4,
+          "by_speaker": {
+            "SPEAKER_01": 4
+          },
+          "contexts": [
+            "24",
+            "Това може да бъде 24",
+            "Тука може да пишеш 24",
+            "24, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10"
+          ]
+        },
+        {
+          "number": 26,
+          "total_mentions": 4,
+          "by_speaker": {
+            "SPEAKER_01": 4
+          },
+          "contexts": [
+            "Аз 26",
+            "Аз 26 имам вече",
+            "26 е при мен",
+            "26 е за при мен"
+          ]
+        },
+        {
+          "number": 27,
+          "total_mentions": 2,
+          "by_speaker": {
+            "SPEAKER_00": 2
+          },
+          "contexts": [
+            "27",
+            "27? Кой е подвижен?"
+          ]
+        }
+      ],
+      "grand_total_mentions": 104,
+      "sum_of_all_numbers": 1386
+    },
+    "candidate_votes": {
+      "tallies": [
+        {
+          "candidate_number": 6,
+          "times_mentioned": 15,
+          "vote_count_stated": 6
+        },
+        {
+          "candidate_number": 8,
+          "times_mentioned": 7,
+          "vote_count_stated": 1
+        },
+        {
+          "candidate_number": 24,
+          "times_mentioned": 4,
+          "vote_count_stated": 24
+        },
+        {
+          "candidate_number": 26,
+          "times_mentioned": 4,
+          "vote_count_stated": 26
+        },
+        {
+          "candidate_number": 27,
+          "times_mentioned": 2,
+          "vote_count_stated": 27
+        }
+      ],
+      "total_votes_stated": 64,
+      "interpretation": "Vote counting for different candidate numbers, with ballot counting and tallying process"
+    },
+    "names_mentioned": {
+      "names": []
+    },
+    "partisan_language": {
+      "nashi_count": 0,
+      "vashi_count": 1,
+      "per_speaker": {
+        "SPEAKER_01": {
+          "nashi": 0,
+          "vashi": 1
+        }
+      },
+      "examples": [
+        "А, ваша."
+      ]
+    },
+    "invalid_votes": {
+      "nevalidni_count": 0,
+      "mentions": []
+    }
+  },
+  "models": {
+    "groq_large_v3": {
+      "name": "Groq API (three-pass)",
+      "time": 146.4100365638733,
+      "type": "cloud",
+      "merged_segments": [
+        {
+          "start": 0.96,
+          "end": 3.18,
+          "text": "Седем, осем, номера.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Седьам, осем, номери."
+        },
+        {
+          "start": 3.6,
+          "end": 3.78,
+          "text": "Девет.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Девица."
+        },
+        {
+          "start": 4.28,
+          "end": 4.86,
+          "text": "Осем.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Осем."
+        },
+        {
+          "start": 5.28,
+          "end": 6.26,
+          "text": "Аз осем броя.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Аз овсем блашам."
+        },
+        {
+          "start": 6.44,
+          "end": 8.48,
+          "text": "Шест, девет.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Шест, дев Video heavenly."
+        },
+        {
+          "start": 8.88,
+          "end": 9.22,
+          "text": "Двадесет.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Двидата."
+        },
+        {
+          "start": 12.04,
+          "end": 14.48,
+          "text": "Устройството не е позиционирано правилно.",
+          "speaker": "SPEAKER_00",
+          "text_original": "Остройството не е позиционирано правилно."
+        },
+        {
+          "start": 14.98,
+          "end": 17.92,
+          "text": "Завъртете го така, че физическите бутони да бъдат отгоре.",
+          "speaker": "SPEAKER_00",
+          "text_original": "Завъртете го така, че физическите бутони да бъдат отгоре."
+        },
+        {
+          "start": 18.9,
+          "end": 21.76,
+          "text": "А това е осмата.",
+          "speaker": "SPEAKER_01",
+          "text_original": "А това е оптината."
+        },
+        {
+          "start": 23.6,
+          "end": 25.08,
+          "text": "Не е съвсем.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Не е сгseл."
+        },
+        {
+          "start": 24.76,
+          "end": 29.42,
+          "text": "Българската е фазна.",
+          "speaker": "SPEAKER_01",
+          "text_original": "… нашото еляальное стрелязимо в тезиρείта идеи стел si"
+        },
+        {
+          "start": 25.26,
+          "end": 28.92,
+          "text": "12, 5, 4, 5, 6, 7, 8, 9, 10.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Пълската е фазни."
+        },
+        {
+          "start": 28.92,
+          "end": 34.04,
+          "text": "Десет, колко тя, десет.",
+          "speaker": "SPEAKER_01",
+          "text_original": "12, 5, 4, 5, 6, 7, 8, 9, 10."
+        },
+        {
+          "start": 34.04,
+          "end": 35.3,
+          "text": "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Дейси, кивай тя, дейси."
+        },
+        {
+          "start": 36.1,
+          "end": 44.18,
+          "text": "И може ли?",
+          "speaker": "SPEAKER_01",
+          "text_original": "10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20."
+        },
+        {
+          "start": 44.18,
+          "end": 44.86,
+          "text": "12, 13, 14, 15, 16, 17, 18, 19, 20.",
+          "speaker": "SPEAKER_01",
+          "text_original": "И може ли?"
+        },
+        {
+          "start": 45.06,
+          "end": 49.2,
+          "text": "Ей, бай, не бъде още малко.",
+          "speaker": "SPEAKER_00",
+          "text_original": "12, 13, 14, 15, 16, 17, 18, 19, 20."
+        },
+        {
+          "start": 50.68,
+          "end": 52,
+          "text": "Да, бай, не бъде още малко.",
+          "speaker": "SPEAKER_00",
+          "text_original": "Ей, бай, не бъде ищи малей."
+        },
+        {
+          "start": 52.44,
+          "end": 54.7,
+          "text": "Айде, вали, вали.",
+          "speaker": "SPEAKER_00",
+          "text_original": "Да, бай, не бъде ищи малей."
+        },
+        {
+          "start": 54.2,
+          "end": 56.2,
+          "text": "Устройството не е позиционирано правилно.",
+          "speaker": "SPEAKER_00",
+          "text_original": "Айде, вали, вали."
+        },
+        {
+          "start": 54.7,
+          "end": 74.52,
+          "text": "27.",
+          "speaker": "SPEAKER_00",
+          "text_original": "Остройството не е позиционирано правилно."
+        },
+        {
+          "start": 56.2,
+          "end": 58.2,
+          "text": "27? Кой е подвижен?",
+          "speaker": "SPEAKER_00",
+          "text_original": "27."
+        },
+        {
+          "start": 58.2,
+          "end": 60.2,
+          "text": "Кой е върху?",
+          "speaker": "SPEAKER_00",
+          "text_original": "27? Кой е подвиден?"
+        },
+        {
+          "start": 60.2,
+          "end": 62.2,
+          "text": "Я.",
+          "speaker": "SPEAKER_00",
+          "text_original": "Кой е върху?"
+        },
+        {
+          "start": 62.2,
+          "end": 64.2,
+          "text": "Айде, вали, вали.",
+          "speaker": "SPEAKER_00",
+          "text_original": "Я."
+        },
+        {
+          "start": 64.2,
+          "end": 66.2,
+          "text": "Айде, вали, вали.",
+          "speaker": "SPEAKER_00",
+          "text_original": "Айде, вали, вали."
+        },
+        {
+          "start": 66.2,
+          "end": 68.2,
+          "text": "Вали, вали.",
+          "speaker": "SPEAKER_00",
+          "text_original": "Айде, вали, вали."
+        },
+        {
+          "start": 68.2,
+          "end": 70.2,
+          "text": "27.",
+          "speaker": "SPEAKER_00",
+          "text_original": "Вали, вали."
+        },
+        {
+          "start": 70.2,
+          "end": 72.5,
+          "text": "Завъртете го така, че физическите бутони",
+          "speaker": "SPEAKER_00",
+          "text_original": "27."
+        },
+        {
+          "start": 74.98,
+          "end": 77.04,
+          "text": "да бъдат отгоре.",
+          "speaker": "SPEAKER_00",
+          "text_original": "Завъртете го така, че физическите бутони"
+        },
+        {
+          "start": 77.04,
+          "end": 77.92,
+          "text": "Като че да си обърнена насам в тези някои време.",
+          "speaker": "SPEAKER_00",
+          "text_original": "да бъдат отгоре."
+        },
+        {
+          "start": 84.2,
+          "end": 86.78,
+          "text": "осемнадесет",
+          "speaker": "SPEAKER_00",
+          "text_original": "Като че да си обозрена есек в тези някои време."
+        },
+        {
+          "start": 84.7,
+          "end": 95,
+          "text": "А, да, от това.",
+          "speaker": "SPEAKER_01",
+          "text_original": "olabilir 18"
+        },
+        {
+          "start": 86.78,
+          "end": 88.28,
+          "text": "Трябва да е в някакво състояние.",
+          "speaker": "SPEAKER_01",
+          "text_original": "А, да, от това."
+        },
+        {
+          "start": 88.96000000000001,
+          "end": 90.96000000000001,
+          "text": "Трябва да бъде съмнение, но...",
+          "speaker": "SPEAKER_01",
+          "text_original": "Трябва да е някакъв състояние."
+        },
+        {
+          "start": 90.96000000000001,
+          "end": 92.96000000000001,
+          "text": "Трябва да бъде в някакво състояние.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Трябва да бъде съмник, но..."
+        },
+        {
+          "start": 92.96000000000001,
+          "end": 95.5,
+          "text": "Ето, аз се объркв",
+          "speaker": "SPEAKER_01",
+          "text_original": "Трябва да бъде някакъв състояние."
+        },
+        {
+          "start": 95,
+          "end": 97,
+          "text": "Това е много хубаво.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Ето, аз се спектрах."
+        },
+        {
+          "start": 97,
+          "end": 99,
+          "text": "Аз 26.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Това е много хубаво."
+        },
+        {
+          "start": 99,
+          "end": 101,
+          "text": "Аз 26 имам вече.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Аз 26."
+        },
+        {
+          "start": 101,
+          "end": 103,
+          "text": "26 е при мен.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Аз 26 има вече."
+        },
+        {
+          "start": 103,
+          "end": 105,
+          "text": "26 е за при мен.",
+          "speaker": "SPEAKER_01",
+          "text_original": "26 е при мен."
+        },
+        {
+          "start": 105,
+          "end": 107,
+          "text": "Десет има ли още някъде?",
+          "speaker": "SPEAKER_01",
+          "text_original": "26 е за при мен."
+        },
+        {
+          "start": 107,
+          "end": 109,
+          "text": "Десет, само не е вече.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Десет има ли още някакво?"
+        },
+        {
+          "start": 109,
+          "end": 111,
+          "text": "Десет, аз само не знам.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Десет, само не е вече."
+        },
+        {
+          "start": 111,
+          "end": 113,
+          "text": "Това е това.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Десет, аз само не знам."
+        },
+        {
+          "start": 113,
+          "end": 115,
+          "text": "Това е тази.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Това е това."
+        },
+        {
+          "start": 115,
+          "end": 117,
+          "text": "И сега, когато е вече,",
+          "speaker": "SPEAKER_01",
+          "text_original": "Това е тази."
+        },
+        {
+          "start": 117,
+          "end": 119,
+          "text": "последно ще го ви дам да ми пишете.",
+          "speaker": "SPEAKER_01",
+          "text_original": "И сега, когато е вечер,"
+        },
+        {
+          "start": 119,
+          "end": 121,
+          "text": "Аз ще пиша.",
+          "speaker": "SPEAKER_01",
+          "text_original": "последно ще го ви да ще пиша."
+        },
+        {
+          "start": 121,
+          "end": 123,
+          "text": "Аз ще ви го дам.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Аз ще пиша."
+        },
+        {
+          "start": 123,
+          "end": 125,
+          "text": "Значи, да почнем от най-малко ще запиша.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Аз ще ви го дадам."
+        },
+        {
+          "start": 125,
+          "end": 127,
+          "text": "Да.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Значи, да почнем от най-малко ще запиша."
+        },
+        {
+          "start": 127,
+          "end": 129,
+          "text": "Добре, там, скочете върху.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Да."
+        },
+        {
+          "start": 129,
+          "end": 131,
+          "text": "Устройството не е",
+          "speaker": "SPEAKER_01",
+          "text_original": "Добре, там, шкодите върху."
+        },
+        {
+          "start": 131,
+          "end": 133,
+          "text": "позиционирано правилно.",
+          "speaker": "SPEAKER_00",
+          "text_original": "Остройството не е"
+        },
+        {
+          "start": 133,
+          "end": 135,
+          "text": "Завъртете го така, че физическите бутони",
+          "speaker": "SPEAKER_00",
+          "text_original": "позиционирано правилно."
+        },
+        {
+          "start": 135,
+          "end": 137,
+          "text": "да бъдат отгоре.",
+          "speaker": "SPEAKER_00",
+          "text_original": "Завъртете го така, че физическите бутони"
+        },
+        {
+          "start": 137,
+          "end": 139,
+          "text": "Сега, сега.",
+          "speaker": "SPEAKER_00",
+          "text_original": "да бъдат отгоре."
+        },
+        {
+          "start": 139,
+          "end": 141,
+          "text": "Три, само да ги смятам.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Сега, сега."
+        },
+        {
+          "start": 141,
+          "end": 144,
+          "text": "Не, не, не.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Три, само да ги сметваме."
+        },
+        {
+          "start": 144,
+          "end": 146,
+          "text": "Три, четири.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Не, не, не."
+        },
+        {
+          "start": 146,
+          "end": 148,
+          "text": "За малко искате и преференциите да казвам.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Три, четири."
+        },
+        {
+          "start": 148,
+          "end": 151,
+          "text": "Това няма.",
+          "speaker": "SPEAKER_01",
+          "text_original": "За малко искате и преференциите да казваме."
+        },
+        {
+          "start": 151,
+          "end": 152,
+          "text": "Има ли преференции?",
+          "speaker": "SPEAKER_01",
+          "text_original": "Това няма."
+        },
+        {
+          "start": 152,
+          "end": 154,
+          "text": "Няма.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Има ли преференции?"
+        },
+        {
+          "start": 154,
+          "end": 155,
+          "text": "Няма малко да прави.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Няма."
+        },
+        {
+          "start": 155,
+          "end": 157,
+          "text": "Тия са невалидните.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Няма малко да прави."
+        },
+        {
+          "start": 157,
+          "end": 159,
+          "text": "Ама тука са три само, че?",
+          "speaker": "SPEAKER_01",
+          "text_original": "Тия са невалидните."
+        },
+        {
+          "start": 159,
+          "end": 161,
+          "text": "Е, три да я сброим.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Ама тука са три само, че?"
+        },
+        {
+          "start": 161,
+          "end": 163,
+          "text": "Не, някакви са от четири.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Е, три да я споклътна."
+        },
+        {
+          "start": 163,
+          "end": 165,
+          "text": "А, нали не бихме в тази?",
+          "speaker": "SPEAKER_01",
+          "text_original": "Не, някакви са от четири."
+        },
+        {
+          "start": 165,
+          "end": 166,
+          "text": "На горе ли трябва да бъдем в горе?",
+          "speaker": "SPEAKER_01",
+          "text_original": "А, нали не бихме в тази?"
+        },
+        {
+          "start": 166,
+          "end": 168,
+          "text": "Добре.",
+          "speaker": "SPEAKER_01",
+          "text_original": "На гора ли трябва да бъдем в гора?"
+        },
+        {
+          "start": 168,
+          "end": 169,
+          "text": "8, чакай 100, аз ме смали.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Добре."
+        },
+        {
+          "start": 169,
+          "end": 172,
+          "text": "5, нямаме нито една.",
+          "speaker": "SPEAKER_01",
+          "text_original": "8, чакам 100, аз ме смали."
+        },
+        {
+          "start": 172,
+          "end": 175,
+          "text": "6.",
+          "speaker": "SPEAKER_01",
+          "text_original": "5, нямаме нито една."
+        },
+        {
+          "start": 174.5,
+          "end": 175.52,
+          "text": "6 6 6 6",
+          "speaker": "SPEAKER_01",
+          "text_original": "6."
+        },
+        {
+          "start": 175,
+          "end": 185.38,
+          "text": "Имам ли някъде 6?",
+          "speaker": "SPEAKER_01",
+          "text_original": "6 6 6 6"
+        },
+        {
+          "start": 175.7,
+          "end": 176.84,
+          "text": "Признавам това е 6 бюлетини.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Имам ли някъде 6?"
+        },
+        {
+          "start": 178.4,
+          "end": 180.12,
+          "text": "Ето това е 6 бюлетини.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Премесвам това е 6 битки."
+        },
+        {
+          "start": 180.96,
+          "end": 182.22,
+          "text": "А, ваша.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Ето това е 6 битки."
+        },
+        {
+          "start": 182.4,
+          "end": 182.86,
+          "text": "Ето това е 1,",
+          "speaker": "SPEAKER_01",
+          "text_original": "А, ваше."
+        },
+        {
+          "start": 183.44,
+          "end": 184.3,
+          "text": "това е 1 бюлетина.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Ето това е 1,"
+        },
+        {
+          "start": 184.54,
+          "end": 185.88,
+          "text": "Какво е това?",
+          "speaker": "SPEAKER_01",
+          "text_original": "това е 1 битка."
+        },
+        {
+          "start": 185.68,
+          "end": 186.38,
+          "text": "Една 6 листа, едно.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Какво е това?"
+        },
+        {
+          "start": 186.74,
+          "end": 188.28,
+          "text": "6 листа.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Една 6 лица, едно."
+        },
+        {
+          "start": 189.74,
+          "end": 190.62,
+          "text": "Добре.",
+          "speaker": "SPEAKER_01",
+          "text_original": "6 лица."
+        },
+        {
+          "start": 191,
+          "end": 191.32,
+          "text": "Устройството не е позиционирано правилно.",
+          "speaker": "SPEAKER_00",
+          "text_original": "Добре."
+        },
+        {
+          "start": 192.36,
+          "end": 194.42,
+          "text": "Завъртете го така, че физическите бутони да бъдат отгоре.",
+          "speaker": "SPEAKER_00",
+          "text_original": "Остройството не е позиционирано правилно."
+        },
+        {
+          "start": 194.94,
+          "end": 197.88,
+          "text": "Към нещо казано.",
+          "speaker": "SPEAKER_00",
+          "text_original": "Завъртете го така, че физическите бутони да бъдат отгоре."
+        },
+        {
+          "start": 198.56,
+          "end": 200.02,
+          "text": "Минало, че върни замка.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Към нещо казано."
+        },
+        {
+          "start": 200.24,
+          "end": 202.34,
+          "text": "6 листа.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Минално, че върни замкал."
+        },
+        {
+          "start": 202.34,
+          "end": 203.22,
+          "text": "Ще стигнава тук спокойно, може да си си нега.",
+          "speaker": "SPEAKER_01",
+          "text_original": "6 лица."
+        },
+        {
+          "start": 202.72,
+          "end": 204.72,
+          "text": "Най-важно е да има физически включен.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Ще стигнава тук шпорта, може да си си нега."
+        },
+        {
+          "start": 203.22,
+          "end": 210.22,
+          "text": "Явно така искам.",
+          "speaker": "SPEAKER_01",
+          "text_original": "..."
+        },
+        {
+          "start": 204.72,
+          "end": 210.72,
+          "text": "Ти ще започне с този някой,",
+          "speaker": "SPEAKER_01",
+          "text_original": "Най-важно е да има физически вкл."
+        },
+        {
+          "start": 210.22,
+          "end": 213.22,
+          "text": "който е десен, някой...",
+          "speaker": "SPEAKER_01",
+          "text_original": "Явно така искам."
+        },
+        {
+          "start": 212.72,
+          "end": 214.72,
+          "text": "Добре, ако не.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Ти ще започне с този някой,"
+        },
+        {
+          "start": 213.22,
+          "end": 216.22,
+          "text": "Благодаря.",
+          "speaker": "SPEAKER_01",
+          "text_original": "..."
+        },
+        {
+          "start": 214.72,
+          "end": 216.72,
+          "text": "О, ако не, това е много малко.",
+          "speaker": "SPEAKER_01",
+          "text_original": "който е деден, някой..."
+        },
+        {
+          "start": 215.72,
+          "end": 216.72,
+          "text": "Трябва да приемем предпочитанията.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Добре, ако не."
+        },
+        {
+          "start": 216.22,
+          "end": 221.22,
+          "text": "Ето.",
+          "speaker": "SPEAKER_01",
+          "text_original": "..."
+        },
+        {
+          "start": 216.72,
+          "end": 217.72,
+          "text": "Ето.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Благодаря."
+        },
+        {
+          "start": 217.72,
+          "end": 218.72,
+          "text": "Ето.",
+          "speaker": "SPEAKER_01",
+          "text_original": "О, ако не, това е много малък."
+        },
+        {
+          "start": 218.72,
+          "end": 221.72,
+          "text": "7. Осем, седми.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Трябва да приемем предпълнителите."
+        },
+        {
+          "start": 220.72,
+          "end": 222.72,
+          "text": "Осем, седми.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Ето."
+        },
+        {
+          "start": 221.22,
+          "end": 224.22,
+          "text": "Една стой една.",
+          "speaker": "SPEAKER_01",
+          "text_original": "..."
+        },
+        {
+          "start": 222.72,
+          "end": 224.72,
+          "text": "Няма, само това е. Една стой една.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Ето."
+        },
+        {
+          "start": 223.72,
+          "end": 227.72,
+          "text": "Един с осмица, да.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Ето."
+        },
+        {
+          "start": 224.22,
+          "end": 227.22,
+          "text": "Осмица е една.",
+          "speaker": "SPEAKER_01",
+          "text_original": "..."
+        },
+        {
+          "start": 226.72,
+          "end": 228.82,
+          "text": "Пишеш ли?",
+          "speaker": "SPEAKER_01",
+          "text_original": "7. Awesome. Awesome, седми."
+        },
+        {
+          "start": 227.22,
+          "end": 230.22,
+          "text": "Пиша. Едно.",
+          "speaker": "SPEAKER_01",
+          "text_original": "..."
+        },
+        {
+          "start": 229.5,
+          "end": 230.72,
+          "text": "Осмица е една.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Awesome, седми."
+        },
+        {
+          "start": 230.22,
+          "end": 232.22,
+          "text": "Една.",
+          "speaker": "SPEAKER_01",
+          "text_original": "..."
+        },
+        {
+          "start": 232.22,
+          "end": 234.22,
+          "text": "Преференци няма.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Една стои една."
+        },
+        {
+          "start": 242.22,
+          "end": 244.22,
+          "text": "И с осмица.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Няма, само това е. Едно стои една."
+        },
+        {
+          "start": 244.22,
+          "end": 246.22,
+          "text": "Девета някъде има ли?",
+          "speaker": "SPEAKER_01",
+          "text_original": "Едки с есмица, да."
+        },
+        {
+          "start": 246.22,
+          "end": 248.22,
+          "text": "Не, 10 има.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Есмица е епи."
+        },
+        {
+          "start": 248.22,
+          "end": 250.22,
+          "text": "Не е тежи, но не е върху няма възможно.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Пишеш ли?"
+        },
+        {
+          "start": 250.22,
+          "end": 252.22,
+          "text": "Къде",
+          "speaker": "SPEAKER_01",
+          "text_original": "Пиша. Едно."
+        },
+        {
+          "start": 252.22,
+          "end": 254.22,
+          "text": "9 9 10 2",
+          "speaker": "SPEAKER_01",
+          "text_original": "Есмица е една епи."
+        },
+        {
+          "start": 254.22,
+          "end": 256.22,
+          "text": "Не е върху няма.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Една епи."
+        },
+        {
+          "start": 256.22,
+          "end": 258.22,
+          "text": "Не е върху няма.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Преференци няма."
+        },
+        {
+          "start": 258.22,
+          "end": 260.22,
+          "text": "Здравейте, дете.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Епи с есмица."
+        },
+        {
+          "start": 260.22,
+          "end": 262.58002,
+          "text": "Вие",
+          "speaker": "SPEAKER_01",
+          "text_original": "Девятър някъде има ли?"
+        },
+        {
+          "start": 263.58002,
+          "end": 264.94,
+          "text": "Две",
+          "speaker": "SPEAKER_01",
+          "text_original": "Не, 10 има."
+        },
+        {
+          "start": 263.604,
+          "end": 266.804,
+          "text": "121 е добро.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Не е тежи, но не е върху няма възможно."
+        },
+        {
+          "start": 264.94000000000005,
+          "end": 270.28000000000003,
+          "text": "Една претензия 121.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Къде"
+        },
+        {
+          "start": 265.22,
+          "end": 275,
+          "text": "Този е проблем приемаме за действителни или за нея?",
+          "speaker": "SPEAKER_01",
+          "text_original": "9 9 10 2"
+        },
+        {
+          "start": 266.804,
+          "end": 267.824,
+          "text": "Нея са сега по-получавани.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Не е върху няма."
+        },
+        {
+          "start": 267.824,
+          "end": 269.864,
+          "text": "Чакайте, чакайте, чакайте.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Не е върху няма."
+        },
+        {
+          "start": 269.872,
+          "end": 273.332,
+          "text": "Чакайте, чакайте, чакайте.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Здравейте, дете."
+        },
+        {
+          "start": 270.28000000000003,
+          "end": 272.0,
+          "text": "Чакайте.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Вие"
+        },
+        {
+          "start": 272.0,
+          "end": 272.88000000000005,
+          "text": "Обявай, полека ми до 12.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Две"
+        },
+        {
+          "start": 272.88000000000005,
+          "end": 275.5,
+          "text": "Чакай по 12?..",
+          "speaker": "SPEAKER_01",
+          "text_original": "clones"
+        },
+        {
+          "start": 275,
+          "end": 277,
+          "text": "Безусловно, да.",
+          "speaker": "SPEAKER_01",
+          "text_original": "121 е добро."
+        },
+        {
+          "start": 277,
+          "end": 279,
+          "text": "Ей.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Една претензия 121."
+        },
+        {
+          "start": 279,
+          "end": 283,
+          "text": "12",
+          "speaker": "SPEAKER_01",
+          "text_original": "Този е проблем приемаме за действителни или за неги?"
+        },
+        {
+          "start": 283,
+          "end": 285,
+          "text": "12.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Неги са сега по-получавани."
+        },
+        {
+          "start": 285,
+          "end": 287,
+          "text": "3, 2, 1.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Чакате, чакате, чакате."
+        },
+        {
+          "start": 287,
+          "end": 289,
+          "text": "24.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Чакате, чакате, чакате."
+        },
+        {
+          "start": 289,
+          "end": 291,
+          "text": "Това е двойно, трети, висока.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Чакате."
+        },
+        {
+          "start": 291,
+          "end": 293.44,
+          "text": "Айде, овая, трети, висока.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Обявай, похожа ми до 12."
+        },
+        {
+          "start": 293.44,
+          "end": 294.8,
+          "text": "24.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Чакай по 12?.."
+        },
+        {
+          "start": 304.76,
+          "end": 306,
+          "text": "Куда беше?",
+          "speaker": "SPEAKER_01",
+          "text_original": "БезandнаJE, да."
+        },
+        {
+          "start": 306.46,
+          "end": 307.28,
+          "text": "Това може да бъде 24,",
+          "speaker": "SPEAKER_01",
+          "text_original": "Ей."
+        },
+        {
+          "start": 309.28,
+          "end": 310.16,
+          "text": "Тука може да пишеш 24, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10.",
+          "speaker": "SPEAKER_01",
+          "text_original": "12"
+        },
+        {
+          "start": 310.16,
+          "end": 310.72,
+          "text": "едно без петчисло.",
+          "speaker": "SPEAKER_01",
+          "text_original": "12."
+        },
+        {
+          "start": 311.28,
+          "end": 312.06,
+          "text": "Само 24.",
+          "speaker": "SPEAKER_01",
+          "text_original": "3, 2, 1."
+        },
+        {
+          "start": 321,
+          "end": 322,
+          "text": "Едно без петчисло.",
+          "speaker": "SPEAKER_01",
+          "text_original": "24."
+        },
+        {
+          "start": 323,
+          "end": 324,
+          "text": "Не, още 10 имам",
+          "speaker": "SPEAKER_01",
+          "text_original": "Това е двойно, третий, висока."
+        },
+        {
+          "start": 324,
+          "end": 326,
+          "text": "10, 9, 10.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Айде, овся, третий, висока."
+        },
+        {
+          "start": 326,
+          "end": 327,
+          "text": "10.",
+          "speaker": "SPEAKER_01",
+          "text_original": "24."
+        },
+        {
+          "start": 329,
+          "end": 330,
+          "text": "5, 6, 7, 8, 9, 10.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Куда беше?"
+        },
+        {
+          "start": 329.5,
+          "end": 331.5,
+          "text": "О!",
+          "speaker": "SPEAKER_01",
+          "text_original": "Това може да бидеш 24,"
+        },
+        {
+          "start": 330,
+          "end": 341,
+          "text": "Дай ме път.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Туда може да пишеш 24, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10."
+        },
+        {
+          "start": 331.5,
+          "end": 333.5,
+          "text": "Най-смисли.",
+          "speaker": "SPEAKER_01",
+          "text_original": "едно без петглед."
+        },
+        {
+          "start": 333.5,
+          "end": 335.5,
+          "text": "Дай ме път.",
+          "speaker": "SPEAKER_01",
+          "text_original": "Само 24."
+        },
+        {
+          "start": 335.5,
+          "end": 337.5,
+          "text": "Едно без петглед.",
+          "speaker": "SPEAKER_01"
+        },
+        {
+          "start": 339.5,
+          "end": 341.5,
+          "text": "Не, още 10 мая",
+          "speaker": "SPEAKER_01"
+        },
+        {
+          "start": 341,
+          "end": 343,
+          "text": "10, 9, 10.",
+          "speaker": "SPEAKER_01"
+        },
+        {
+          "start": 343,
+          "end": 344,
+          "text": "10.",
+          "speaker": "SPEAKER_01"
+        },
+        {
+          "start": 344,
+          "end": 347,
+          "text": "5, 6, 7, 8, 9, 10.",
+          "speaker": "SPEAKER_01"
+        },
+        {
+          "start": 347,
+          "end": 347.98,
+          "text": "О!",
+          "speaker": "SPEAKER_01"
+        },
+        {
+          "start": 356.48,
+          "end": 357.48,
+          "text": "Дай ме път.",
+          "speaker": "SPEAKER_01"
+        },
+        {
+          "start": 356.98,
+          "end": 359.98,
+          "text": "Най-смисли.",
+          "speaker": "SPEAKER_01"
+        },
+        {
+          "start": 359.0,
+          "end": 360.0,
+          "text": "Дай ме път.",
+          "speaker": "SPEAKER_01"
+        }
+      ]
+    }
+  }
+}

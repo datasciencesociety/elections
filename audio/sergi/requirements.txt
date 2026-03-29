@@ -1,0 +1,14 @@
+# Video download
+yt-dlp
+
+# Phase 1: API-based transcription
+openai
+
+# Phase 2: Local transcription
+faster-whisper
+pyannote.audio
+torch
+torchaudio
+
+# Utilities
+numpy
