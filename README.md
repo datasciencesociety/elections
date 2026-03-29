@@ -18,6 +18,44 @@ This project provides:
 | `histogram_l1` (stride 1 & 10) | L1 distance between frame histograms |
 | `SSIM` (optional) | Structural similarity index |
 
+## Video Source Folder
+
+The `videos/` directory is the local source for test and benchmark footage. It is **not tracked by git** (excluded via `.gitignore`).
+
+Structure:
+
+```text
+videos/
+├── raw/                        # Raw per-camera footage, organised by camera ID
+│   └── <camera_id>/            # e.g. 234602001/, 234610032/, ...
+├── normal_samples/             # Trimmed 5-minute normal clips used for benchmarking
+│   ├── _cut.sh                 # Script that generates the trimmed clips (see below)
+│   └── normal_<camera_id>.mp4
+├── blocked_table_visibility.mp4
+├── hand_cover.mp4
+├── misplaced_camera_*.mp4
+└── paper_cover.mp4
+```
+
+When running the streaming stack locally, the publisher service reads videos from this folder and pushes them to MediaMTX as RTSP streams.
+
+### Trimming Normal Samples
+
+**Prerequisites:** [`ffmpeg`](https://ffmpeg.org/download.html) must be installed and available on `PATH`.
+
+```bash
+# macOS
+brew install ffmpeg
+```
+
+The script `videos/normal_samples/_cut.sh` trims a 300-second (5-minute) clip from each raw camera file at a manually chosen start offset (to avoid frozen/anomaly segments), running all cuts in parallel:
+
+```bash
+bash videos/normal_samples/_cut.sh
+```
+
+Each `ffmpeg` call uses `-c copy` (no re-encoding) so trimming is fast. The script prints `All done.` once all background jobs finish.
+
 ## Streaming Stack
 
 The `streaming/` directory contains a Docker Compose setup with:
