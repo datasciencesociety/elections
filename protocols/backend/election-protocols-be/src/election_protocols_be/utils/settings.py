@@ -32,7 +32,13 @@ class Settings(BaseSettings):
 
     # Gemini settings
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GEMINI_MODEL: str = "gemini-2.5-flash-lite"
+
+    # Chandra OCR (vLLM) settings
+    CHANDRA_BASE_URL: str = "http://localhost:8080/v1"
+    CHANDRA_API_KEY: str = "EMPTY"
+    CHANDRA_MODEL: str = "datalab-to/chandra-ocr-2"
+    CHANDRA_DPI: int = 200
 
 
 @lru_cache

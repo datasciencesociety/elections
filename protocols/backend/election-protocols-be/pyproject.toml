@@ -9,7 +9,9 @@ dependencies = [
     "pydantic-settings",
     "python-dotenv",
     "python-multipart",
-    "google-genai"
+    "google-genai",
+    "pymupdf",
+    "openai"
 ]
 
 [build-system]

@@ -3,54 +3,55 @@
 import logging
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
-from pydantic import ValidationError
+from fastapi.responses import StreamingResponse
 
 from election_protocols_be.models.protocol import ALLOWED_CONTENT_TYPES
-from election_protocols_be.models.response import ProcessResult
 from election_protocols_be.services import protocol_service
 
 router = APIRouter(prefix="/protocol", tags=["protocol"])
 
 
 @router.post(
-    "/check",
-    summary="OCR, validate and compare an election protocol PDF",
+    "/check/stream",
+    summary="OCR, validate and compare an election protocol PDF (Stream)",
     description=(
-        "Upload an election protocol PDF. "
-        "Optionally upload a ground-truth JSON for comparison. "
-        "Returns the extracted data, validation result, and comparison score."
+        "Upload an election protocol PDF and optionally a ground-truth JSON for comparison. "
+        "Returns a Server-Sent Events (SSE) stream with progress updates and the final JSON result."
     ),
     status_code=200,
-    response_model=ProcessResult,
 )
-async def protocol_check(
-    file: UploadFile = File(..., description="Election protocol PDF"),
+async def protocol_check_stream(
+    files: list[UploadFile] = File(..., description="Election protocol PDF or HTML pages"),
     sik_type: str = Form("paper_machine", description="SIK type: 'paper' or 'paper_machine'"),
+    ocr_mode: str = Form("gemini", description="OCR mode: 'gemini' or 'chandra'"),
     ground_truth: UploadFile = File(None, description="Optional ground-truth JSON for comparison"),
-) -> ProcessResult:
-    if file.content_type not in ALLOWED_CONTENT_TYPES:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                f"Unsupported file type: {file.content_type}. "
-                f"Allowed types: {', '.join(sorted(ALLOWED_CONTENT_TYPES))}"
-            ),
-        )
+) -> StreamingResponse:
+    if not files:
+        raise HTTPException(status_code=422, detail="No files provided.")
 
     if sik_type not in ("paper", "paper_machine"):
         raise HTTPException(
             status_code=422,
             detail="sik_type must be 'paper' or 'paper_machine'",
         )
-
-    try:
-        return await protocol_service.process(
-            pdf_file=file,
-            sik_type=sik_type,
-            ground_truth_file=ground_truth if (ground_truth and ground_truth.filename) else None,
+        
+    if ocr_mode not in ("gemini", "chandra"):
+        raise HTTPException(
+            status_code=422,
+            detail="ocr_mode must be 'gemini' or 'chandra'",
         )
-    except RuntimeError as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-    except Exception as exc:
-        logging.exception("Protocol processing failed: %s", str(exc))
-        raise HTTPException(status_code=500, detail="Protocol processing failed") from exc
+
+    async def stream_wrapper():
+        try:
+            async for event in protocol_service.stream_process(
+                uploaded_files=files,
+                sik_type=sik_type,
+                ocr_mode=ocr_mode,
+                ground_truth_file=ground_truth if (ground_truth and ground_truth.filename) else None,
+            ):
+                yield event
+        except Exception as exc:
+            logging.exception("Stream wrapper failed")
+            yield f'data: {{"status":"error","msg":"Internal Error: {str(exc)}"}}\n\n'
+
+    return StreamingResponse(stream_wrapper(), media_type="text/event-stream")
