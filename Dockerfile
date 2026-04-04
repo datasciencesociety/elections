@@ -36,4 +36,7 @@ COPY --from=build /app/web/dist web/dist/
 ENV PORT=3000
 EXPOSE 3000
 
-CMD ["node", "server/dist/index.js"]
+# CWD = /app/server so serveStatic root "../web/dist" → /app/web/dist
+WORKDIR /app/server
+
+CMD ["node", "dist/index.js"]
