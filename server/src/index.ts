@@ -1,11 +1,6 @@
-import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
-import elections from "./routes/elections.js";
-
-const app = new Hono();
-
-app.route("/api/elections", elections);
+import app from "./app.js";
 
 // Serve Vite build output for production
 app.use("/*", serveStatic({ root: "../web/dist" }));

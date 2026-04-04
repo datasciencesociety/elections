@@ -23,11 +23,12 @@ elections.get("/:id/results", (c) => {
 
   const results = db
     .prepare(
-      `SELECT p.id AS party_id, p.name AS party_name, SUM(v.votes) AS total_votes
+      `SELECT p.id AS party_id, COALESCE(ep.name_on_ballot, p.canonical_name) AS party_name, SUM(v.total) AS total_votes
        FROM votes v
-       JOIN parties p ON p.id = v.party_id
+       JOIN election_parties ep ON ep.election_id = v.election_id AND ep.ballot_number = v.party_number
+       JOIN parties p ON p.id = ep.party_id
        WHERE v.election_id = ?
-       GROUP BY p.id, p.name
+       GROUP BY p.id, party_name
        ORDER BY total_votes DESC`
     )
     .all(id);
