@@ -15,28 +15,22 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     container:
-      image: docker.gitea.com/runner-images:ubuntu-latest
-      volumes:
-        - /home/sova/data/elections.db:/elections.db:ro
+      image: node:22-slim
+      options: -v /home/sova/data/elections.db:/elections.db:ro
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy database to workspace
-        run: cp /elections.db ${{ github.workspace }}/elections.db
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
+      - name: Install pnpm
+        run: npm install -g pnpm
 
       - name: Install dependencies
-        run: cd server && npm install
+        run: cd server && pnpm install
 
       - name: Link database
-        run: ln -s ${{ env.DB_HOST_PATH }} elections.db
+        run: cp /elections.db elections.db
 
       - name: Run tests
-        run: cd server && npx vitest run
+        run: cd server && pnpm vitest run
 
   deploy:
     if: github.event_name == 'push'
