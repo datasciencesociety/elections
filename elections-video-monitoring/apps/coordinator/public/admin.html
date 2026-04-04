@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Election Monitor — Admin</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #0d0d0d; color: #e0e0e0; min-height: 100vh; }
+
+header {
+  background: #1a1a1a;
+  border-bottom: 1px solid #2a2a2a;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+header h1 { font-size: 16px; font-weight: 700; color: #fff; }
+#meta-bar { font-size: 12px; color: #888; display: flex; gap: 20px; flex-wrap: wrap; }
+#meta-bar strong { color: #e0e0e0; }
+
+main { max-width: 1200px; margin: 0 auto; padding: 20px; display: flex; flex-direction: column; gap: 24px; }
+
+section {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+section h2 { font-size: 14px; font-weight: 600; color: #ccc; margin-bottom: 12px; }
+
+/* Upload */
+#upload-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
+textarea#stream-json {
+  flex: 1; min-width: 260px; height: 100px;
+  background: #111; border: 1px solid #333; color: #e0e0e0;
+  padding: 8px; font-family: monospace; font-size: 11px; resize: vertical;
+  border-radius: 4px;
+}
+#upload-controls { display: flex; flex-direction: column; gap: 6px; min-width: 140px; }
+button {
+  padding: 8px 16px; border: none; border-radius: 4px;
+  font-size: 13px; cursor: pointer; font-weight: 500;
+}
+#btn-upload { background: #2563eb; color: #fff; }
+#btn-upload:hover { background: #1d4ed8; }
+#btn-file-pick { background: #374151; color: #e0e0e0; }
+#btn-file-pick:hover { background: #4b5563; }
+#file-input { display: none; }
+#upload-msg { font-size: 12px; padding: 4px 0; min-height: 20px; }
+#upload-msg.ok  { color: #22c55e; }
+#upload-msg.err { color: #ef4444; }
+
+/* Flagged table */
+#flagged-section { position: relative; }
+#refresh-status { position: absolute; top: 16px; right: 20px; font-size: 11px; color: #555; }
+
+.flag-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.flag-table th {
+  text-align: left; padding: 6px 10px;
+  border-bottom: 1px solid #2a2a2a; color: #888; font-weight: 500; font-size: 11px;
+}
+.flag-table td { padding: 8px 10px; border-bottom: 1px solid #1f1f1f; vertical-align: middle; }
+.flag-table tr:last-child td { border-bottom: none; }
+.flag-table tr:hover td { background: #1f1f1f; }
+
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 3px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+}
+.badge-covered { background: #7f1d1d; color: #fca5a5; }
+.badge-frozen  { background: #78350f; color: #fcd34d; }
+.badge-dark    { background: #1e3a5f; color: #93c5fd; }
+
+.url-cell { font-family: monospace; font-size: 11px; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.url-cell a { color: #60a5fa; text-decoration: none; }
+.url-cell a:hover { text-decoration: underline; }
+
+.report-count { font-weight: 600; color: #f97316; }
+
+#no-flags { color: #555; font-size: 13px; padding: 8px 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Election Stream Monitor — Admin</h1>
+  <div id="meta-bar">
+    <span>Active volunteers: <strong id="vol-count">–</strong></span>
+    <span>Flagged streams: <strong id="flag-count">–</strong></span>
+    <span>Updated: <strong id="last-updated">–</strong></span>
+  </div>
+</header>
+
+<main>
+
+  <!-- Upload -->
+  <section>
+    <h2>Upload Stream List</h2>
+    <p style="font-size:12px;color:#666;margin-bottom:10px">
+      JSON array: <code style="color:#9ca3af">[{"url":"https://...","label":"Station 42"}, …]</code>
+      — replaces the current list and resets all sessions.
+    </p>
+    <div id="upload-row">
+      <textarea id="stream-json" placeholder='[{"url":"https://archive.evideo.bg/...","label":"..."}]'></textarea>
+      <div id="upload-controls">
+        <button id="btn-file-pick">Choose file…</button>
+        <input type="file" id="file-input" accept=".json,.csv,.txt">
+        <button id="btn-upload">Upload</button>
+        <div id="upload-msg"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Flagged streams -->
+  <section id="flagged-section">
+    <h2>Flagged Streams</h2>
+    <span id="refresh-status">auto-refresh every 15s</span>
+    <div id="flagged-container">
+      <p id="no-flags" style="display:none">No anomalies detected in the last 5 minutes.</p>
+      <table class="flag-table" id="flag-table" style="display:none">
+        <thead>
+          <tr>
+            <th>Label</th>
+            <th>URL</th>
+            <th>Flag</th>
+            <th>First seen</th>
+            <th>Duration</th>
+            <th>Reports</th>
+          </tr>
+        </thead>
+        <tbody id="flagged-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<script>
+// ── Upload ────────────────────────────────────────────────────────────────────
+const uploadMsg = document.getElementById('upload-msg');
+
+function showMsg(text, type) {
+  uploadMsg.textContent = text;
+  uploadMsg.className = type;
+}
+
+document.getElementById('btn-file-pick').addEventListener('click', () => {
+  document.getElementById('file-input').click();
+});
+
+document.getElementById('file-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => { document.getElementById('stream-json').value = ev.target.result; };
+  reader.readAsText(file);
+});
+
+document.getElementById('btn-upload').addEventListener('click', async () => {
+  const raw = document.getElementById('stream-json').value.trim();
+  if (!raw) { showMsg('Paste JSON first', 'err'); return; }
+
+  let data;
+  try { data = JSON.parse(raw); }
+  catch (e) { showMsg('Invalid JSON: ' + e.message, 'err'); return; }
+
+  if (!Array.isArray(data)) { showMsg('Expected a JSON array', 'err'); return; }
+
+  showMsg('Uploading…', '');
+  try {
+    const res = await fetch('/api/streams', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (!res.ok) { showMsg('Error: ' + result.error, 'err'); return; }
+    showMsg(`Uploaded ${result.inserted.toLocaleString()} streams`, 'ok');
+    document.getElementById('stream-json').value = '';
+  } catch (e) {
+    showMsg('Network error: ' + e.message, 'err');
+  }
+});
+
+// ── Flagged table ─────────────────────────────────────────────────────────────
+async function refresh() {
+  let data;
+  try {
+    const res = await fetch('/api/flagged');
+    data = await res.json();
+  } catch (e) {
+    document.getElementById('refresh-status').textContent = 'Connection error';
+    return;
+  }
+
+  document.getElementById('vol-count').textContent = data.volunteer_count;
+  document.getElementById('flag-count').textContent = data.flagged.length;
+  document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+  document.getElementById('refresh-status').textContent = 'auto-refresh every 15s';
+
+  const noFlags = document.getElementById('no-flags');
+  const table = document.getElementById('flag-table');
+  const tbody = document.getElementById('flagged-body');
+
+  if (data.flagged.length === 0) {
+    noFlags.style.display = '';
+    table.style.display = 'none';
+    return;
+  }
+
+  noFlags.style.display = 'none';
+  table.style.display = '';
+  tbody.innerHTML = '';
+
+  const now = Date.now();
+  for (const row of data.flagged) {
+    const tr = document.createElement('tr');
+    const durationMs = now - row.first_seen;
+    tr.innerHTML = `
+      <td>${escHtml(row.label)}</td>
+      <td class="url-cell"><a href="${escHtml(row.url)}" target="_blank" title="${escHtml(row.url)}">${escHtml(row.url)}</a></td>
+      <td><span class="badge badge-${escHtml(row.flag_type)}">${escHtml(row.flag_type)}</span></td>
+      <td>${relativeTime(row.first_seen)}</td>
+      <td>${formatDuration(durationMs)}</td>
+      <td><span class="report-count">${row.report_count}</span></td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function relativeTime(tsMs) {
+  const sec = Math.floor((Date.now() - tsMs) / 1000);
+  if (sec < 60) return `${sec}s ago`;
+  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
+  return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m ago`;
+}
+
+function formatDuration(ms) {
+  const sec = Math.floor(ms / 1000);
+  if (sec < 60) return `${sec}s`;
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return `${m}m ${s}s`;
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+setInterval(refresh, 15_000);
+refresh();
+</script>
+</body>
+</html>

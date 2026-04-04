@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stream Monitor</title>
+<style>
+:root {
+  --bg: #0d0d0d;
+  --surface: #1a1a1a;
+  --surface2: #111;
+  --border: #2a2a2a;
+  --text: #e0e0e0;
+  --text-muted: #888;
+  --text-dim: #ccc;
+  --text-metrics: #aaa;
+  --placeholder: #333;
+  --loading: #555;
+  --hg: #666;
+  --vol-off: #444;
+  --card-ok-border: #166534;   --card-ok-bg: #0a1a0a;
+  --card-cov-border: #991b1b;  --card-cov-bg: #1a0808;
+  --card-frz-border: #92400e;  --card-frz-bg: #1a0e00;
+  --card-drk-border: #1e3a5f;  --card-drk-bg: #080d1a;
+  --card-err-border: #4a1d1d;  --card-err-bg: #120808;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f1f5f9;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --text-dim: #374151;
+    --text-metrics: #6b7280;
+    --placeholder: #cbd5e1;
+    --loading: #94a3b8;
+    --hg: #9ca3af;
+    --vol-off: #cbd5e1;
+    --card-ok-border: #16a34a;   --card-ok-bg: #f0fdf4;
+    --card-cov-border: #dc2626;  --card-cov-bg: #fef2f2;
+    --card-frz-border: #d97706;  --card-frz-bg: #fff7ed;
+    --card-drk-border: #2563eb;  --card-drk-bg: #eff6ff;
+    --card-err-border: #f87171;  --card-err-bg: #fef2f2;
+  }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
+#status-bar { font-size: 12px; color: var(--text-muted); display: flex; gap: 16px; flex-wrap: wrap; }
+#status-bar span { display: flex; align-items: center; gap: 4px; }
+#vol-indicator { width: 8px; height: 8px; border-radius: 50%; background: var(--vol-off); display: inline-block; }
+#vol-indicator.active { background: #22c55e; }
+
+/* ── Two-pane layout ──────────────────────────────────────────────────────── */
+#main-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#stream-panel {
+  flex: 0 0 min(55%, 660px);
+  min-width: 0;
+  overflow: hidden auto;
+  border-right: 1px solid var(--border);
+}
+
+#stream-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+  padding: 12px;
+}
+
+/* ── Responsive breakpoints ───────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  body { height: auto; overflow: auto; }
+  #main-layout { flex-direction: column; overflow: visible; min-height: unset; }
+  #stream-panel {
+    flex: none;
+    width: 100%;
+    overflow: visible;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  #inspect-panel { height: 60vh; flex-shrink: 0; }
+}
+
+/* ── Inspect pane ─────────────────────────────────────────────────────────── */
+#inspect-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface2);
+}
+
+#inspect-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--placeholder);
+  font-size: 13px;
+}
+
+#inspect-frame {
+  flex: 1;
+  border: none;
+  width: 100%;
+  display: none;
+}
+
+/* ── Stream cards ─────────────────────────────────────────────────────────── */
+.stream-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 0.3s;
+}
+.stream-card.ok      { border-color: var(--card-ok-border);  background: var(--card-ok-bg); }
+.stream-card.covered { border-color: var(--card-cov-border); background: var(--card-cov-bg); }
+.stream-card.frozen  { border-color: var(--card-frz-border); background: var(--card-frz-bg); }
+.stream-card.dark    { border-color: var(--card-drk-border); background: var(--card-drk-bg); }
+.stream-card.error   { border-color: var(--card-err-border); background: var(--card-err-bg); }
+.stream-card.selected { outline: 2px solid #3b82f6; outline-offset: -1px; }
+
+.card-thumb {
+  width: 100%;
+  aspect-ratio: 16/9;
+  border-radius: 3px;
+  background: #000;
+  display: block;
+}
+
+.card-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card-status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.card-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+}
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.dot-init    { background: var(--vol-off); }
+.dot-ok      { background: #22c55e; }
+.dot-covered { background: #ef4444; }
+.dot-frozen  { background: #f97316; }
+.dot-dark    { background: #3b82f6; }
+.dot-error   { background: #6b7280; }
+.dot-loading { background: #a855f7; }
+
+.card-metrics { font-size: 12px; color: var(--text-metrics); }
+
+.stream-card { cursor: pointer; }
+.stream-card:hover { border-color: #3b82f6 !important; }
+
+/* ── Overlay ──────────────────────────────────────────────────────────────── */
+#overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 16px; z-index: 100;
+}
+#overlay h2 { font-size: 20px; color: #fff; }
+#overlay p  { font-size: 14px; color: #aaa; text-align: center; max-width: 360px; }
+#overlay button {
+  padding: 12px 32px; background: #2563eb; color: #fff;
+  border: none; border-radius: 6px; font-size: 16px; cursor: pointer;
+}
+#overlay button:hover { background: #1d4ed8; }
+#overlay.hidden { display: none; }
+
+#loading-msg { padding: 32px; text-align: center; color: var(--loading); }
+
+/* ── Hourglass icon ───────────────────────────────────────────────────────── */
+.hg-icon {
+  width: 9px;
+  height: 14px;
+  flex-shrink: 0;
+  overflow: visible;
+  color: var(--hg);
+}
+@keyframes hg-top {
+  from { transform: scaleY(1); }
+  to   { transform: scaleY(0); }
+}
+@keyframes hg-bot {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Election Stream Monitor</h1>
+  <div id="status-bar">
+    <span><span id="vol-indicator"></span> <span id="session-label">connecting…</span></span>
+    <span id="stream-count"></span>
+    <span id="last-report-label"></span>
+  </div>
+</header>
+
+<div id="main-layout">
+  <div id="stream-panel">
+    <div id="stream-grid"><p id="loading-msg">Connecting to coordinator…</p></div>
+  </div>
+
+  <div id="inspect-panel">
+    <div id="inspect-placeholder">← select a stream to inspect</div>
+    <iframe id="inspect-frame" allow="autoplay"></iframe>
+  </div>
+</div>
+
+<div id="overlay">
+  <h2>Stream Monitor</h2>
+  <p>Your browser needs to autoplay muted video streams. Click Start to begin monitoring.</p>
+  <button id="start-btn">Start Monitoring</button>
+</div>
+
+<!-- Hidden video container -->
+<div id="video-container" style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden"></div>
+<!-- Hidden canvas container -->
+<div id="canvas-container" style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden"></div>
+
+<!-- Hourglass symbol — defined once, reused via <use href="#hg"> -->
+<svg style="display:none" aria-hidden="true">
+  <symbol id="hg" viewBox="0 0 10 16">
+    <!-- frame: two triangles sharing a neck at (5,8) -->
+    <path d="M1 1.5 L9 1.5 L5 8 L9 14.5 L1 14.5 L5 8 Z"
+          fill="none" stroke="currentColor" stroke-width="0.9" stroke-linejoin="round"/>
+    <!-- top sand: fills top chamber, anchored at neck so it drains downward -->
+    <polygon points="1.8,2 8.2,2 5,7.5" fill="#d97706"
+             style="transform-box:fill-box;transform-origin:center bottom;animation:hg-top 30s linear infinite"/>
+    <!-- bottom sand: fills bottom chamber, anchored at bottom so it fills upward -->
+    <polygon points="1.8,14 8.2,14 5,8.5" fill="#d97706"
+             style="transform-box:fill-box;transform-origin:center bottom;animation:hg-bot 30s linear infinite"/>
+  </symbol>
+</svg>
+
+<script src="detection-core.js"></script>
+<script>
+const DETECTOR_URL = '/inspect/';
+
+// ── Detection constants ───────────────────────────────────────────────────────
+const COVER_VARIANCE_THRESHOLD = 40;
+const COVER_AREA_THRESHOLD = 0.50;
+const COVER_DURATION_THRESHOLD_SEC = 30;
+const FROZEN_THRESHOLD_SEC = 120;
+const DARK_THRESHOLD = 15;
+const MOTION_THRESHOLD = 5;
+const CHECK_INTERVAL_MS = 30_000;
+const REPORT_INTERVAL_MS = 30_000;
+const HEARTBEAT_INTERVAL_MS = 60_000;
+const CANVAS_W = 320, CANVAS_H = 180;
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let SESSION_ID = null;
+let streamStates = [];
+let autoplayBlocked = false;
+let intervals = [];
+
+// ── Session init ──────────────────────────────────────────────────────────────
+async function init() {
+  let data;
+  try {
+    const res = await fetch('/api/session', { method: 'POST' });
+    data = await res.json();
+  } catch (e) {
+    document.getElementById('loading-msg').textContent = 'Failed to connect. Retrying in 10s…';
+    setTimeout(init, 10_000);
+    return;
+  }
+
+  SESSION_ID = data.session_id;
+  document.getElementById('session-label').textContent =
+    'Session ' + SESSION_ID.slice(0, 8);
+
+  const grid = document.getElementById('stream-grid');
+  grid.innerHTML = '';
+
+  for (const stream of data.streams) {
+    setupStream(stream);
+  }
+
+  document.getElementById('stream-count').textContent =
+    `Monitoring ${streamStates.length} streams`;
+
+  // Try autoplay
+  const playPromises = streamStates.map(s => s.video.play().catch(() => null));
+  const results = await Promise.allSettled(playPromises);
+  const anyBlocked = results.some(r => r.status === 'rejected');
+  if (anyBlocked) {
+    document.getElementById('overlay').classList.remove('hidden');
+    autoplayBlocked = true;
+  } else {
+    document.getElementById('overlay').classList.add('hidden');
+  }
+
+  intervals.push(
+    setInterval(checkAllStreams, CHECK_INTERVAL_MS),
+    setInterval(updateThumbnails, 1_000),
+    setInterval(sendReport, REPORT_INTERVAL_MS),
+    setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS)
+  );
+}
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  streamStates.forEach(s => s.video.play().catch(() => {}));
+  document.getElementById('overlay').classList.add('hidden');
+  autoplayBlocked = false;
+});
+
+// ── Stream setup ──────────────────────────────────────────────────────────────
+function setupStream(stream) {
+  // Rewrite URL through local proxy
+  const proxiedUrl = '/proxy' + stream.url.replace(/^https?:\/\/[^/]+/, '');
+
+  const video = document.createElement('video');
+  video.muted = true;
+  video.autoplay = true;
+  video.playsInline = true;
+  video.preload = 'auto';
+  video.crossOrigin = 'anonymous';
+  video.src = proxiedUrl;
+  document.getElementById('video-container').appendChild(video);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = CANVAS_W;
+  canvas.height = CANVAS_H;
+  document.getElementById('canvas-container').appendChild(canvas);
+
+  const state = {
+    id: stream.id,
+    url: stream.url,
+    label: stream.label,
+    video,
+    canvas,
+    ctx: canvas.getContext('2d'),
+    lastFrameData: null,
+    lastChangeTime: null,
+    coverStartTime: null,
+    status: 'initializing',
+    coverRatio: 0,
+    frozenSec: 0,
+    luma: 0,
+    errorCount: 0,
+    recStart: parseRecordingStart(stream.url),
+  };
+  streamStates.push(state);
+
+  // Build card
+  const card = document.createElement('div');
+  card.className = 'stream-card';
+  card.dataset.streamId = stream.id;
+  card.innerHTML = `
+    <canvas class="card-thumb" width="192" height="108"></canvas>
+    <div class="card-label" title="${escHtml(stream.label)}">${escHtml(stream.label)}</div>
+    <div class="card-status-row">
+      <div class="card-status">
+        <svg class="hg-icon" aria-hidden="true"><use href="#hg"/></svg>
+        <span class="status-dot dot-init"></span>
+        <span class="status-text">initializing</span>
+      </div>
+    </div>
+    <div class="card-metrics"></div>
+  `;
+  state.thumbCanvas = card.querySelector('.card-thumb');
+  state.thumbCtx    = state.thumbCanvas.getContext('2d');
+
+  // Draw placeholder until first real video frame arrives
+  (function(ctx, w, h) {
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, w, h);
+    const cx = w / 2, cy = h / 2 - 6;
+    // Camera body
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cx - 22, cy - 12, 44, 26);
+    // Lens
+    ctx.beginPath();
+    ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+    ctx.stroke();
+    // Label
+    ctx.fillStyle = '#555';
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('waiting for stream…', cx, cy + 20);
+  })(state.thumbCtx, 192, 108);
+
+  card.addEventListener('click', function () {
+    const t = Math.floor(state.video.currentTime) || 0;
+    const url = `${DETECTOR_URL}?url=${encodeURIComponent(stream.url)}&t=${t}`;
+
+    // Highlight selected card
+    document.querySelectorAll('.stream-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+
+    // Load in iframe
+    const frame = document.getElementById('inspect-frame');
+    const placeholder = document.getElementById('inspect-placeholder');
+    placeholder.style.display = 'none';
+    frame.style.display = 'block';
+    frame.src = url;
+  });
+
+  document.getElementById('stream-grid').appendChild(card);
+}
+
+// ── Thumbnails ────────────────────────────────────────────────────────────────
+function updateThumbnails() {
+  for (const state of streamStates) {
+    if (state.video.readyState < 2 || !state.thumbCtx) continue;
+    try {
+      state.thumbCtx.drawImage(state.video, 0, 0, 192, 108);
+    } catch (e) { /* ignore taint or decode errors */ }
+  }
+}
+
+// ── Detection ─────────────────────────────────────────────────────────────────
+function checkAllStreams() {
+  const now = Date.now();
+  for (const state of streamStates) checkStream(state, now);
+}
+
+function checkStream(state, now) {
+  const { video, canvas, ctx } = state;
+
+  if (video.readyState < 2) {
+    state.status = 'loading';
+    updateCard(state);
+    return;
+  }
+
+  ctx.drawImage(video, 0, 0, CANVAS_W, CANVAS_H);
+  let imageData;
+  try {
+    imageData = ctx.getImageData(0, 0, CANVAS_W, CANVAS_H);
+  } catch (e) {
+    state.status = 'error';
+    state.errorCount++;
+    updateCard(state);
+    return;
+  }
+
+  const data = imageData.data;
+  state.luma = computeLuminance(data);
+
+  // Freeze
+  if (state.lastFrameData) {
+    if (computeDiff(state.lastFrameData, data) > MOTION_THRESHOLD)
+      state.lastChangeTime = now;
+  } else {
+    state.lastChangeTime = now;
+  }
+  state.lastFrameData = new Uint8ClampedArray(data);
+  state.frozenSec = state.lastChangeTime ? (now - state.lastChangeTime) / 1000 : 0;
+
+  // Cover
+  state.coverRatio = computeCoverRatio(data, CANVAS_W, CANVAS_H, COVER_VARIANCE_THRESHOLD);
+  if (state.coverRatio >= COVER_AREA_THRESHOLD) {
+    if (!state.coverStartTime) state.coverStartTime = now;
+  } else {
+    state.coverStartTime = null;
+  }
+  const coverDurSec = state.coverStartTime ? (now - state.coverStartTime) / 1000 : 0;
+
+  // Recording wall-clock time
+  state.recTime = state.recStart
+    ? new Date(state.recStart.getTime() + video.currentTime * 1000)
+        .toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    : null;
+
+  // Classify
+  if (state.coverRatio >= COVER_AREA_THRESHOLD && coverDurSec >= COVER_DURATION_THRESHOLD_SEC) {
+    state.status = 'covered';
+  } else if (state.luma < DARK_THRESHOLD) {
+    state.status = 'dark';
+  } else if (state.frozenSec >= FROZEN_THRESHOLD_SEC) {
+    state.status = 'frozen';
+  } else {
+    state.status = 'ok';
+  }
+
+  updateCard(state);
+}
+
+function updateCard(state) {
+  const card = document.querySelector(`[data-stream-id="${state.id}"]`);
+  if (!card) return;
+
+  const wasSelected = card.classList.contains('selected');
+  card.className = `stream-card ${state.status}${wasSelected ? ' selected' : ''}`;
+
+  const dotClass = {
+    initializing: 'dot-init',
+    loading:  'dot-loading',
+    ok:       'dot-ok',
+    covered:  'dot-covered',
+    frozen:   'dot-frozen',
+    dark:     'dot-dark',
+    error:    'dot-error',
+  }[state.status] || 'dot-init';
+
+  const statusLabel = {
+    initializing: 'Initializing',
+    loading:  'Loading',
+    ok:       'OK',
+    covered:  'COVERED',
+    frozen:   'FROZEN',
+    dark:     'DARK / MISSING',
+    error:    'Error',
+  }[state.status] || state.status;
+
+  card.querySelector('.status-dot').className = `status-dot ${dotClass}`;
+  card.querySelector('.status-text').textContent = statusLabel;
+  const activeStatus = state.status === 'ok' || state.status === 'covered' || state.status === 'frozen' || state.status === 'dark';
+  card.querySelector('.card-metrics').textContent = activeStatus
+    ? `luma=${state.luma.toFixed(0)} cover=${(state.coverRatio*100).toFixed(0)}% frozen=${state.frozenSec.toFixed(0)}s${state.recTime ? ' · ' + state.recTime : ''}`
+    : '';
+}
+
+// ── Reporting ─────────────────────────────────────────────────────────────────
+async function sendReport() {
+  if (!SESSION_ID) return;
+  const results = streamStates.map(s => ({
+    stream_id: s.id,
+    status: s.status,
+    cover_ratio: s.coverRatio,
+    frozen_sec: s.frozenSec,
+    luma: s.luma,
+  }));
+  try {
+    await fetch('/api/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: SESSION_ID, results }),
+    });
+    document.getElementById('last-report-label').textContent =
+      'Last report: ' + new Date().toLocaleTimeString();
+  } catch (e) { /* silent — will retry */ }
+}
+
+async function sendHeartbeat() {
+  if (!SESSION_ID) return;
+  try {
+    await fetch('/api/heartbeat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: SESSION_ID }),
+    });
+    document.getElementById('vol-indicator').classList.add('active');
+  } catch (e) {
+    document.getElementById('vol-indicator').classList.remove('active');
+  }
+}
+
+// ── Page unload — release all video network connections ───────────────────────
+function releaseAll() {
+  intervals.forEach(id => clearInterval(id));
+  intervals.length = 0;
+  // Clear iframe to drop any open proxy connection
+  const frame = document.getElementById('inspect-frame');
+  frame.src = '';
+  for (const s of streamStates) {
+    try {
+      s.video.pause();
+      // Set src to '' then load() to abort the network fetch.
+      s.video.src = '';
+      s.video.load();
+    } catch (e) { /* ignore */ }
+  }
+}
+// beforeunload fires synchronously before navigation — more reliable than
+// pagehide alone in Edge (which may defer pagehide via bfcache).
+window.addEventListener('beforeunload', releaseAll);
+window.addEventListener('pagehide', releaseAll);
+
+// ── Tab visibility ────────────────────────────────────────────────────────────
+let hiddenAt = null;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    hiddenAt = Date.now();
+  } else {
+    if (hiddenAt && Date.now() - hiddenAt > 5 * 60_000) {
+      // Reset diff state to avoid false freeze alerts after long background
+      for (const s of streamStates) {
+        s.lastFrameData = null;
+        s.lastChangeTime = null;
+        s.coverStartTime = null;
+      }
+    }
+    hiddenAt = null;
+  }
+});
+
+// ── Util ──────────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

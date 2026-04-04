@@ -1,0 +1,12 @@
+{
+  "name": "coordinator",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "scraper",
+  "private": true,
+  "scripts": {
+    "scrape": "node scrape-streams.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
+  }
+}

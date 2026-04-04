@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>POC – Frame Detection</title>
+</head>
+<body>
+<h2>POC – Black Frame / Freeze / Camera Cover Detection</h2>
+<video id="v" muted autoplay controls width="640" height="360"
+  src="http://localhost:8788/le20260222/device-recordings/tour1/real/233900044/le20260222_real_102897_233900044_20260222_200022_96.mp4">
+</video>
+<br>
+<button id="btn-capture" style="margin:6px 0;padding:6px 14px;font-size:14px;cursor:pointer">📸 Capture &amp; Score Current Frame</button>
+<br>
+<canvas id="c" width="320" height="180" style="border:1px solid #ccc"></canvas>
+<br>
+<pre id="log" style="height:400px;overflow-y:auto;background:#111;color:#0f0;padding:8px;font-size:12px"></pre>
+
+<script>
+const video = document.getElementById('v');
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const log = document.getElementById('log');
+
+const COLS = 16, ROWS = 9;
+const COVER_VARIANCE_THRESHOLD = 40;
+const COVER_AREA_THRESHOLD = 0.50;
+const CHECK_INTERVAL_MS = 5000;
+
+let lastFrameData = null;
+let lastChangeTime = null;
+let coverStartTime = null;
+let checkCount = 0;
+
+function logMsg(msg) {
+  const ts = new Date().toISOString().slice(11, 23);
+  log.textContent = `[${ts}] ${msg}\n` + log.textContent;
+}
+
+function computeLuminance(data) {
+  let sum = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    sum += (data[i] + data[i+1] + data[i+2]) / 3;
+  }
+  return sum / (data.length / 4);
+}
+
+function computeDiff(a, b) {
+  let sum = 0;
+  for (let i = 0; i < a.length; i += 4) {
+    sum += (Math.abs(a[i]-b[i]) + Math.abs(a[i+1]-b[i+1]) + Math.abs(a[i+2]-b[i+2])) / 3;
+  }
+  return sum / (a.length / 4);
+}
+
+function computeCoverRatio(data, w, h) {
+  const cellW = w / COLS, cellH = h / ROWS;
+  let coveredCells = 0;
+  for (let row = 0; row < ROWS; row++) {
+    for (let col = 0; col < COLS; col++) {
+      const x0 = Math.floor(col * cellW), y0 = Math.floor(row * cellH);
+      const x1 = Math.floor((col+1) * cellW), y1 = Math.floor((row+1) * cellH);
+      let lumaSum = 0, lumaSumSq = 0, count = 0;
+      for (let y = y0; y < y1; y++) {
+        for (let x = x0; x < x1; x++) {
+          const i = (y * w + x) * 4;
+          const luma = 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
+          lumaSum += luma;
+          lumaSumSq += luma * luma;
+          count++;
+        }
+      }
+      const mean = lumaSum / count;
+      const variance = (lumaSumSq / count) - (mean * mean);
+      if (variance < COVER_VARIANCE_THRESHOLD) coveredCells++;
+    }
+  }
+  return coveredCells / (COLS * ROWS);
+}
+
+function checkFrame() {
+  if (video.readyState < 2) {
+    logMsg(`readyState=${video.readyState} — skipping (not ready)`);
+    return;
+  }
+
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  let imageData;
+  try {
+    imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  } catch (e) {
+    logMsg(`SecurityError: ${e.message}`);
+    return;
+  }
+
+  const data = imageData.data;
+  const luma = computeLuminance(data);
+  const coverRatio = computeCoverRatio(data, canvas.width, canvas.height);
+  checkCount++;
+
+  // Freeze detection
+  let diffStr = 'N/A (first frame)';
+  if (lastFrameData) {
+    const diff = computeDiff(lastFrameData, data);
+    diffStr = diff.toFixed(2);
+    if (diff > 5) {
+      lastChangeTime = Date.now();
+    }
+  } else {
+    lastChangeTime = Date.now();
+  }
+  lastFrameData = new Uint8ClampedArray(data);
+
+  // Cover detection
+  let coverStr = `coverRatio=${(coverRatio*100).toFixed(1)}%`;
+  if (coverRatio >= COVER_AREA_THRESHOLD) {
+    if (!coverStartTime) coverStartTime = Date.now();
+    const durSec = ((Date.now() - coverStartTime) / 1000).toFixed(1);
+    coverStr += ` POSSIBLE COVER (${durSec}s)`;
+  } else {
+    coverStartTime = null;
+  }
+
+  const frozenSec = lastChangeTime ? ((Date.now() - lastChangeTime) / 1000).toFixed(1) : 'N/A';
+  logMsg(`#${checkCount} readyState=${video.readyState} luma=${luma.toFixed(1)} diff=${diffStr} frozen=${frozenSec}s | ${coverStr}`);
+}
+
+document.getElementById('btn-capture').addEventListener('click', () => {
+  if (video.readyState < 2) { logMsg('Video not ready yet'); return; }
+
+  const t = video.currentTime;
+  const mm = String(Math.floor(t / 60)).padStart(2, '0');
+  const ss = String(Math.floor(t % 60)).padStart(2, '0');
+
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  let imageData;
+  try {
+    imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  } catch (e) {
+    logMsg(`SecurityError on capture: ${e.message}`);
+    return;
+  }
+
+  const data = imageData.data;
+  const luma = computeLuminance(data);
+  const coverRatio = computeCoverRatio(data, canvas.width, canvas.height);
+  const coverPct = (coverRatio * 100).toFixed(1);
+  const verdict = coverRatio >= COVER_AREA_THRESHOLD ? '⚠️ COVER DETECTED' : 'OK';
+
+  logMsg(`[MANUAL @${mm}:${ss}] luma=${luma.toFixed(1)} coverRatio=${coverPct}% (threshold=${COVER_AREA_THRESHOLD*100}%) → ${verdict}`);
+});
+
+video.addEventListener('loadeddata', () => logMsg('Video loaded — starting checks'));
+video.addEventListener('error', e => logMsg(`Video error: ${video.error?.message}`));
+
+setInterval(checkFrame, CHECK_INTERVAL_MS);
+logMsg('POC initialized — waiting for video...');
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "name": "detector",
+  "private": true,
+  "scripts": {
+    "proxy": "node proxy.js",
+    "serve": "npx serve -l 8787 ."
+  }
+}

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Stream Freeze Detector</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="header-title">
+      <h1>Live Stream Freeze Detector</h1>
+      <p class="subtitle">Monitor any HLS or video stream for freeze, no-signal, or camera cover events</p>
+    </div>
+    <section id="status-panel" class="status-idle">
+      <div class="status-icon" id="status-icon">⏸</div>
+      <div class="status-body">
+        <div class="status-text" id="status-text">Idle — enter a URL to begin</div>
+        <div class="status-sub" id="status-sub"></div>
+      </div>
+    </section>
+  </header>
+
+  <main>
+    <!-- Input -->
+    <section class="card" id="input-section">
+      <div class="input-row">
+        <input type="text" id="stream-url" placeholder="Enter HLS (.m3u8) or video stream URL…" autocomplete="off" spellcheck="false">
+        <button id="btn-start" class="btn-primary">Start Monitoring</button>
+        <button id="btn-stop" class="btn-danger" disabled>Stop</button>
+      </div>
+    </section>
+
+    <!-- Metrics Row -->
+    <section class="metrics-row" id="metrics-row">
+      <div class="metric">
+        <span class="metric-label">Luminance</span>
+        <span class="metric-value" id="m-luma">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Motion Diff</span>
+        <span class="metric-value" id="m-diff">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Cover Ratio</span>
+        <span class="metric-value" id="m-cover">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Frozen For</span>
+        <span class="metric-value" id="m-frozen">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Rec. Time</span>
+        <span class="metric-value" id="m-rectime">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Last Check</span>
+        <span class="metric-value" id="m-last-check">—</span>
+      </div>
+    </section>
+
+    <!-- Stream Preview + Canvas (hidden) -->
+    <section class="card preview-section">
+      <video id="video" crossorigin="anonymous" muted autoplay playsinline></video>
+      <canvas id="canvas" width="320" height="180"></canvas>
+    </section>
+
+    <!-- Config Panel -->
+    <details class="card config-panel" id="config-panel">
+      <summary>Configuration</summary>
+      <div class="config-grid">
+        <label>Check Interval (s)
+          <input type="number" id="cfg-interval" min="1" max="60" value="1">
+        </label>
+        <label>Freeze Alert Threshold (s)
+          <input type="number" id="cfg-freeze-min" min="30" max="3600" value="300">
+        </label>
+        <label>Motion Sensitivity (diff threshold)
+          <input type="range" id="cfg-motion-threshold" min="1" max="50" value="5">
+          <span id="cfg-motion-val">5</span>
+        </label>
+        <label>Cover Area Threshold (%)
+          <input type="number" id="cfg-cover-area" min="10" max="100" value="50">
+        </label>
+        <label>Cover Duration Threshold (s)
+          <input type="number" id="cfg-cover-duration" min="5" max="300" value="30">
+        </label>
+        <label>Cover Variance Sensitivity
+          <input type="range" id="cfg-cover-variance" min="5" max="200" value="40">
+          <span id="cfg-cover-var-val">40</span>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="cfg-low-cpu"> Low CPU mode (160×90)
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="cfg-notif"> Browser notifications
+          <button id="btn-test-notif" class="btn-small">Test</button>
+        </label>
+      </div>
+      <button id="btn-reset-config" class="btn-secondary">Reset to Defaults</button>
+    </details>
+
+    <!-- Alert Log -->
+    <section class="card" id="log-section">
+      <div class="log-header">
+        <h2>Alert Log</h2>
+        <button id="btn-copy-log" class="btn-small">Copy</button>
+        <button id="btn-clear-log" class="btn-small">Clear</button>
+      </div>
+      <div id="alert-log"></div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Runs 100% in browser — no data leaves your device</span>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.15"></script>
+  <script src="detection-core.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

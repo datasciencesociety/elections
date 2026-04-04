@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(lsof -i :3000 -sTCP:LISTEN)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_console_messages"
+    ]
+  }
+}
