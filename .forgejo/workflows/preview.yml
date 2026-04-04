@@ -32,7 +32,7 @@ jobs:
 
       - name: Run tests inside built image
         run: |
-          docker run --rm \
+          docker run --rm -a stdout -a stderr \
             -v ${{ env.DB_HOST_PATH }}:/app/elections.db:ro \
             --name ${{ steps.slug.outputs.test }} \
             ${{ steps.slug.outputs.container }} \
