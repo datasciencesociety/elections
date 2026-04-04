@@ -1,0 +1,13 @@
+{
+  "name": "bg-elections-data",
+  "private": true,
+  "workspaces": ["server", "web"],
+  "scripts": {
+    "dev": "npx concurrently --kill-others \"npm run dev -w server\" \"npm run dev -w web\"",
+    "build": "npm run build -w web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "typescript": "^5.7.0"
+  }
+}
