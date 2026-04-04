@@ -66,22 +66,18 @@ jobs:
           HOST="${{ steps.slug.outputs.host }}"
           MARKER="@${CONTAINER} host"
 
-          # Check if already registered (read Caddyfile via docker cp from caddy container)
           docker cp caddy:/etc/caddy/Caddyfile /tmp/Caddyfile
           if grep -q "$MARKER" /tmp/Caddyfile; then
             echo "Already registered in Caddy"
             exit 0
           fi
 
-          # Add entry before the fallback handle block
           sed -i "s|  handle {|  @${CONTAINER} host ${HOST}\n  handle @${CONTAINER} {\n    reverse_proxy ${CONTAINER}:3000\n  }\n\n  handle {|" /tmp/Caddyfile
 
-          # Copy back and reload
-          docker cp /tmp/Caddyfile caddy:/etc/caddy/Caddyfile
+          # Write to a new path inside Caddy (can't overwrite mounted file)
+          docker cp /tmp/Caddyfile caddy:/etc/caddy/Caddyfile.new
+          docker exec caddy sh -c "cat /etc/caddy/Caddyfile.new > /etc/caddy/Caddyfile && rm /etc/caddy/Caddyfile.new"
           docker exec caddy caddy reload --config /etc/caddy/Caddyfile
-          
-          # Also update host copy for persistence across caddy restarts
-          docker cp /tmp/Caddyfile $(docker ps -q -f name=forgejo-runner):/tmp/Caddyfile 2>/dev/null || true
 
       - name: Summary
         run: |
