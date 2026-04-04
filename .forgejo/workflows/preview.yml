@@ -9,8 +9,7 @@ env:
   REGISTRY: registry.home.georgi.alexandrov.dev
   PROJECT: elections
   DOMAIN: yolo.home.georgi.alexandrov.dev
-  DB_RELEASE_URL: https://git.home.georgi.alexandrov.dev/georgi/bg-elections-data/releases/download/data-v1/elections.db
-  DB_CACHE_PATH: /opt/data/elections.db
+  DB_HOST_PATH: /home/sova/data/elections.db
 
 jobs:
   deploy:
@@ -27,20 +26,13 @@ jobs:
           echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
           echo "image=$REGISTRY/$PROJECT:$SLUG" >> "$GITHUB_OUTPUT"
           echo "container=preview-${PROJECT}-${SLUG}" >> "$GITHUB_OUTPUT"
-          echo "host=${SLUG}.${PROJECT}.${DOMAIN}" >> "$GITHUB_OUTPUT"
+          echo "host=${SLUG}-${PROJECT}.${DOMAIN}" >> "$GITHUB_OUTPUT"
 
       - name: Build image
         run: docker build -t ${{ steps.slug.outputs.image }} .
 
       - name: Push to registry
         run: docker push ${{ steps.slug.outputs.image }}
-
-      - name: Download elections.db (cached)
-        run: |
-          if [ ! -f "$DB_CACHE_PATH" ]; then
-            mkdir -p /opt/data
-            curl -sL "$DB_RELEASE_URL" -o "$DB_CACHE_PATH"
-          fi
 
       - name: Stop old container
         run: docker stop ${{ steps.slug.outputs.container }} 2>/dev/null || true && docker rm ${{ steps.slug.outputs.container }} 2>/dev/null || true
@@ -50,25 +42,10 @@ jobs:
           docker run -d \
             --name ${{ steps.slug.outputs.container }} \
             --restart unless-stopped \
-            -v ${{ env.DB_CACHE_PATH }}:/app/elections.db:ro \
+            -v ${{ env.DB_HOST_PATH }}:/app/elections.db:ro \
             -e PORT=3000 \
-            --label "caddy=${{ steps.slug.outputs.host }}" \
-            --label "caddy.reverse_proxy={{upstreams 3000}}" \
+            --network proxy-net \
             ${{ steps.slug.outputs.image }}
-
-      - name: Add Caddy route
-        run: |
-          # Get container IP
-          IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${{ steps.slug.outputs.container }})
-
-          # Add route via Caddy API
-          curl -s -X POST "http://localhost:2019/config/apps/http/servers/srv0/routes" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "@id": "preview-${{ steps.slug.outputs.container }}",
-              "match": [{"host": ["${{ steps.slug.outputs.host }}"]}],
-              "handle": [{"handler": "reverse_proxy", "upstreams": [{"dial": "'$IP':3000"}]}]
-            }' || echo "Caddy route may need manual config"
 
       - name: Summary
         run: |
@@ -86,21 +63,11 @@ jobs:
         run: |
           BRANCH="${{ github.event.ref }}"
           SLUG=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]' | sed 's/-\+/-/g; s/^-//; s/-$//')
-          echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
           echo "container=preview-${PROJECT}-${SLUG}" >> "$GITHUB_OUTPUT"
           echo "image=$REGISTRY/$PROJECT:$SLUG" >> "$GITHUB_OUTPUT"
 
       - name: Stop and remove container
         run: docker stop ${{ steps.slug.outputs.container }} 2>/dev/null || true && docker rm ${{ steps.slug.outputs.container }} 2>/dev/null || true
 
-      - name: Remove Caddy route
-        run: curl -s -X DELETE "http://localhost:2019/id/preview-${{ steps.slug.outputs.container }}" || true
-
       - name: Remove image
         run: docker rmi ${{ steps.slug.outputs.image }} 2>/dev/null || true
-
-      - name: Summary
-        run: |
-          echo "## Preview cleaned up" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch:** ${{ github.event.ref }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Container:** ${{ steps.slug.outputs.container }} (removed)" >> $GITHUB_STEP_SUMMARY
