@@ -14,6 +14,10 @@ jobs:
   deploy:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    container:
+      image: docker.gitea.com/runner-images:ubuntu-latest
+      volumes:
+        - /home/sova/data/elections.db:/elections.db:ro
     steps:
       - uses: actions/checkout@v4
 
@@ -24,21 +28,24 @@ jobs:
           SLUG=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]' | sed 's/-\+/-/g; s/^-//; s/-$//' | cut -c1-40)
           echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
           echo "container=preview-${PROJECT}-${SLUG}" >> "$GITHUB_OUTPUT"
-          echo "test=test-${PROJECT}-${SLUG}" >> "$GITHUB_OUTPUT"
           echo "host=preview-${PROJECT}-${SLUG}.home.georgi.alexandrov.dev" >> "$GITHUB_OUTPUT"
+
+      - name: Copy database to workspace
+        run: cp /elections.db ${{ github.workspace }}/elections.db
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies and run tests
+        run: cd server && pnpm install && pnpm vitest run --reporter=verbose
 
       - name: Build image
         run: docker build -t ${{ steps.slug.outputs.container }} .
-
-      - name: Build test image from build stage
-        run: docker build --target build -t ${{ steps.slug.outputs.test }} .
-
-      - name: Run tests
-        run: |
-          docker run --rm \
-            -v ${{ env.DB_HOST_PATH }}:/app/elections.db:ro \
-            ${{ steps.slug.outputs.test }} \
-            sh -c "cd /app/server && npx vitest run"
 
       - name: Stop old container
         run: docker stop ${{ steps.slug.outputs.container }} 2>/dev/null || true && docker rm ${{ steps.slug.outputs.container }} 2>/dev/null || true
@@ -53,8 +60,23 @@ jobs:
             --network proxy-net \
             ${{ steps.slug.outputs.container }}
 
-      - name: Run tests
-        run: docker exec ${{ steps.slug.outputs.container }} npm test
+      - name: Register preview in Caddy
+        run: |
+          CONTAINER="${{ steps.slug.outputs.container }}"
+          HOST="${{ steps.slug.outputs.host }}"
+          MARKER="@${CONTAINER} host"
+
+          # Skip if already registered
+          if grep -q "$MARKER" "${{ env.CADDYFILE }}" 2>/dev/null; then
+            echo "Already registered in Caddy"
+            exit 0
+          fi
+
+          # Insert before the fallback handle block
+          sed -i "s|  handle {|  @${CONTAINER} host ${HOST}\n  handle @${CONTAINER} {\n    reverse_proxy ${CONTAINER}:3000\n  }\n\n  handle {|" "${{ env.CADDYFILE }}"
+
+          # Restart Caddy to pick up new config
+          docker restart caddy
 
       - name: Summary
         run: |
