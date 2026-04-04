@@ -7,7 +7,6 @@ on:
 
 env:
   PROJECT: elections
-  DOMAIN: yolo.home.georgi.alexandrov.dev
   DB_HOST_PATH: /home/sova/data/elections.db
 
 jobs:
@@ -25,7 +24,7 @@ jobs:
           echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
           echo "image=preview-${PROJECT}-${SLUG}" >> "$GITHUB_OUTPUT"
           echo "container=preview-${PROJECT}-${SLUG}" >> "$GITHUB_OUTPUT"
-          echo "host=${SLUG}-${PROJECT}.${DOMAIN}" >> "$GITHUB_OUTPUT"
+          echo "host=preview-${PROJECT}-${SLUG}.home.georgi.alexandrov.dev" >> "$GITHUB_OUTPUT"
 
       - name: Build image
         run: docker build -t ${{ steps.slug.outputs.image }} .
@@ -42,6 +41,9 @@ jobs:
             -e PORT=3000 \
             --network proxy-net \
             ${{ steps.slug.outputs.image }}
+
+      - name: Run tests
+        run: docker exec ${{ steps.slug.outputs.container }} npm test
 
       - name: Summary
         run: |
