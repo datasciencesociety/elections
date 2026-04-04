@@ -32,8 +32,16 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm
 
-      - name: Install dependencies and run tests
-        run: cd server && pnpm install && pnpm vitest run --reporter=verbose 2>&1
+      - name: Download elections.db from release
+        run: |
+          curl -fSL \
+            -H "Authorization: token ${{ github.token }}" \
+            "https://git.home.georgi.alexandrov.dev/georgi/bg-elections-data/releases/download/data-v1/elections.db" \
+            -o elections.db
+          ls -lh elections.db
+
+      - name: Run tests
+        run: npm test -w server
 
   deploy:
     if: github.event_name == 'push'
