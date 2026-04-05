@@ -32,6 +32,8 @@ export default function ElectionList() {
       <h1>Elections</h1>
       <p>
         <Link to="/compare">Compare elections</Link>
+        {" | "}
+        <Link to="/parties">Parties</Link>
       </p>
       <ul>
         {elections.map((e) => (

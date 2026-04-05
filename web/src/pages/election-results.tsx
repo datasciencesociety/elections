@@ -101,7 +101,7 @@ export default function ElectionResults() {
           <tbody>
             {data.results.map((r) => (
               <tr key={r.party_id}>
-                <td>{r.party_name}</td>
+                <td><Link to={`/parties/${r.party_id}`}>{r.party_name}</Link></td>
                 <td>{r.total_votes.toLocaleString()}</td>
               </tr>
             ))}
