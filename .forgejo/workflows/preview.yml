@@ -34,9 +34,29 @@ jobs:
       - name: Install dependencies and run tests
         run: cd server && pnpm install && pnpm vitest run --reporter=verbose 2>&1
 
-  deploy:
+  check-app-changes:
     if: github.event_name == 'push'
-    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      has_app_code: ${{ steps.check.outputs.has_app_code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if branch has app source changes vs main
+        id: check
+        run: |
+          if git diff --name-only origin/main...HEAD | grep -qE '^(server|web|Dockerfile|package\.json|package-lock\.json)'; then
+            echo "has_app_code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_app_code=false" >> "$GITHUB_OUTPUT"
+            echo "No app source changes — skipping deploy"
+          fi
+
+  deploy:
+    if: github.event_name == 'push' && needs.check-app-changes.outputs.has_app_code == 'true'
+    needs: [test, check-app-changes]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
