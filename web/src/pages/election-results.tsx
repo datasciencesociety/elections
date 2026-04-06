@@ -82,6 +82,8 @@ export default function ElectionResults() {
             Date: {data.election.date} | Type: {data.election.type}
             {" | "}
             <Link to={`/elections/${data.election.id}/anomalies`}>Anomalies</Link>
+            {" | "}
+            <Link to={`/map/${data.election.id}`}>Map</Link>
           </p>
         </>
       )}

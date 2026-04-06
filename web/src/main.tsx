@@ -9,6 +9,7 @@ import Turnout from "./pages/turnout.js";
 import PartyList from "./pages/party-list.js";
 import PartyProfile from "./pages/party-profile.js";
 import SectionAnomalies from "./pages/section-anomalies.js";
+import ElectionMap from "./pages/election-map.js";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -21,6 +22,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/parties" element={<PartyList />} />
         <Route path="/parties/:id" element={<PartyProfile />} />
         <Route path="/elections/:id/anomalies" element={<SectionAnomalies />} />
+        <Route path="/map/:electionId" element={<ElectionMap />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>

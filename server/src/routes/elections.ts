@@ -436,4 +436,111 @@ elections.get("/:id/results", (c) => {
   return c.json({ election, results });
 });
 
+elections.get("/:id/results/geo", (c) => {
+  const db = getDb();
+  const { id } = c.req.param();
+
+  // Validate numeric ID
+  if (!/^\d+$/.test(id)) {
+    return c.json({ error: "Election ID must be numeric" }, 400);
+  }
+
+  const election = db
+    .prepare("SELECT id, name, date, type FROM elections WHERE id = ?")
+    .get(id) as { id: number; name: string; date: string; type: string } | undefined;
+
+  if (!election) {
+    return c.json({ error: "Election not found" }, 404);
+  }
+
+  // Aggregate votes by municipality and party
+  const voteRows = db
+    .prepare(`
+      SELECT
+        l.municipality_id,
+        ep.party_id,
+        p.canonical_name AS party_name,
+        p.color AS party_color,
+        SUM(v.total) AS votes
+      FROM votes v
+      JOIN sections s ON s.election_id = v.election_id AND s.section_code = v.section_code
+      JOIN locations l ON l.id = s.location_id
+      JOIN election_parties ep ON ep.election_id = v.election_id AND ep.ballot_number = v.party_number
+      JOIN parties p ON p.id = ep.party_id
+      WHERE v.election_id = ?
+      GROUP BY l.municipality_id, ep.party_id
+    `)
+    .all(id) as {
+      municipality_id: number;
+      party_id: number;
+      party_name: string;
+      party_color: string | null;
+      votes: number;
+    }[];
+
+  // Build a map: municipality_id -> party_id -> { votes, party_name, party_color }
+  const muniVotes = new Map<number, Map<number, { votes: number; party_name: string; party_color: string | null }>>();
+  for (const row of voteRows) {
+    if (!muniVotes.has(row.municipality_id)) {
+      muniVotes.set(row.municipality_id, new Map());
+    }
+    muniVotes.get(row.municipality_id)!.set(row.party_id, {
+      votes: row.votes,
+      party_name: row.party_name,
+      party_color: row.party_color,
+    });
+  }
+
+  // Fetch all municipalities with non-null geo
+  const municipalities = db
+    .prepare("SELECT id, name, geo FROM municipalities WHERE geo IS NOT NULL ORDER BY id")
+    .all() as { id: number; name: string; geo: string }[];
+
+  const result = municipalities.map((muni) => {
+    const partyMap = muniVotes.get(muni.id);
+
+    if (!partyMap || partyMap.size === 0) {
+      return {
+        id: muni.id,
+        name: muni.name,
+        geo: JSON.parse(muni.geo),
+        total_votes: 0,
+        winner: null,
+        parties: [],
+      };
+    }
+
+    const total_votes = Array.from(partyMap.values()).reduce((sum, p) => sum + p.votes, 0);
+
+    const parties = Array.from(partyMap.entries())
+      .map(([party_id, data]) => ({
+        party_id,
+        name: data.party_name,
+        color: data.party_color ?? "#CCCCCC",
+        votes: data.votes,
+        pct: total_votes > 0 ? Math.round((data.votes / total_votes) * 10000) / 100 : 0,
+      }))
+      .sort((a, b) => b.votes - a.votes);
+
+    const winner = parties[0];
+
+    return {
+      id: muni.id,
+      name: muni.name,
+      geo: JSON.parse(muni.geo),
+      total_votes,
+      winner: {
+        party_id: winner.party_id,
+        name: winner.name,
+        color: winner.color,
+        votes: winner.votes,
+        pct: winner.pct,
+      },
+      parties,
+    };
+  });
+
+  return c.json({ election, municipalities: result });
+});
+
 export default elections;
