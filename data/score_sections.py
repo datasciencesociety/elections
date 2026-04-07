@@ -661,7 +661,11 @@ def score_election(conn, election_id, prev_election_id=None):
         # Per-methodology composites
         benford_risk_val = round(s4, 4)  # Benford is a single signal
         peer_risk_val = round((s5 + s6) / 2, 4)  # EKATTE turnout + party deviation
-        acf_risk_val = round((s7_combined + s8_norm + s9_norm) / 3, 4)
+        # ACF: only average signals that exist (temporal models need a previous election)
+        if prev_election_id and sc in acf_temporal:
+            acf_risk_val = round((s7_combined + s8_norm + s9_norm) / 3, 4)
+        else:
+            acf_risk_val = round(s7_combined, 4)  # only multicomponent available
 
         rows.append((
             election_id, sc, 'normal',
