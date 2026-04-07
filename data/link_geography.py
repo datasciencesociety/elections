@@ -245,6 +245,129 @@ def main() -> None:
     print(f"  {n:,}/{total:,} total after kmetstvo fallback")
 
     # -----------------------------------------------------------------------
+    # Step 4b — fix municipality_id conflicts using EKATTE as ground truth
+    # -----------------------------------------------------------------------
+    # Some section code prefixes changed when МИР boundaries were reorganized
+    # (e.g. Елин Пелин sections moved from prefix 2317 to 2617). The prefix-based
+    # mapping in Step 1 assigns these to the wrong municipality. Kmetstva table
+    # has the authoritative EKATTE → municipality mapping for settlements.
+    print("\nStep 4b: fix municipality_id via EKATTE → kmetstva")
+    # Build EKATTE → correct municipality from kmetstva
+    ekatte_correct_muni = {}
+    for ek, mid in conn.execute(
+        "SELECT ekatte, municipality_id FROM kmetstva WHERE ekatte IS NOT NULL"
+    ).fetchall():
+        ekatte_correct_muni[ek] = mid
+
+    # Cities that don't have kmetstva entries — hardcoded from EKATTE registry
+    ekatte_correct_muni.setdefault("27303", 207)  # гр. Елин Пелин
+    ekatte_correct_muni.setdefault("18280", 225)  # гр. Гълъбово
+
+    # Find locations where municipality_id disagrees with kmetstva
+    fixes = []
+    for loc_id, ekatte, current_mid in conn.execute("""
+        SELECT id, ekatte, municipality_id FROM locations
+        WHERE ekatte IS NOT NULL AND municipality_id IS NOT NULL
+    """).fetchall():
+        correct = ekatte_correct_muni.get(ekatte)
+        if correct and correct != current_mid:
+            fixes.append((correct, loc_id))
+
+    if fixes:
+        conn.executemany("UPDATE locations SET municipality_id = ? WHERE id = ?", fixes)
+        conn.commit()
+        print(f"  {len(fixes):,} locations corrected")
+    else:
+        print("  no corrections needed")
+
+    n = conn.execute("SELECT COUNT(*) FROM locations WHERE municipality_id IS NOT NULL").fetchone()[0]
+    print(f"  {n:,}/{total:,} total after EKATTE correction")
+
+    # -----------------------------------------------------------------------
+    # Step 4c — fix remaining NULL municipality_id using RIK + settlement name
+    # -----------------------------------------------------------------------
+    # Locations with new section prefixes (МИР renumbering) that don't match
+    # any municipality oik_code. Use the RIK district + settlement name to
+    # find the correct municipality from already-mapped data.
+    print("\nStep 4c: remaining NULL municipality via RIK + settlement name")
+
+    # Build RIK → set of municipalities (from correctly mapped data)
+    rik_munis: dict[str, set[int]] = {}
+    for rik_code, mid in conn.execute("""
+        SELECT DISTINCT s.rik_code, l.municipality_id
+        FROM sections s
+        JOIN locations l ON l.id = s.location_id
+        WHERE l.municipality_id IS NOT NULL AND s.rik_code != '32'
+    """).fetchall():
+        rik_munis.setdefault(rik_code, set()).add(mid)
+
+    # Build municipality → set of settlement names
+    muni_snames: dict[int, set[str]] = {}
+    for mid, name in conn.execute("SELECT municipality_id, name FROM kmetstva").fetchall():
+        muni_snames.setdefault(mid, set()).add(name.lower())
+    for mid, sname in conn.execute("""
+        SELECT municipality_id, settlement_name FROM locations
+        WHERE municipality_id IS NOT NULL AND settlement_name IS NOT NULL
+    """).fetchall():
+        clean = re.sub(r"^(гр\.|с\.|мин\.с\.)\s*", "", sname.strip(), flags=re.IGNORECASE).strip().lower()
+        clean = re.sub(r"\s*\(.*\)", "", clean).strip()
+        muni_snames.setdefault(mid, set()).add(clean)
+
+    # Sofia district → Столична община mapping
+    sofia_id = conn.execute(
+        "SELECT id FROM municipalities WHERE name = 'Столична'"
+    ).fetchone()
+    sofia_muni = sofia_id[0] if sofia_id else None
+
+    unfixed = conn.execute("""
+        SELECT l.id, l.ekatte, l.settlement_name,
+               (SELECT s.rik_code FROM sections s WHERE s.location_id = l.id LIMIT 1)
+        FROM locations l
+        WHERE l.municipality_id IS NULL AND l.ekatte IS NOT NULL
+          AND l.id IN (SELECT location_id FROM sections WHERE rik_code != '32')
+    """).fetchall()
+
+    step4c_fixes = []
+    for loc_id, ekatte, sname, rik in unfixed:
+        if not rik or not sname:
+            continue
+
+        # Sofia quarters and Банкя belong to Столична община
+        if sofia_muni and (sname.startswith("гр. София") or "банкя" in sname.lower()):
+            step4c_fixes.append((sofia_muni, loc_id))
+            continue
+
+        clean = re.sub(r"^(гр\.|с\.|мин\.с\.)\s*", "", sname.strip(), flags=re.IGNORECASE)
+        clean = re.sub(r"\s*\(.*\)", "", clean).strip().lower()
+        candidates = rik_munis.get(rik, set())
+        matched = [mid for mid in candidates if clean in muni_snames.get(mid, set())]
+        if len(matched) == 1:
+            step4c_fixes.append((matched[0], loc_id))
+        elif len(matched) > 1:
+            # Disambiguate: the section prefix suffix (last 2 of 4 digits) should
+            # match the municipality oik_code suffix. E.g. prefix 3122 → oik XX22.
+            sec_prefix = loc_prefix.get(loc_id, "")
+            suffix = sec_prefix[2:4] if len(sec_prefix) >= 4 else ""
+            for mid in matched:
+                moik = conn.execute("SELECT oik_code FROM municipalities WHERE id=?", (mid,)).fetchone()
+                if moik and moik[0][2:4] == suffix:
+                    step4c_fixes.append((mid, loc_id))
+                    break
+
+    if step4c_fixes:
+        conn.executemany("UPDATE locations SET municipality_id = ? WHERE id = ?", step4c_fixes)
+        conn.commit()
+        print(f"  {len(step4c_fixes):,} locations fixed")
+
+    n = conn.execute("SELECT COUNT(*) FROM locations WHERE municipality_id IS NOT NULL").fetchone()[0]
+    remaining = conn.execute("""
+        SELECT COUNT(*) FROM locations l
+        WHERE l.municipality_id IS NULL
+          AND l.id IN (SELECT location_id FROM sections WHERE rik_code != '32')
+    """).fetchone()[0]
+    print(f"  {n:,}/{total:,} total linked ({remaining} domestic still missing)")
+
+    # -----------------------------------------------------------------------
     # Step 5 — district_id via municipality_id → municipalities.district_id
     # -----------------------------------------------------------------------
     print("\nStep 5: district_id")
