@@ -1,0 +1,19 @@
+.DS_Store
+node_modules/
+*.log
+.env
+.kiro
+__pycache__
+.hypothesis
+.pytest*
+
+# SQLite runtime files
+*.db
+*.db-shm
+*.db-wal
+
+# Playwright test artifacts
+test-results/
+
+# Reports
+*report/
