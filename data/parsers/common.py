@@ -372,6 +372,42 @@ def parse_cik_parties(filepath: str, election_id: int, cur: sqlite3.Cursor) -> i
     return count
 
 
+def parse_local_parties(filepath: str, election_id: int, cur: sqlite3.Cursor) -> int:
+    """
+    Parse local_parties file (per-municipality party/coalition registrations).
+    Format: rik_code;rik_name;party_number;party_name
+
+    Only inserts entries whose ballot number does NOT already exist in the
+    parties table for this election (i.e., local coalitions not in cik_parties).
+    """
+    # Collect existing ballot numbers for this election
+    existing = set(
+        row[0] for row in cur.execute(
+            "SELECT number FROM parties WHERE election_id = ?", (election_id,)
+        ).fetchall()
+    )
+
+    count = 0
+    for line in read_lines(filepath):
+        p = line.split(";")
+        if len(p) < 4:
+            continue
+        rik_code = p[0].strip()
+        number = safe_int(p[2])
+        name = p[3].strip()
+        if number is None or not name:
+            continue
+        if number in existing:
+            continue
+        cur.execute(
+            "INSERT INTO parties (election_id, number, name, rik_code) VALUES (?,?,?,?)",
+            (election_id, number, name, rik_code),
+        )
+        existing.add(number)
+        count += 1
+    return count
+
+
 def parse_cik_parties_ordered(filepath: str, election_id: int, cur: sqlite3.Cursor) -> list[int]:
     """
     Parse parties and return the ordered list of party numbers (file order).

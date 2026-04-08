@@ -19,7 +19,8 @@ import sqlite3
 from parsers.common import (
     RESULTS_DIR, create_temp_db, insert_election,
     find_file, read_lines, safe_int,
-    parse_sections, parse_cik_parties, parse_local_candidates, parse_preferences,
+    parse_sections, parse_cik_parties, parse_local_parties,
+    parse_local_candidates, parse_preferences,
 )
 
 
@@ -163,6 +164,8 @@ def process_election(e: dict, cur: sqlite3.Cursor) -> dict:
     if f: stats["sections"] = parse_sections(f, election_id, cur)
     f = _find_election_file(data_dir, "cik_parties", date)
     if f: stats["parties"] = parse_cik_parties(f, election_id, cur)
+    f = _find_election_file(data_dir, "local_parties", date)
+    if f: stats["local_parties"] = parse_local_parties(f, election_id, cur)
     f = _find_election_file(data_dir, "local_candidates", date)
     if f: stats["candidates"] = parse_local_candidates(f, election_id, cur)
     f = _find_election_file(data_dir, "protocols", date)
