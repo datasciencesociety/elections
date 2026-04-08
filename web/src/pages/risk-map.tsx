@@ -806,7 +806,7 @@ function SectionResults({ data, loading, electionId, sectionCode, protocolUrl }:
   const generated = buildProtocolLinks(sectionCode, parseInt(electionId));
   // Prefer stored protocol_url from DB, fall back to generated
   const links = protocolUrl
-    ? { protocol: protocolUrl, scan: protocolUrl.replace("#/p/", "#/s/").replace("#/pk/", "#/s/").replace(".html", ".pdf"), video: generated?.video ?? null }
+    ? { protocol: protocolUrl, scan: protocolUrl.replace("#/p/", "#/s/").replace("#/pk/", "#/s/").replace(/\.html$/, ".pdf"), video: generated?.video ?? null }
     : generated;
 
   return (
