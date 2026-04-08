@@ -93,6 +93,22 @@ class CIKAddressParser(HTMLParser):
                 self.results.append((code, self._current_address.strip(), self._span_data_el))
 
 
+def _proto_suffix(election_slug: str, machine_count: int | None) -> str:
+    """Protocol URL suffix varies by election era.
+    pi2021_apr (Apr 2021): no suffix — flat HAS_PROTO array, URLs are just {code}.html
+    pi2021_jul..ns2022: always .0
+    ns2023, mi2023_*: always .1
+    europe2024+, pe202410+: .0 if machine, .1 if no machine
+    """
+    if election_slug == 'pi2021':
+        return ''
+    if election_slug in ('pi2021_07', 'pvrns2021', 'ns2022'):
+        return '.0'
+    if election_slug in ('ns2023',) or election_slug.startswith('mi2023'):
+        return '.1'
+    return '.0' if machine_count and machine_count > 0 else '.1'
+
+
 def fetch_page(url: str) -> str | None:
     """Fetch a URL. No retries."""
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
@@ -217,8 +233,8 @@ def main():
 
         if row:
             section_id, location_id, machine_count = row
-            proto_idx = 0 if machine_count and machine_count > 0 else 1
-            url = f"{BASE_URL}/{args.election}/rezultati/{info['mir']:02d}.html#/p/{info['data_el']}/{code}.{proto_idx}.html"
+            suffix = _proto_suffix(args.election, machine_count)
+            url = f"{BASE_URL}/{args.election}/rezultati/{info['mir']:02d}.html#/p/{info['data_el']}/{code}{suffix}.html"
             conn.execute(
                 "UPDATE sections SET protocol_address = ?, protocol_url = ? WHERE id = ?",
                 (addr, url, section_id)
