@@ -51,6 +51,9 @@ importers:
       '@turf/bbox':
         specifier: ^7.3.4
         version: 7.3.4
+      '@turf/boolean-point-in-polygon':
+        specifier: ^7.3.4
+        version: 7.3.4
       '@turf/helpers':
         specifier: ^7.3.4
         version: 7.3.4
@@ -995,11 +998,17 @@ packages:
   '@turf/bbox@7.3.4':
     resolution: {integrity: sha512-D5ErVWtfQbEPh11yzI69uxqrcJmbPU/9Y59f1uTapgwAwQHQztDWgsYpnL3ns8r1GmPWLP8sGJLVTIk2TZSiYA==}
 
+  '@turf/boolean-point-in-polygon@7.3.4':
+    resolution: {integrity: sha512-v/4hfyY90Vz9cDgs2GwjQf+Lft8o7mNCLJOTz/iv8SHAIgMMX0czEoIaNVOJr7tBqPqwin1CGwsncrkf5C9n8Q==}
+
   '@turf/helpers@7.3.4':
     resolution: {integrity: sha512-U/S5qyqgx3WTvg4twaH0WxF3EixoTCfDsmk98g1E3/5e2YKp7JKYZdz0vivsS5/UZLJeZDEElOSFH4pUgp+l7g==}
 
   '@turf/intersect@7.3.4':
     resolution: {integrity: sha512-VsqMEMeRWWs2mjwI7sTlUgH1cEfugTGhQ0nF8ncHG7YKd9HUUTzIKpn9FJeoguPWIYITcy1ar4yJEOU/hteBVw==}
+
+  '@turf/invariant@7.3.4':
+    resolution: {integrity: sha512-88Eo4va4rce9sNZs6XiMJowWkikM3cS2TBhaCKlU+GFHdNf8PFEpiU42VDU8q5tOF6/fu21Rvlke5odgOGW4AQ==}
 
   '@turf/meta@7.3.4':
     resolution: {integrity: sha512-tlmw9/Hs1p2n0uoHVm1w3ugw1I6L8jv9YZrcdQa4SH5FX5UY0ATrKeIvfA55FlL//PGuYppJp+eyg/0eb4goqw==}
@@ -2108,6 +2117,9 @@ packages:
     resolution: {integrity: sha512-wQ0b/W4Fr01qtpHlqSqspcj3EhBvimsdh0KlHhH8HRZnMsEa0ea2fTULOXOS9ccQr3om+GcGRk4e+isrZWV8qQ==}
     engines: {node: '>=16.20.0'}
 
+  point-in-polygon-hao@1.2.4:
+    resolution: {integrity: sha512-x2pcvXeqhRHlNRdhLs/tgFapAbSSe86wa/eqmj1G6pWftbEs5aVRJhRGM6FYSUERKu0PjekJzMq0gsI2XyiclQ==}
+
   polyclip-ts@0.16.8:
     resolution: {integrity: sha512-JPtKbDRuPEuAjuTdhR62Gph7Is2BS1Szx69CFOO3g71lpJDFo78k4tFyi+qFOMVPePEzdSKkpGU3NBXPHHjvKQ==}
 
@@ -2240,6 +2252,9 @@ packages:
   reusify@1.1.0:
     resolution: {integrity: sha512-g6QUff04oZpHs0eG5p83rFLhHeV00ug/Yf9nZM6fLeUrPguBTkTQOdpAWWspMh55TZfVQDPaN3NQJfbVRAxdIw==}
     engines: {iojs: '>=1.0.0', node: '>=0.10.0'}
+
+  robust-predicates@3.0.3:
+    resolution: {integrity: sha512-NS3levdsRIUOmiJ8FZWCP7LG3QpJyrs/TE0Zpf1yvZu8cAJJ6QMW92H1c7kWpdIHo8RvmLxN/o2JXTKHp74lUA==}
 
   rollup@4.60.1:
     resolution: {integrity: sha512-VmtB2rFU/GroZ4oL8+ZqXgSA38O6GR8KSIvWmEFv63pQ0G6KaBH9s07PO8XTXP4vI+3UJUEypOfjkGfmSBBR0w==}
@@ -3455,6 +3470,14 @@ snapshots:
       '@types/geojson': 7946.0.16
       tslib: 2.8.1
 
+  '@turf/boolean-point-in-polygon@7.3.4':
+    dependencies:
+      '@turf/helpers': 7.3.4
+      '@turf/invariant': 7.3.4
+      '@types/geojson': 7946.0.16
+      point-in-polygon-hao: 1.2.4
+      tslib: 2.8.1
+
   '@turf/helpers@7.3.4':
     dependencies:
       '@types/geojson': 7946.0.16
@@ -3466,6 +3489,12 @@ snapshots:
       '@turf/meta': 7.3.4
       '@types/geojson': 7946.0.16
       polyclip-ts: 0.16.8
+      tslib: 2.8.1
+
+  '@turf/invariant@7.3.4':
+    dependencies:
+      '@turf/helpers': 7.3.4
+      '@types/geojson': 7946.0.16
       tslib: 2.8.1
 
   '@turf/meta@7.3.4':
@@ -4541,6 +4570,10 @@ snapshots:
 
   pkce-challenge@5.0.1: {}
 
+  point-in-polygon-hao@1.2.4:
+    dependencies:
+      robust-predicates: 3.0.3
+
   polyclip-ts@0.16.8:
     dependencies:
       bignumber.js: 9.3.1
@@ -4679,6 +4712,8 @@ snapshots:
   rettime@0.10.1: {}
 
   reusify@1.1.0: {}
+
+  robust-predicates@3.0.3: {}
 
   rollup@4.60.1:
     dependencies:

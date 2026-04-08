@@ -939,15 +939,13 @@ elections.get("/:id/results/geo/districts", (c) => {
     return c.json({ error: "Election not found" }, 404);
   }
 
-  // Population-weighted centroids + voter totals per district
+  // Population-weighted centroids per district (needs lat/lng)
   const centroidRows = db
     .prepare(`
       SELECT
         l.district_id,
         SUM(p.registered_voters * l.lat) / SUM(p.registered_voters) AS weighted_lat,
-        SUM(p.registered_voters * l.lng) / SUM(p.registered_voters) AS weighted_lng,
-        SUM(p.registered_voters) AS registered_voters,
-        SUM(p.actual_voters) AS actual_voters
+        SUM(p.registered_voters * l.lng) / SUM(p.registered_voters) AS weighted_lng
       FROM protocols p
       JOIN sections s ON s.election_id = p.election_id AND s.section_code = p.section_code
       JOIN locations l ON l.id = s.location_id
@@ -958,11 +956,32 @@ elections.get("/:id/results/geo/districts", (c) => {
       district_id: number;
       weighted_lat: number;
       weighted_lng: number;
-      registered_voters: number;
-      actual_voters: number;
     }[];
 
   const centroidMap = new Map(centroidRows.map((r) => [r.district_id, r]));
+
+  // Voter totals per district (all sections, no lat/lng filter)
+  const voterRows = db
+    .prepare(`
+      SELECT
+        l.district_id,
+        SUM(p.registered_voters) AS registered_voters,
+        SUM(p.actual_voters) AS actual_voters,
+        SUM(p.null_votes) AS null_votes
+      FROM protocols p
+      JOIN sections s ON s.election_id = p.election_id AND s.section_code = p.section_code
+      JOIN locations l ON l.id = s.location_id
+      WHERE p.election_id = ?
+      GROUP BY l.district_id
+    `)
+    .all(id) as {
+      district_id: number;
+      registered_voters: number;
+      actual_voters: number;
+      null_votes: number;
+    }[];
+
+  const voterMap = new Map(voterRows.map((r) => [r.district_id, r]));
 
   // Votes by district and party
   const voteRows = db
@@ -1008,13 +1027,16 @@ elections.get("/:id/results/geo/districts", (c) => {
 
   const result = districts.map((dist) => {
     const centroid = centroidMap.get(dist.id);
+    const voters = voterMap.get(dist.id);
     const partyMap = districtVotes.get(dist.id);
 
-    const registered_voters = centroid?.registered_voters ?? 0;
-    const actual_voters = centroid?.actual_voters ?? 0;
-    const total_votes = partyMap
+    const registered_voters = voters?.registered_voters ?? 0;
+    const actual_voters = voters?.actual_voters ?? 0;
+    const null_votes = voters?.null_votes ?? 0;
+    const party_votes = partyMap
       ? Array.from(partyMap.values()).reduce((sum, p) => sum + p.votes, 0)
       : 0;
+    const total_votes = party_votes + null_votes;
 
     const parties = partyMap
       ? Array.from(partyMap.entries())
@@ -1028,7 +1050,19 @@ elections.get("/:id/results/geo/districts", (c) => {
           .sort((a, b) => b.votes - a.votes)
       : [];
 
-    const winner = parties[0] ?? null;
+    // Add "Не подкрепям никого" as a pseudo-party entry
+    if (null_votes > 0) {
+      parties.push({
+        party_id: -1,
+        name: "Не подкрепям никого",
+        color: "#a0a0a0",
+        votes: null_votes,
+        pct: total_votes > 0 ? Math.round((null_votes / total_votes) * 10000) / 100 : 0,
+      });
+      parties.sort((a, b) => b.votes - a.votes);
+    }
+
+    const winner = parties.find((p) => p.party_id !== -1) ?? null;
 
     return {
       id: dist.id,
@@ -1073,7 +1107,8 @@ elections.get("/:id/results/geo/municipalities", (c) => {
       SELECT
         l.municipality_id,
         SUM(p.registered_voters) AS registered_voters,
-        SUM(p.actual_voters) AS actual_voters
+        SUM(p.actual_voters) AS actual_voters,
+        SUM(p.null_votes) AS null_votes
       FROM protocols p
       JOIN sections s ON s.election_id = p.election_id AND s.section_code = p.section_code
       JOIN locations l ON l.id = s.location_id
@@ -1084,6 +1119,7 @@ elections.get("/:id/results/geo/municipalities", (c) => {
       municipality_id: number;
       registered_voters: number;
       actual_voters: number;
+      null_votes: number;
     }[];
 
   const voterMap = new Map(voterRows.map((r) => [r.municipality_id, r]));
@@ -1135,9 +1171,11 @@ elections.get("/:id/results/geo/municipalities", (c) => {
 
     const registered_voters = voters?.registered_voters ?? 0;
     const actual_voters = voters?.actual_voters ?? 0;
-    const total_votes = partyMap
+    const null_votes = voters?.null_votes ?? 0;
+    const party_votes = partyMap
       ? Array.from(partyMap.values()).reduce((sum, p) => sum + p.votes, 0)
       : 0;
+    const total_votes = party_votes + null_votes;
 
     const parties = partyMap
       ? Array.from(partyMap.entries())
@@ -1151,7 +1189,18 @@ elections.get("/:id/results/geo/municipalities", (c) => {
           .sort((a, b) => b.votes - a.votes)
       : [];
 
-    const winner = parties[0] ?? null;
+    if (null_votes > 0) {
+      parties.push({
+        party_id: -1,
+        name: "Не подкрепям никого",
+        color: "#a0a0a0",
+        votes: null_votes,
+        pct: total_votes > 0 ? Math.round((null_votes / total_votes) * 10000) / 100 : 0,
+      });
+      parties.sort((a, b) => b.votes - a.votes);
+    }
+
+    const winner = parties.find((p) => p.party_id !== -1) ?? null;
 
     return {
       id: muni.id,
@@ -1192,7 +1241,8 @@ elections.get("/:id/results/geo/riks", (c) => {
       SELECT
         l.rik_id,
         SUM(p.registered_voters) AS registered_voters,
-        SUM(p.actual_voters) AS actual_voters
+        SUM(p.actual_voters) AS actual_voters,
+        SUM(p.null_votes) AS null_votes
       FROM protocols p
       JOIN sections s ON s.election_id = p.election_id AND s.section_code = p.section_code
       JOIN locations l ON l.id = s.location_id
@@ -1203,6 +1253,7 @@ elections.get("/:id/results/geo/riks", (c) => {
       rik_id: number;
       registered_voters: number;
       actual_voters: number;
+      null_votes: number;
     }[];
 
   const voterMap = new Map(voterRows.map((r) => [r.rik_id, r]));
@@ -1253,9 +1304,11 @@ elections.get("/:id/results/geo/riks", (c) => {
 
     const registered_voters = voters?.registered_voters ?? 0;
     const actual_voters = voters?.actual_voters ?? 0;
-    const total_votes = partyMap
+    const null_votes = voters?.null_votes ?? 0;
+    const party_votes = partyMap
       ? Array.from(partyMap.values()).reduce((sum, p) => sum + p.votes, 0)
       : 0;
+    const total_votes = party_votes + null_votes;
 
     const parties = partyMap
       ? Array.from(partyMap.entries())
@@ -1269,7 +1322,18 @@ elections.get("/:id/results/geo/riks", (c) => {
           .sort((a, b) => b.votes - a.votes)
       : [];
 
-    const winner = parties[0] ?? null;
+    if (null_votes > 0) {
+      parties.push({
+        party_id: -1,
+        name: "Не подкрепям никого",
+        color: "#a0a0a0",
+        votes: null_votes,
+        pct: total_votes > 0 ? Math.round((null_votes / total_votes) * 10000) / 100 : 0,
+      });
+      parties.sort((a, b) => b.votes - a.votes);
+    }
+
+    const winner = parties.find((p) => p.party_id !== -1) ?? null;
 
     return {
       id: rik.id,

@@ -12,6 +12,7 @@
     "@fontsource-variable/geist": "^5.2.8",
     "@tailwindcss/vite": "^4.2.2",
     "@turf/bbox": "^7.3.4",
+    "@turf/boolean-point-in-polygon": "^7.3.4",
     "@turf/helpers": "^7.3.4",
     "@turf/intersect": "^7.3.4",
     "chart.js": "^4.5.1",
