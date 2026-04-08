@@ -174,19 +174,20 @@ def geocode_google(query: str) -> tuple[float, float] | None:
     return (lat, lng)
 
 
-def geocode(queries: list[str]) -> tuple[float, float] | None:
-    """Try Google first (accurate), fall back to Photon (free)."""
+def geocode(queries: list[str]) -> tuple[float, float, str] | None:
+    """Try Google first (accurate), fall back to Photon (free).
+    Returns (lat, lng, source) or None."""
     if API_KEY:
         for query in queries:
             result = geocode_google(query)
             if result:
-                return result
+                return (*result, "google")
 
     # Photon fallback
     for query in queries:
         result = geocode_photon(query)
         if result:
-            return result
+            return (*result, "photon")
         time.sleep(RATE_LIMIT_S)
 
     return None
@@ -198,6 +199,7 @@ def strip_norm(s: str) -> str:
     s = re.sub(r'["""\'„\u201c\u201d\u201e\(\)]', '', s)
     s = re.sub(r'[\u2013\u2014\u2012\-]', ' ', s)
     s = re.sub(r'№\s*', '', s)
+    s = re.sub(r'[,\.]', ' ', s)
     s = re.sub(r'([А-ЯA-Z])(\d)', r'\1 \2', s)
     s = re.sub(r'(\d)([А-ЯA-Z])', r'\1 \2', s)
     s = re.sub(r'\s+', ' ', s).strip()
@@ -351,8 +353,8 @@ def main():
         result = geocode(queries)
 
         if result:
-            lat, lng = result
-            conn.execute("UPDATE locations SET lat=?, lng=? WHERE id=?", (lat, lng, loc_id))
+            lat, lng, source = result
+            conn.execute("UPDATE locations SET lat=?, lng=?, geocode_source=? WHERE id=?", (lat, lng, source, loc_id))
 
             n = strip_norm(addr)
             if n not in existing:

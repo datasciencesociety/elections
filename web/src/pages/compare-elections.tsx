@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
-import { Link, useSearchParams } from "react-router";
+import { Fragment, useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "react-router";
 import LocationFilter from "../components/location-filter.js";
 import {
   Chart as ChartJS,
@@ -60,7 +60,6 @@ export default function CompareElections() {
     return { param: p, value: p ? searchParams.get(p) : null };
   });
 
-  // Fetch election list
   useEffect(() => {
     fetch("/api/elections")
       .then((res) => {
@@ -71,7 +70,6 @@ export default function CompareElections() {
       .catch((err) => setError(err.message));
   }, []);
 
-  // Update URL when selections change
   useEffect(() => {
     const params: Record<string, string> = {};
     if (selectedIds.size > 0) {
@@ -83,7 +81,6 @@ export default function CompareElections() {
     setSearchParams(params, { replace: true });
   }, [selectedIds, geoFilter, setSearchParams]);
 
-  // Fetch comparison data
   useEffect(() => {
     if (selectedIds.size < 2) {
       setData(null);
@@ -125,7 +122,6 @@ export default function CompareElections() {
   const activeParam = geoFilter.param;
   const activeValue = geoFilter.value;
 
-  // Chart data: top 15 parties by total votes
   const chartData = data ? (() => {
     const top15 = data.results.slice(0, 15);
     const labels = top15.map((r) => r.party_name);
@@ -139,93 +135,157 @@ export default function CompareElections() {
 
   const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
-      legend: { position: "top" as const },
-      title: { display: true, text: "Vote Share Comparison (%)" },
+      legend: {
+        position: "top" as const,
+        labels: {
+          boxWidth: 12,
+          font: { size: 11 },
+          color: "rgb(156, 163, 175)",
+        },
+      },
+      title: { display: false },
     },
     scales: {
       y: {
         beginAtZero: true,
-        title: { display: true, text: "Percentage (%)" },
+        title: { display: true, text: "%", font: { size: 11 }, color: "rgb(156, 163, 175)" },
+        ticks: { font: { size: 10 }, color: "rgb(156, 163, 175)" },
+        grid: { color: "rgba(156, 163, 175, 0.1)" },
+      },
+      x: {
+        ticks: { font: { size: 10 }, color: "rgb(156, 163, 175)", maxRotation: 45 },
+        grid: { display: false },
       },
     },
   };
 
   return (
-    <div>
-      <p>
-        <Link to="/">Back to elections</Link>
-      </p>
-      <h1>Compare Elections</h1>
-
-      <fieldset>
-        <legend>Select elections to compare (2-10):</legend>
-        {allElections.map((e) => (
-          <label key={e.id} style={{ display: "block", margin: "0.25rem 0" }}>
-            <input
-              type="checkbox"
-              checked={selectedIds.has(e.id)}
-              onChange={() => handleToggle(e.id)}
-              disabled={!selectedIds.has(e.id) && selectedIds.size >= 10}
-            />
-            {" "}{e.name} ({e.date})
-          </label>
-        ))}
-      </fieldset>
-
-      <LocationFilter
-        onFilterChange={handleFilterChange}
-        initialParam={activeParam}
-        initialValue={activeValue}
-      />
-
-      {selectedIds.size < 2 && <p>Select at least 2 elections to compare.</p>}
-      {loading && <p>Loading comparison...</p>}
-      {error && <p>Error: {error}</p>}
-
-      {!loading && !error && data && chartData && (
-        <>
-          <div style={{ maxWidth: "900px", margin: "1rem 0" }}>
-            <Bar data={chartData} options={chartOptions} />
+    <div className="flex h-full flex-col overflow-hidden">
+      {/* Filters bar */}
+      <div className="flex flex-wrap items-end gap-4 border-b border-border bg-background px-4 py-2.5">
+        <div>
+          <div className="mb-1 text-[11px] text-muted-foreground">Избори за сравнение (2-10)</div>
+          <div className="flex flex-wrap gap-1.5">
+            {allElections.map((e) => {
+              const checked = selectedIds.has(e.id);
+              const disabled = !checked && selectedIds.size >= 10;
+              return (
+                <label
+                  key={e.id}
+                  className={`flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] transition-colors ${
+                    checked
+                      ? "border-foreground/30 bg-foreground/10 text-foreground"
+                      : disabled
+                      ? "cursor-not-allowed border-border text-muted-foreground/50"
+                      : "border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => handleToggle(e.id)}
+                    disabled={disabled}
+                    className="accent-foreground"
+                  />
+                  {e.name} ({e.date})
+                </label>
+              );
+            })}
           </div>
+        </div>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Party</th>
-                {data.elections.map((el) => (
-                  <th key={el.id} colSpan={2}>{el.name} ({el.date})</th>
-                ))}
-              </tr>
-              <tr>
-                <th />
-                {data.elections.map((el) => (
-                  <>
-                    <th key={`${el.id}-v`}>Votes</th>
-                    <th key={`${el.id}-p`}>%</th>
-                  </>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.results.map((r) => (
-                <tr key={r.party_id}>
-                  <td>{r.party_name}</td>
-                  {data.elections.map((el) => {
-                    const d = r.elections[String(el.id)];
-                    return (
-                      <>
-                        <td key={`${el.id}-v`}>{(d?.votes ?? 0).toLocaleString()}</td>
-                        <td key={`${el.id}-p`}>{d?.percentage ?? 0}%</td>
-                      </>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
+        <LocationFilter
+          onFilterChange={handleFilterChange}
+          initialParam={activeParam}
+          initialValue={activeValue}
+        />
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-auto">
+        {selectedIds.size < 2 && (
+          <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+            Изберете поне 2 избора за сравнение.
+          </div>
+        )}
+
+        {loading && (
+          <div className="px-4 py-8 text-center text-sm text-muted-foreground">Зареждане...</div>
+        )}
+
+        {error && (
+          <div className="px-4 py-8 text-center text-sm text-red-500">Грешка: {error}</div>
+        )}
+
+        {!loading && !error && data && chartData && (
+          <div className="space-y-4 p-4">
+            {/* Chart */}
+            <div className="rounded-lg border border-border p-4">
+              <div className="mb-2 text-xs font-medium text-muted-foreground">Дял на гласовете (%)</div>
+              <div className="h-[350px]">
+                <Bar data={chartData} options={chartOptions} />
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-auto rounded-lg border border-border">
+              <table className="w-full text-xs">
+                <thead className="border-b border-border bg-secondary/50">
+                  <tr>
+                    <th className="whitespace-nowrap px-3 py-2 text-left text-[11px] font-medium text-muted-foreground">Партия</th>
+                    {data.elections.map((el) => (
+                      <th
+                        key={el.id}
+                        colSpan={2}
+                        className="whitespace-nowrap px-3 py-2 text-center text-[11px] font-medium text-muted-foreground"
+                      >
+                        {el.name} ({el.date})
+                      </th>
+                    ))}
+                  </tr>
+                  <tr className="border-b border-border/50">
+                    <th />
+                    {data.elections.map((el) => (
+                      <Fragment key={el.id}>
+                        <th className="px-2 py-1 text-right text-[10px] font-normal text-muted-foreground/70">Гласове</th>
+                        <th className="px-2 py-1 text-right text-[10px] font-normal text-muted-foreground/70">%</th>
+                      </Fragment>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.results.map((r, idx) => (
+                    <tr
+                      key={r.party_id}
+                      className={`border-b border-border/50 transition-colors hover:bg-secondary/50 ${
+                        idx % 2 === 0 ? "" : "bg-secondary/20"
+                      }`}
+                    >
+                      <td className="whitespace-nowrap px-3 py-1.5 font-medium">{r.party_name}</td>
+                      {data.elections.map((el) => {
+                        const d = r.elections[String(el.id)];
+                        return (
+                          <Fragment key={el.id}>
+                            <td className="whitespace-nowrap px-2 py-1.5 text-right font-mono tabular-nums">
+                              {(d?.votes ?? 0).toLocaleString()}
+                            </td>
+                            <td className="whitespace-nowrap px-2 py-1.5 text-right font-mono font-semibold tabular-nums">
+                              {d?.percentage ?? 0}%
+                            </td>
+                          </Fragment>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
+

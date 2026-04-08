@@ -30,7 +30,6 @@ export default function LocationFilter({
 
   const [initialized, setInitialized] = useState(false);
 
-  // Fetch top-level lists on mount
   useEffect(() => {
     Promise.all([
       fetch("/api/geography/riks").then((r) => r.json()),
@@ -41,7 +40,6 @@ export default function LocationFilter({
     });
   }, []);
 
-  // Initialize from URL params after top-level data loads
   useEffect(() => {
     if (initialized || districts.length === 0) return;
     if (!initialParam || !initialValue) {
@@ -54,19 +52,16 @@ export default function LocationFilter({
         setSelectedRik(initialValue);
       } else if (initialParam === "district") {
         setSelectedDistrict(initialValue);
-        // Load municipalities for this district
         const munis = await fetch(
           `/api/geography/municipalities?district=${initialValue}`
         ).then((r) => r.json());
         setMunicipalities(munis);
       } else if (initialParam === "municipality") {
-        // Find the district for this municipality to load siblings
         const allMunis: GeoEntity[] = await fetch(
           "/api/geography/municipalities"
         ).then((r) => r.json());
         setMunicipalities(allMunis);
         setSelectedMunicipality(initialValue);
-        // Load children
         const [km, lr] = await Promise.all([
           fetch(`/api/geography/kmetstva?municipality=${initialValue}`).then(
             (r) => r.json()
@@ -103,7 +98,6 @@ export default function LocationFilter({
     init();
   }, [initialized, initialParam, initialValue, districts]);
 
-  // When district changes, fetch municipalities
   const handleDistrictChange = useCallback(
     (value: string) => {
       setSelectedDistrict(value);
@@ -126,7 +120,6 @@ export default function LocationFilter({
     [onFilterChange]
   );
 
-  // When municipality changes, fetch kmetstva and local regions
   const handleMunicipalityChange = useCallback(
     (value: string) => {
       setSelectedMunicipality(value);
@@ -149,7 +142,6 @@ export default function LocationFilter({
       } else {
         setKmetstva([]);
         setLocalRegions([]);
-        // Fall back to district filter if district is selected
         if (selectedDistrict) {
           onFilterChange("district", selectedDistrict);
         } else {
@@ -160,10 +152,12 @@ export default function LocationFilter({
     [onFilterChange, selectedDistrict]
   );
 
+  const selectClass = "h-7 rounded-md border border-border bg-background px-1.5 text-xs disabled:opacity-50";
+
   return (
-    <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1rem" }}>
-      <label>
-        RIK:{" "}
+    <div className="flex flex-wrap items-end gap-3">
+      <div>
+        <div className="mb-0.5 text-[11px] text-muted-foreground">МИР</div>
         <select
           value={selectedRik}
           onChange={(e) => {
@@ -178,36 +172,34 @@ export default function LocationFilter({
             setLocalRegions([]);
             onFilterChange(val ? "rik" : null, val || null);
           }}
+          className={selectClass}
         >
-          <option value="">All</option>
+          <option value="">Всички</option>
           {riks.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
+            <option key={r.id} value={r.id}>{r.name}</option>
           ))}
         </select>
-      </label>
+      </div>
 
-      <label>
-        District:{" "}
+      <div>
+        <div className="mb-0.5 text-[11px] text-muted-foreground">Област</div>
         <select
           value={selectedDistrict}
           onChange={(e) => {
             setSelectedRik("");
             handleDistrictChange(e.target.value);
           }}
+          className={selectClass}
         >
-          <option value="">All</option>
+          <option value="">Всички</option>
           {districts.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.name}
-            </option>
+            <option key={d.id} value={d.id}>{d.name}</option>
           ))}
         </select>
-      </label>
+      </div>
 
-      <label>
-        Municipality:{" "}
+      <div>
+        <div className="mb-0.5 text-[11px] text-muted-foreground">Община</div>
         <select
           value={selectedMunicipality}
           onChange={(e) => {
@@ -215,18 +207,17 @@ export default function LocationFilter({
             handleMunicipalityChange(e.target.value);
           }}
           disabled={municipalities.length === 0}
+          className={selectClass}
         >
-          <option value="">All</option>
+          <option value="">Всички</option>
           {municipalities.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name}
-            </option>
+            <option key={m.id} value={m.id}>{m.name}</option>
           ))}
         </select>
-      </label>
+      </div>
 
-      <label>
-        Kmetstvo:{" "}
+      <div>
+        <div className="mb-0.5 text-[11px] text-muted-foreground">Кметство</div>
         <select
           value={selectedKmetstvo}
           onChange={(e) => {
@@ -237,18 +228,17 @@ export default function LocationFilter({
             onFilterChange(val ? "kmetstvo" : selectedMunicipality ? "municipality" : null, val || selectedMunicipality || null);
           }}
           disabled={kmetstva.length === 0}
+          className={selectClass}
         >
-          <option value="">All</option>
+          <option value="">Всички</option>
           {kmetstva.map((k) => (
-            <option key={k.id} value={k.id}>
-              {k.name}
-            </option>
+            <option key={k.id} value={k.id}>{k.name}</option>
           ))}
         </select>
-      </label>
+      </div>
 
-      <label>
-        Local Region:{" "}
+      <div>
+        <div className="mb-0.5 text-[11px] text-muted-foreground">Район</div>
         <select
           value={selectedLocalRegion}
           onChange={(e) => {
@@ -259,15 +249,14 @@ export default function LocationFilter({
             onFilterChange(val ? "local_region" : selectedMunicipality ? "municipality" : null, val || selectedMunicipality || null);
           }}
           disabled={localRegions.length === 0}
+          className={selectClass}
         >
-          <option value="">All</option>
+          <option value="">Всички</option>
           {localRegions.map((lr) => (
-            <option key={lr.id} value={lr.id}>
-              {lr.name}
-            </option>
+            <option key={lr.id} value={lr.id}>{lr.name}</option>
           ))}
         </select>
-      </label>
+      </div>
     </div>
   );
 }

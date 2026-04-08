@@ -47,6 +47,8 @@ export default function ElectionList() {
             <Link to={`/elections/${e.id}/anomalies`}>Anomalies</Link>
             {" | "}
             <Link to={`/map/${e.id}`}>Map</Link>
+            {" | "}
+            <Link to={`/district-map/${e.id}`}>District Pie</Link>
           </li>
         ))}
       </ul>
