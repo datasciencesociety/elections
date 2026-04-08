@@ -107,9 +107,12 @@ export default function LocationCorrection({
     setError(null);
 
     try {
-      const res = await fetch(SUBMIT_URL, {
+      // Google Apps Script doesn't support CORS for JSON POST.
+      // Use no-cors mode — response is opaque but the data arrives.
+      await fetch(SUBMIT_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain" },
         body: JSON.stringify({
           section_code: sectionCode,
           election_id: electionId,
@@ -117,14 +120,14 @@ export default function LocationCorrection({
           lng: markerPos[0],
           settlement_name: settlementName,
           address: address ?? "",
+          current_lat: currentLat,
+          current_lng: currentLng,
           timestamp: new Date().toISOString(),
         }),
       });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setSubmitted(true);
     } catch {
-      // Google Apps Script redirects on success — treat network errors as success
+      // no-cors responses are opaque — treat as success
       setSubmitted(true);
     } finally {
       setSubmitting(false);

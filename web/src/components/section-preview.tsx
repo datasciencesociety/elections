@@ -186,6 +186,7 @@ export default function SectionPreview({ sectionCode }: { sectionCode: string })
   const [details, setDetails] = useState<Map<number, ElectionDetail>>(new Map());
   const [loading, setLoading] = useState(true);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [showCorrection, setShowCorrection] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -248,7 +249,6 @@ export default function SectionPreview({ sectionCode }: { sectionCode: string })
     return <div className="py-8 text-center text-xs text-muted-foreground">Няма данни</div>;
   }
 
-  const [showCorrection, setShowCorrection] = useState(false);
   const flaggedCount = history.filter((h) => h.risk_score >= 0.3).length;
   const avgRisk = history.reduce((s, h) => s + h.risk_score, 0) / history.length;
   const maxRisk = Math.max(...history.map((h) => h.risk_score));
