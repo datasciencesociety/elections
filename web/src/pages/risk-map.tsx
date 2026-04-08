@@ -182,7 +182,30 @@ function buildCircleFeatures(sections: RiskSection[], methodology: Methodology) 
   };
 }
 
-// Circle layer using MapLibre native rendering
+const TRIANGLE_ICON = "risk-triangle";
+const TRIANGLE_SIZE = 48;
+
+function ensureTriangleIcon(map: MapLibreGL.Map) {
+  if (map.hasImage(TRIANGLE_ICON)) return;
+  const size = TRIANGLE_SIZE;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  // Draw upward-pointing triangle (warning sign shape)
+  const pad = 4;
+  ctx.fillStyle = "#fff";
+  ctx.beginPath();
+  ctx.moveTo(size / 2, pad);
+  ctx.lineTo(size - pad, size - pad);
+  ctx.lineTo(pad, size - pad);
+  ctx.closePath();
+  ctx.fill();
+  const imageData = ctx.getImageData(0, 0, size, size);
+  map.addImage(TRIANGLE_ICON, imageData, { sdf: true });
+}
+
+// Risk layer using triangle symbol markers
 function CircleLayer({
   sections,
   methodology,
@@ -196,6 +219,7 @@ function CircleLayer({
   useEffect(() => {
     if (!map || !isLoaded || sections.length === 0) return;
 
+    ensureTriangleIcon(map);
     const fc = buildCircleFeatures(sections, methodology);
 
     const existing = map.getSource(CIRCLE_SOURCE);
@@ -208,26 +232,29 @@ function CircleLayer({
     if (!map.getLayer(CIRCLE_LAYER)) {
       map.addLayer({
         id: CIRCLE_LAYER,
-        type: "circle",
+        type: "symbol",
         source: CIRCLE_SOURCE,
-        paint: {
-          "circle-radius": [
+        layout: {
+          "icon-image": TRIANGLE_ICON,
+          "icon-size": [
             "interpolate", ["linear"], ["get", "risk"],
-            0.3, 4,
-            0.5, 7,
-            0.7, 11,
-            1.0, 16,
+            0.3, 0.35,
+            0.5, 0.55,
+            0.7, 0.75,
+            1.0, 1.0,
           ],
-          "circle-color": [
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
+        },
+        paint: {
+          "icon-color": [
             "interpolate", ["linear"], ["get", "risk"],
             0.3, "#facc15",  // yellow
             0.5, "#f97316",  // orange
             0.7, "#ef4444",  // red
             1.0, "#991b1b",  // dark red
           ],
-          "circle-opacity": 0.85,
-          "circle-stroke-width": 1,
-          "circle-stroke-color": "rgba(255,255,255,0.6)",
+          "icon-opacity": 0.9,
         },
       });
     }
@@ -236,26 +263,29 @@ function CircleLayer({
     if (!map.getLayer(CIRCLE_HOVER_LAYER)) {
       map.addLayer({
         id: CIRCLE_HOVER_LAYER,
-        type: "circle",
+        type: "symbol",
         source: CIRCLE_SOURCE,
-        paint: {
-          "circle-radius": [
+        layout: {
+          "icon-image": TRIANGLE_ICON,
+          "icon-size": [
             "interpolate", ["linear"], ["get", "risk"],
-            0.3, 6,
-            0.5, 10,
-            0.7, 14,
-            1.0, 20,
+            0.3, 0.5,
+            0.5, 0.7,
+            0.7, 0.9,
+            1.0, 1.3,
           ],
-          "circle-color": [
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
+        },
+        paint: {
+          "icon-color": [
             "interpolate", ["linear"], ["get", "risk"],
             0.3, "#facc15",
             0.5, "#f97316",
             0.7, "#ef4444",
             1.0, "#991b1b",
           ],
-          "circle-opacity": 0.95,
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "#fff",
+          "icon-opacity": 1.0,
         },
         filter: ["==", "section_code", ""],
       });
@@ -387,9 +417,11 @@ function CircleClickHandler({
 function AllSectionsLayer({
   sections,
   onSectionClick,
+  riskCodes,
 }: {
   sections: SectionGeo[];
   onSectionClick: (sectionCode: string) => void;
+  riskCodes?: Set<string>;
 }) {
   const { map, isLoaded } = useMap();
   const onClickRef = useRef(onSectionClick);
@@ -398,7 +430,10 @@ function AllSectionsLayer({
   useEffect(() => {
     if (!map || !isLoaded || sections.length === 0) return;
 
-    const spread = offsetOverlappingSections(sections);
+    const baseSections = riskCodes?.size
+      ? sections.filter((s) => !riskCodes.has(s.section_code))
+      : sections;
+    const spread = offsetOverlappingSections(baseSections);
     const fc = {
       type: "FeatureCollection" as const,
       features: spread.map((s) => ({
@@ -472,7 +507,7 @@ function AllSectionsLayer({
         if (map.getSource(BASE_SOURCE)) map.removeSource(BASE_SOURCE);
       } catch { /* map already destroyed */ }
     };
-  }, [map, isLoaded, sections]);
+  }, [map, isLoaded, sections, riskCodes]);
 
   return null;
 }
@@ -1255,19 +1290,24 @@ export default function RiskMap() {
   const [total, setTotal] = useState(0);
   const [riskLoading, setRiskLoading] = useState(false);
 
+  const [showBaseSections, setShowBaseSections] = useState(true);
   const [districts, setDistricts] = useState<GeoEntity[]>([]);
   const [municipalities, setMunicipalities] = useState<GeoEntity[]>([]);
 
-  // Fetch all sections (base layer)
+  // Fetch all sections (base layer), filtered by location
   useEffect(() => {
     if (!electionId) return;
     setBaseLoading(true);
-    fetch(`/api/elections/${electionId}/sections/geo`)
+    const params = new URLSearchParams();
+    if (municipality) params.set("municipality", municipality);
+    else if (district) params.set("district", district);
+    const qs = params.toString();
+    fetch(`/api/elections/${electionId}/sections/geo${qs ? `?${qs}` : ""}`)
       .then((res) => res.json())
       .then((data) => setAllSections(data.sections ?? []))
       .catch(() => {})
       .finally(() => setBaseLoading(false));
-  }, [electionId]);
+  }, [electionId, district, municipality]);
 
   // Fetch districts on mount
   useEffect(() => {
@@ -1343,9 +1383,13 @@ export default function RiskMap() {
       {/* Map */}
       <Map key={`sections-${electionId}`} center={BULGARIA_CENTER} zoom={BULGARIA_ZOOM} className="h-full w-full" loading={baseLoading}>
         {electionId && <MunicipalityOutlines electionId={electionId} />}
-        {/* Base layer: all sections by winner color */}
-        {filteredAllSections.length > 0 && (
-          <AllSectionsLayer sections={filteredAllSections} onSectionClick={handleSectionClick} />
+        {/* Base layer: all sections by winner color (hidden when toggled off) */}
+        {showBaseSections && filteredAllSections.length > 0 && (
+          <AllSectionsLayer
+            sections={filteredAllSections}
+            onSectionClick={handleSectionClick}
+            riskCodes={riskActive ? new Set(riskSections.map((s) => s.section_code)) : undefined}
+          />
         )}
         {/* Risk overlay: only when filter is active */}
         {riskActive && riskSections.length > 0 && (
@@ -1357,107 +1401,133 @@ export default function RiskMap() {
       </Map>
 
       {/* Floating filter panel — top left */}
-      <div className="absolute top-3 left-3 z-10 flex min-w-[280px] max-w-[320px] flex-col gap-3 rounded-lg border border-border bg-background/96 p-3.5 shadow-lg backdrop-blur-sm">
-        {/* Risk threshold */}
-        <div>
-          <div className="mb-1 text-[11px] font-medium text-muted-foreground">
-            Мин. риск: <span className="font-bold text-foreground">{minRisk.toFixed(2)}</span>
-            {!riskActive && <span className="ml-1 text-muted-foreground/60">(изключен)</span>}
-          </div>
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.05}
-            value={minRisk}
-            onChange={(e) => setMinRisk(parseFloat(e.target.value))}
-            className="w-full accent-red-500"
-          />
-        </div>
+      <div className="absolute top-3 left-3 z-10 flex min-w-[280px] max-w-[320px] flex-col gap-0 rounded-lg border border-border bg-background/96 shadow-lg backdrop-blur-sm">
+        {/* Section 1: Location filter */}
+        <div className="flex flex-col gap-2.5 p-3.5 pb-3">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Местоположение</div>
 
-        {/* Methodology pills — only when risk is active */}
-        {riskActive && (
-          <div>
-            <div className="mb-1 text-[11px] font-medium text-muted-foreground">Методология</div>
-            <div className="flex flex-wrap gap-1">
-              {methodologies.map((m) => (
-                <button
-                  key={m.key}
-                  onClick={() => setMethodology(m.key)}
-                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                    methodology === m.key
-                      ? "bg-foreground text-background"
-                      : "bg-secondary text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {m.label}
-                </button>
-              ))}
+          {/* Geographic filters */}
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <div className="mb-0.5 text-[11px] text-muted-foreground">Област</div>
+              <select
+                value={district}
+                onChange={(e) => setDistrict(e.target.value)}
+                className="w-full rounded-md border border-border bg-background px-1.5 py-1 text-xs"
+              >
+                <option value="">Всички</option>
+                {districts.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1">
+              <div className="mb-0.5 text-[11px] text-muted-foreground">Община</div>
+              <select
+                value={municipality}
+                onChange={(e) => setMunicipality(e.target.value)}
+                disabled={!district}
+                className="w-full rounded-md border border-border bg-background px-1.5 py-1 text-xs disabled:opacity-50"
+              >
+                <option value="">Всички</option>
+                {municipalities.map((m) => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
             </div>
           </div>
-        )}
 
-        {/* Geographic filters */}
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <div className="mb-0.5 text-[11px] text-muted-foreground">Област</div>
-            <select
-              value={district}
-              onChange={(e) => setDistrict(e.target.value)}
-              className="w-full rounded-md border border-border bg-background px-1.5 py-1 text-xs"
-            >
-              <option value="">Всички</option>
-              {districts.map((d) => (
-                <option key={d.id} value={d.id}>{d.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex-1">
-            <div className="mb-0.5 text-[11px] text-muted-foreground">Община</div>
-            <select
-              value={municipality}
-              onChange={(e) => setMunicipality(e.target.value)}
-              disabled={!district}
-              className="w-full rounded-md border border-border bg-background px-1.5 py-1 text-xs disabled:opacity-50"
-            >
-              <option value="">Всички</option>
-              {municipalities.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
+          {/* Section code search */}
+          <div>
+            <div className="mb-0.5 text-[11px] text-muted-foreground">Секция №</div>
+            <input
+              type="text"
+              value={sectionFilter}
+              onChange={(e) => setSectionFilter(e.target.value)}
+              placeholder="напр. 234600001"
+              className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs placeholder:text-muted-foreground/50"
+            />
           </div>
         </div>
 
-        {/* Section code search */}
-        <div>
-          <div className="mb-0.5 text-[11px] text-muted-foreground">Секция №</div>
-          <input
-            type="text"
-            value={sectionFilter}
-            onChange={(e) => setSectionFilter(e.target.value)}
-            placeholder="напр. 234600001"
-            className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs placeholder:text-muted-foreground/50"
-          />
-        </div>
+        <div className="border-t border-border" />
 
-        {/* Section count */}
-        <div className="rounded-md bg-secondary px-2.5 py-1.5 text-center text-xs text-muted-foreground">
-          {baseLoading || riskLoading ? (
-            "Зареждане..."
-          ) : riskActive ? (
-            <>
-              <b>{riskSections.filter((s) => s.lat != null).length}</b> рискови от{" "}
-              <b>{total.toLocaleString()}</b> секции
-            </>
-          ) : (
-            <>
-              {sectionFilter ? (
-                <><b>{filteredAllSections.length.toLocaleString()}</b> от {allSections.length.toLocaleString()} секции</>
-              ) : (
-                <>{allSections.length.toLocaleString()} секции</>
-              )}
-            </>
+        {/* Section 2: Risk filter */}
+        <div className="flex flex-col gap-2.5 p-3.5 pt-3">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Рисков анализ</div>
+
+          {/* Risk threshold */}
+          <div>
+            <div className="mb-1 text-[11px] font-medium text-muted-foreground">
+              Мин. риск: <span className="font-bold text-foreground">{minRisk.toFixed(2)}</span>
+              {!riskActive && <span className="ml-1 text-muted-foreground/60">(изключен)</span>}
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={minRisk}
+              onChange={(e) => setMinRisk(parseFloat(e.target.value))}
+              className="w-full accent-red-500"
+            />
+          </div>
+
+          {/* Methodology pills — only when risk is active */}
+          {riskActive && (
+            <div>
+              <div className="mb-1 text-[11px] font-medium text-muted-foreground">Методология</div>
+              <div className="flex flex-wrap gap-1">
+                {methodologies.map((m) => (
+                  <button
+                    key={m.key}
+                    onClick={() => setMethodology(m.key)}
+                    className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                      methodology === m.key
+                        ? "bg-foreground text-background"
+                        : "bg-secondary text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
+
+          {/* Show all sections toggle */}
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={showBaseSections}
+              onChange={(e) => setShowBaseSections(e.target.checked)}
+              className="accent-foreground"
+            />
+            Покажи всички секции
+          </label>
+
+          {/* Section count */}
+          <div className="rounded-md bg-secondary px-2.5 py-1.5 text-center text-xs text-muted-foreground">
+            {baseLoading || riskLoading ? (
+              "Зареждане..."
+            ) : riskActive ? (
+              <>
+                <b>{riskSections.filter((s) => s.lat != null).length}</b> рискови
+                {showBaseSections && (
+                  <> от <b>{filteredAllSections.length.toLocaleString()}</b></>
+                )}{" "}
+                секции
+              </>
+            ) : (
+              <>
+                {sectionFilter ? (
+                  <><b>{filteredAllSections.length.toLocaleString()}</b> от {allSections.length.toLocaleString()} секции</>
+                ) : (
+                  <>{allSections.length.toLocaleString()} секции</>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
