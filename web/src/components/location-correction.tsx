@@ -4,7 +4,7 @@ import MapLibreGL from "maplibre-gl";
 
 const SUBMIT_URL =
   ((import.meta as any).env?.VITE_CORRECTION_SHEET_URL as string | undefined) ??
-  "https://script.google.com/macros/s/AKfycbxNi6p6D8xDlI8tYnJtBNQvT4i-n9YktxjDsYpuh55YnmsUYwZDwn9QiCih5bb8yKc6/exec";
+  "https://script.google.com/macros/s/AKfycbwPXGgqgruuWemNRAft0UtufkZhsm8CINDBjvN2liGVYrIlYjxlDnd5sSbxw-GPjyur/exec";
 
 const BULGARIA_CENTER: [number, number] = [25.5, 42.7];
 
@@ -107,24 +107,21 @@ export default function LocationCorrection({
     setError(null);
 
     try {
-      // Google Apps Script doesn't support CORS for JSON POST.
-      // Use no-cors mode — response is opaque but the data arrives.
-      await fetch(SUBMIT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({
-          section_code: sectionCode,
-          election_id: electionId,
-          lat: markerPos[1],
-          lng: markerPos[0],
-          settlement_name: settlementName,
-          address: address ?? "",
-          current_lat: currentLat,
-          current_lng: currentLng,
-          timestamp: new Date().toISOString(),
-        }),
+      // Google Apps Script doesn't support CORS for POST from browsers.
+      // Use GET with query params — works from any origin, no CORS issues.
+      // The Apps Script doGet(e) reads e.parameter.section_code etc.
+      const params = new URLSearchParams({
+        section_code: sectionCode,
+        election_id: electionId,
+        lat: String(markerPos[1]),
+        lng: String(markerPos[0]),
+        settlement_name: settlementName,
+        address: address ?? "",
+        current_lat: String(currentLat ?? ""),
+        current_lng: String(currentLng ?? ""),
+        timestamp: new Date().toISOString(),
       });
+      await fetch(`${SUBMIT_URL}?${params}`, { mode: "no-cors" });
       setSubmitted(true);
     } catch {
       // no-cors responses are opaque — treat as success
