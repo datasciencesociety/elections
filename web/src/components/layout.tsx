@@ -26,11 +26,8 @@ const STANDALONE_NAV = [
   { label: "Системни", path: "/persistence" },
 ] as const;
 
-// Hidden for now — not ready for public release
-// const STANDALONE_ITEMS = [
-//   { label: "Сравнение", path: "/compare" },
-//   { label: "Партии", path: "/parties" },
-// ] as const;
+const REPORT_FORM_URL =
+  "https://docs.google.com/forms/d/e/1FAIpQLSdLB0n9twfFQyiD4mIpAX_fYc_-N5bUhfkKpVJa6_-Oxv5CAQ/viewform";
 
 export default function Layout() {
   const { electionId } = useParams<{ electionId: string }>();
@@ -132,6 +129,14 @@ export default function Layout() {
               {item.label}
             </NavLink>
           ))}
+          <a
+            href={`${REPORT_FORM_URL}?entry.1736983913=${encodeURIComponent(window.location.href)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            Проблем?
+          </a>
         </div>
       </nav>
 

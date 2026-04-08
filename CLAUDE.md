@@ -29,6 +29,13 @@ The data is public. The code will be open source.
 - Election results rendered on a map of Bulgaria (Leaflet or MapLibre)
 - Section-level data with coordinates, filterable by election and party
 
+## Repositories & Sync
+
+- **Primary development:** `origin` → `georgialexandrov/bg-elections-data` (deployment is here)
+- **Organization repo:** `datasciencesociety` → `datasciencesociety/elections` (branch: `feature/web-visualize`)
+- Work happens on `georgialexandrov`. Periodically sync to `datasciencesociety` with:
+  `git push datasciencesociety main:feature/web-visualize`
+
 ## Active Work
 
 See `SPEC.md` for full product spec, delivery plan, and API design.

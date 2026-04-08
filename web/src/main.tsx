@@ -6,12 +6,6 @@ import { trackPageView } from "./lib/analytics.js";
 import Layout from "./components/layout.js";
 import DistrictPieMap from "./pages/district-pie-map.js";
 import RiskMap from "./pages/risk-map.js";
-import CompareElections from "./pages/compare-elections.js";
-import PartyList from "./pages/party-list.js";
-import PartyProfile from "./pages/party-profile.js";
-import ElectionResults from "./pages/election-results.js";
-import Turnout from "./pages/turnout.js";
-import ElectionMap from "./pages/election-map.js";
 import SectionsTable from "./pages/sections-table.js";
 import Persistence from "./pages/persistence.js";
 import SectionDetail from "./pages/section-detail.js";
@@ -55,16 +49,6 @@ createRoot(document.getElementById("root")!).render(
           <Route path="/:electionId/table" element={<SectionsTable />} />
           <Route path="/persistence" element={<Persistence />} />
           <Route path="/section/:sectionCode" element={<SectionDetail />} />
-          {/* Hidden for now — not ready for public release */}
-          {/* <Route path="/compare" element={<CompareElections />} /> */}
-          {/* <Route path="/parties" element={<PartyList />} /> */}
-          {/* <Route path="/parties/:id" element={<PartyProfile />} /> */}
-
-          {/* Keep old pages accessible for now */}
-          <Route path="/elections/:id/details" element={<ElectionResults />} />
-          <Route path="/turnout/:id" element={<Turnout />} />
-          <Route path="/map/:electionId" element={<ElectionMap />} />
-
           {/* Redirect old risk URL to combined sections page */}
           <Route path="/:electionId/risk" element={<RedirectToSections />} />
 
