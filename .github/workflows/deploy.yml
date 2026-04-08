@@ -15,9 +15,10 @@ jobs:
           host: ${{ secrets.HETZNER_HOST }}
           username: elections
           key: ${{ secrets.SSH_KEY }}
+          script_stop: true
           script: |
             cd /opt/elections
             git pull origin main
-            npm ci
-            npm run build -w web
+            pnpm install --frozen-lockfile
+            pnpm --filter web build
             sudo systemctl restart elections-api
