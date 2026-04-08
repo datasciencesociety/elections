@@ -346,8 +346,8 @@ elections.get("/:id/anomalies", (c) => {
   const sectionCode = c.req.query("section");
   const filterClause = filterColumn && filterValue ? ` AND ${filterColumn} = ?` : "";
   const sectionClause = sectionCode ? " AND ss.section_code LIKE ?" : "";
-  const includeSpecial = c.req.query("include_special") === "true";
-  const typeClause = includeSpecial ? "" : " AND ss.section_type = 'normal'";
+  const excludeSpecial = c.req.query("exclude_special") === "true";
+  const typeClause = excludeSpecial ? " AND ss.section_type = 'normal'" : "";
 
   // Which risk column to filter by? Depends on methodology query param
   const methodology = c.req.query("methodology"); // "benford", "peer", "acf", "protocol", or default (combined)

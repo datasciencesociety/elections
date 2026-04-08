@@ -114,6 +114,7 @@ export default function SectionsTable() {
   const order = (searchParams.get("order") ?? "desc") as "asc" | "desc";
   const methodology = (searchParams.get("m") ?? "combined") as Methodology;
   const violationFilter = (searchParams.get("v") ?? "all") as ViolationFilter;
+  const includeSpecial = searchParams.get("special") === "1";
   const minRisk = parseFloat(searchParams.get("risk") ?? "0");
   const district = searchParams.get("district") ?? "";
   const municipality = searchParams.get("municipality") ?? "";
@@ -171,7 +172,10 @@ export default function SectionsTable() {
     params.set("limit", String(PAGE_SIZE));
     params.set("offset", String(page * PAGE_SIZE));
     if (methodology !== "combined") params.set("methodology", methodology);
-    if (violationFilter === "with_violations") params.set("min_violations", "1");
+    if (violationFilter === "with_violations") {
+      params.set("min_violations", "1");
+      if (!includeSpecial) params.set("exclude_special", "true");
+    }
     if (municipality) params.set("municipality", municipality);
     else if (district) params.set("district", district);
     if (sectionFilter) params.set("section", sectionFilter);
@@ -184,7 +188,7 @@ export default function SectionsTable() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [electionId, sort, order, methodology, violationFilter, minRisk, district, municipality, sectionFilter, page]);
+  }, [electionId, sort, order, methodology, violationFilter, includeSpecial, minRisk, district, municipality, sectionFilter, page]);
 
   const selectedSection = selectedCode ? sections.find((s) => s.section_code === selectedCode) ?? null : null;
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -252,7 +256,7 @@ export default function SectionsTable() {
         {/* Protocol violations filter */}
         <div>
           <div className="mb-0.5 text-[11px] text-muted-foreground">Протокол</div>
-          <div className="flex gap-0.5">
+          <div className="flex items-center gap-0.5">
             {violationFilters.map((f) => (
               <button
                 key={f.key}
@@ -274,6 +278,17 @@ export default function SectionsTable() {
                 {f.label}
               </button>
             ))}
+            {violationFilter === "with_violations" && (
+              <label className="ml-1.5 flex cursor-pointer items-center gap-1 text-[11px] text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={includeSpecial}
+                  onChange={(e) => setParam("special", e.target.checked ? "1" : "")}
+                  className="size-3 accent-red-500"
+                />
+                +болници/затвори
+              </label>
+            )}
           </div>
         </div>
 
