@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "react-router";
+import { trackEvent } from "@/lib/analytics.js";
 import { Map, useMap } from "@/components/ui/map";
 import Sidebar from "@/components/sidebar.js";
 import LocationCorrection from "@/components/location-correction.js";
@@ -1398,9 +1399,13 @@ export default function RiskMap() {
     }, { replace: true });
   };
 
-  const setMethodology = (m: Methodology) => setParam("m", m === "combined" ? "" : m);
+  const setMethodology = (m: Methodology) => {
+    trackEvent("filter_methodology", { methodology: m, election_id: electionId });
+    setParam("m", m === "combined" ? "" : m);
+  };
   const setMinRisk = (v: number) => setParam("risk", v === 0 ? "" : String(v));
   const setDistrict = (v: string) => {
+    if (v) trackEvent("filter_district", { district: v, election_id: electionId });
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       if (v) next.set("district", v);
@@ -1409,7 +1414,10 @@ export default function RiskMap() {
       return next;
     }, { replace: true });
   };
-  const setMunicipality = (v: string) => setParam("municipality", v);
+  const setMunicipality = (v: string) => {
+    if (v) trackEvent("filter_municipality", { municipality: v, election_id: electionId });
+    setParam("municipality", v);
+  };
   const sectionFilter = searchParams.get("q") ?? "";
   const setSectionFilter = (v: string) => setParam("q", v);
 
@@ -1498,6 +1506,9 @@ export default function RiskMap() {
   const selectedBaseSection = selectedCode && !selectedRiskSection ? baseMap.get(selectedCode) ?? null : null;
 
   const handleSectionClick = (code: string) => {
+    if (selectedCode !== code) {
+      trackEvent("click_section", { section_code: code, election_id: electionId });
+    }
     setParam("section", selectedCode === code ? "" : code);
   };
 

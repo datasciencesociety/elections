@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Outlet, NavLink, useParams, useNavigate } from "react-router";
+import { trackEvent } from "@/lib/analytics.js";
 import {
   Select,
   SelectContent,
@@ -66,6 +67,7 @@ export default function Layout() {
               const path = window.location.pathname;
               const viewMatch = path.match(/\/\d+\/(\w+)/);
               const view = viewMatch ? viewMatch[1] : "results";
+              trackEvent("select_election", { election_id: val });
               navigate(`/${val}/${view}`);
             }}
           >

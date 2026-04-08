@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
+import { trackEvent } from "@/lib/analytics.js";
 import { Map as MapGL, MapMarker, MarkerContent, MapControls } from "@/components/ui/map";
 
 interface ElectionHistory {
@@ -219,6 +220,7 @@ export default function SectionDetail() {
 
   useEffect(() => {
     if (!sectionCode) return;
+    trackEvent("view_section_detail", { section_code: sectionCode });
     fetch(`/api/elections/persistence/${sectionCode}`)
       .then((r) => r.json())
       .then((d: { elections: ElectionHistory[] }) => setHistory(d.elections))

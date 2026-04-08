@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useParams } from "react-router";
+import { trackEvent } from "@/lib/analytics.js";
 import { Map as MapComponent, useMap, MapControls } from "@/components/ui/map";
 import MapLibreGL from "maplibre-gl";
 import bbox from "@turf/bbox";
@@ -595,6 +596,8 @@ export default function DistrictPieMap() {
       }
       const region = regionMap.get(regionId);
       if (!region) return;
+      const isSelecting = region.id !== undefined;
+      if (isSelecting) trackEvent("click_region", { region_id: regionId, region_name: region.name, election_id: electionId });
       setSelectedRegion((prev) => prev?.id === regionId ? null : region);
       setTappedParty(null);
     },
@@ -602,8 +605,9 @@ export default function DistrictPieMap() {
   );
 
   const handlePartyTap = useCallback((name: string) => {
+    trackEvent("tap_party", { party_name: name, election_id: electionId });
     setTappedParty((prev) => prev === name ? null : name);
-  }, []);
+  }, [electionId]);
 
   const handleClear = useCallback(() => {
     setSelectedRegion(null);

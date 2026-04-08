@@ -1,7 +1,8 @@
 import "./index.css";
-import { StrictMode } from "react";
+import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router";
+import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from "react-router";
+import { trackPageView } from "./lib/analytics.js";
 import Layout from "./components/layout.js";
 import DistrictPieMap from "./pages/district-pie-map.js";
 import RiskMap from "./pages/risk-map.js";
@@ -14,6 +15,15 @@ import ElectionMap from "./pages/election-map.js";
 import SectionsTable from "./pages/sections-table.js";
 import Persistence from "./pages/persistence.js";
 import SectionDetail from "./pages/section-detail.js";
+
+// Track page views on route change
+function AnalyticsTracker() {
+  const location = useLocation();
+  useEffect(() => {
+    trackPageView(location.pathname, location.search);
+  }, [location.pathname, location.search]);
+  return null;
+}
 
 // Redirect helpers for old URLs
 function RedirectToResults() {
@@ -36,6 +46,7 @@ function RedirectAnomalies() {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
+      <AnalyticsTracker />
       <Routes>
         <Route element={<Layout />}>
           {/* Main views */}
