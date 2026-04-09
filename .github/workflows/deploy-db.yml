@@ -51,9 +51,11 @@ jobs:
             cd /opt/elections
             echo "Downloading elections.db from ${{ steps.release.outputs.tag }}..."
             curl -L -o elections.db.new "${{ steps.release.outputs.download_url }}"
+            sudo systemctl stop elections-api
+            rm -f elections.db elections.db-wal elections.db-shm
             mv elections.db.new elections.db
             sqlite3 elections.db "PRAGMA journal_mode=WAL;"
-            sudo systemctl restart elections-api
+            sudo systemctl start elections-api
             # Clear nginx cache so new data is served
             sudo rm -rf /var/cache/nginx/elections/*
             sudo systemctl reload nginx
