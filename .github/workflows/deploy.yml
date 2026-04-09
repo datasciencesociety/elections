@@ -22,6 +22,3 @@ jobs:
             pnpm install --frozen-lockfile
             pnpm --filter web build
             sudo systemctl restart elections-api
-            # Clear nginx + Cloudflare cache so new code is served immediately
-            sudo rm -rf /var/cache/nginx/elections/*
-            sudo systemctl reload nginx

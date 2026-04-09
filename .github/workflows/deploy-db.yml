@@ -47,6 +47,7 @@ jobs:
           host: ${{ secrets.HETZNER_HOST }}
           username: elections
           key: ${{ secrets.SSH_KEY }}
+          script_stop: true
           script: |
             cd /opt/elections
             echo "Downloading elections.db from ${{ steps.release.outputs.tag }}..."
@@ -56,7 +57,4 @@ jobs:
             mv elections.db.new elections.db
             sqlite3 elections.db "PRAGMA journal_mode=WAL;"
             sudo systemctl start elections-api
-            # Clear nginx cache so new data is served
-            sudo rm -rf /var/cache/nginx/elections/*
-            sudo systemctl reload nginx
             echo "DB deployed from ${{ steps.release.outputs.tag }}"
