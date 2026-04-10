@@ -4,6 +4,7 @@ import { trackEvent } from "@/lib/analytics.js";
 import { Map, useMap } from "@/components/ui/map";
 import Sidebar from "@/components/sidebar.js";
 import LocationCorrection from "@/components/location-correction.js";
+import BallotList from "@/components/ballot-list";
 import MapLibreGL from "maplibre-gl";
 
 interface Election {
@@ -804,7 +805,6 @@ function SectionResults({ data, loading, electionId, sectionCode, protocolUrl }:
   if (!data) return null;
 
   const { protocol: p, parties } = data;
-  const maxVotes = parties[0]?.votes ?? 1;
   const generated = buildProtocolLinks(sectionCode, parseInt(electionId));
   // Prefer stored protocol_url from DB, fall back to generated
   const links = protocolUrl
@@ -861,37 +861,8 @@ function SectionResults({ data, loading, electionId, sectionCode, protocolUrl }:
         </div>
       )}
 
-      {/* Party results */}
-      <div className="space-y-2">
-        {parties.map((party) => (
-          <div key={party.name}>
-            <div className="mb-0.5 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 overflow-hidden">
-                <span
-                  className="size-2.5 flex-shrink-0 rounded-sm"
-                  style={{ background: party.color || "#888" }}
-                />
-                <span className="truncate text-[11px]" title={party.name}>
-                  {party.short_name}
-                </span>
-              </div>
-              <div className="flex items-baseline gap-1.5 whitespace-nowrap">
-                <span className="text-[11px] font-mono font-semibold tabular-nums">{pct2(party.pct)}%</span>
-                <span className="text-[10px] font-mono text-muted-foreground tabular-nums">{party.votes.toLocaleString()}</span>
-              </div>
-            </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${(party.votes / maxVotes) * 100}%`,
-                  background: party.color || "#888",
-                }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* Party / candidate results */}
+      <BallotList entries={parties} variant="full-rows" />
     </div>
   );
 }

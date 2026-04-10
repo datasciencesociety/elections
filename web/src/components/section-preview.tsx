@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Map as MapGL, MapMarker, MarkerContent, MapControls } from "@/components/ui/map";
 import LocationCorrection from "@/components/location-correction";
+import BallotList from "@/components/ballot-list";
 
 interface ElectionHistory {
   election_id: number;
@@ -82,35 +83,6 @@ function riskBorder(score: number): string {
   return "border-l-green-500";
 }
 
-function PartyBar({ parties }: { parties: ElectionDetail["parties"] }) {
-  const top = parties.slice(0, 5);
-  const totalVotes = parties.reduce((s, p) => s + p.votes, 0);
-  if (!totalVotes) return null;
-
-  return (
-    <div className="space-y-0.5">
-      <div className="flex h-2.5 w-full overflow-hidden rounded-full">
-        {top.map((p, i) => (
-          <div
-            key={i}
-            style={{ width: `${p.pct}%`, backgroundColor: p.color || "#ccc" }}
-            title={`${p.short_name}: ${p.pct.toFixed(1)}%`}
-          />
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-x-2 gap-y-0">
-        {top.map((p, i) => (
-          <div key={i} className="flex items-center gap-0.5 text-[9px]">
-            <div className="h-1.5 w-1.5 shrink-0 rounded-sm" style={{ backgroundColor: p.color || "#ccc" }} />
-            <span className="truncate">{p.short_name}</span>
-            <span className="font-mono tabular-nums text-muted-foreground">{p.pct.toFixed(0)}%</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function ElectionCard({ detail, history }: { detail: ElectionDetail; history: ElectionHistory }) {
   const p = detail.protocol;
   const turnout = p.registered_voters > 0 ? (p.actual_voters / p.registered_voters) * 100 : 0;
@@ -160,9 +132,9 @@ function ElectionCard({ detail, history }: { detail: ElectionDetail; history: El
           <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground">А <RiskBadge value={history.acf_risk} /></span>
         </div>
 
-        {/* Party bar */}
+        {/* Party / candidate bar */}
         <div className="mt-1.5">
-          <PartyBar parties={detail.parties} />
+          <BallotList entries={detail.parties} variant="stacked-bar" density="sm" />
         </div>
       </div>
 

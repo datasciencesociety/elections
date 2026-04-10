@@ -1,5 +1,30 @@
 import { Hono } from "hono";
 import getDb from "../db.js";
+import {
+  BALLOT_JOIN_SQL,
+  BALLOT_NAME_SQL,
+  getAggregatedBallot,
+  getSectionBallot,
+  resolveGeoFilter,
+} from "../db/ballot.js";
+
+// Single source of truth for /persistence sort: key = accepted query value,
+// value = fully-qualified SQL column. Only the values are ever interpolated.
+const PERSISTENCE_SORT_SQL = {
+  persistence_score: "s.persistence_score",
+  elections_flagged: "s.elections_flagged",
+  elections_present: "s.elections_present",
+  avg_risk: "s.avg_risk",
+  max_risk: "s.max_risk",
+  consistency: "s.consistency",
+  total_violations: "s.total_violations",
+  avg_turnout: "s.avg_turnout",
+  section_code: "s.section_code",
+  settlement_name: "l.settlement_name",
+  avg_registered: "va.avg_registered",
+  avg_voted: "va.avg_voted",
+} as const;
+type PersistenceSortKey = keyof typeof PERSISTENCE_SORT_SQL;
 
 const elections = new Hono();
 
@@ -45,62 +70,32 @@ elections.get("/compare", (c) => {
     return c.json({ error: `Election with id ${missing} not found` }, 404);
   }
 
-  // Geographic filter
-  const kmetstvo = c.req.query("kmetstvo");
-  const localRegion = c.req.query("local_region");
-  const municipality = c.req.query("municipality");
-  const district = c.req.query("district");
-  const rik = c.req.query("rik");
+  // Geographic filter — resolveGeoFilter picks the most specific param.
+  const geo = resolveGeoFilter({
+    kmetstvo: c.req.query("kmetstvo"),
+    local_region: c.req.query("local_region"),
+    municipality: c.req.query("municipality"),
+    district: c.req.query("district"),
+    rik: c.req.query("rik"),
+  });
 
-  let geoColumn: string | null = null;
-  let geoValue: string | null = null;
-
-  if (kmetstvo) {
-    geoColumn = "l.kmetstvo_id";
-    geoValue = kmetstvo;
-  } else if (localRegion) {
-    geoColumn = "l.local_region_id";
-    geoValue = localRegion;
-  } else if (municipality) {
-    geoColumn = "l.municipality_id";
-    geoValue = municipality;
-  } else if (district) {
-    geoColumn = "l.district_id";
-    geoValue = district;
-  } else if (rik) {
-    geoColumn = "l.rik_id";
-    geoValue = rik;
-  }
-
-  // Query per election to keep performance predictable (matches existing results endpoint)
-  let geoSql: string;
-  let makeParams: (elId: number) => unknown[];
-
-  if (geoColumn && geoValue) {
-    geoSql = `SELECT ? AS election_id, p.id AS party_id, COALESCE(ep.name_on_ballot, p.canonical_name) AS party_name, SUM(v.total) AS votes
-       FROM votes v
-       JOIN sections s ON s.election_id = v.election_id AND s.section_code = v.section_code
-       JOIN locations l ON l.id = s.location_id
-       JOIN election_parties ep ON ep.election_id = v.election_id AND ep.ballot_number = v.party_number
-       JOIN parties p ON p.id = ep.party_id
-       WHERE v.election_id = ? AND ${geoColumn} = ?
-       GROUP BY p.id`;
-    makeParams = (elId) => [elId, elId, geoValue];
-  } else {
-    geoSql = `SELECT ? AS election_id, p.id AS party_id, COALESCE(ep.name_on_ballot, p.canonical_name) AS party_name, SUM(v.total) AS votes
-       FROM votes v
-       JOIN election_parties ep ON ep.election_id = v.election_id AND ep.ballot_number = v.party_number
-       JOIN parties p ON p.id = ep.party_id
-       WHERE v.election_id = ?
-       GROUP BY p.id`;
-    makeParams = (elId) => [elId, elId];
-  }
-
-  const stmt = db.prepare(geoSql);
+  // Pull aggregated ballot per election, stamped with election_id so the
+  // downstream cross-election aggregation logic keeps working unchanged.
   const rows: { election_id: number; party_id: number; party_name: string; votes: number }[] = [];
   for (const elId of numericIds) {
-    const elRows = stmt.all(...makeParams(elId)) as typeof rows;
-    rows.push(...elRows);
+    const ballotRows = getAggregatedBallot(
+      db,
+      elId,
+      geo ? { geoColumn: geo.column, geoValue: geo.value } : {},
+    );
+    for (const r of ballotRows) {
+      rows.push({
+        election_id: elId,
+        party_id: r.party_id,
+        party_name: r.party_name,
+        votes: r.votes,
+      });
+    }
   }
 
   // Compute totals per election for percentage calculation
@@ -189,12 +184,10 @@ elections.get("/persistence", (c) => {
   const excludeSpecial = c.req.query("exclude_special") === "true";
   const section = c.req.query("section");
 
-  const VALID_PERSISTENCE_SORTS = [
-    "persistence_score", "elections_flagged", "elections_present",
-    "avg_risk", "max_risk", "consistency", "total_violations",
-    "section_code", "settlement_name", "avg_registered", "avg_voted", "avg_turnout",
-  ];
-  const sortCol = VALID_PERSISTENCE_SORTS.includes(sort) ? sort : "persistence_score";
+  const sortCol: PersistenceSortKey = (sort in PERSISTENCE_SORT_SQL)
+    ? (sort as PersistenceSortKey)
+    : "persistence_score";
+  const sortColumnSql = PERSISTENCE_SORT_SQL[sortCol];
 
   // Election weights: type weight × recency weight
   // Type: parliament/president/european = 1.0, local_council/local_mayor = 0.7, kmetstvo/neighbourhood = 0.4
@@ -279,7 +272,7 @@ elections.get("/persistence", (c) => {
     ) l ON l.section_code = s.section_code AND l.rn = 1
     LEFT JOIN voter_avgs va ON va.section_code = s.section_code
     WHERE s.persistence_score >= ?
-    ORDER BY ${sortCol === "settlement_name" ? "l.settlement_name" : sortCol === "section_code" ? "s.section_code" : sortCol === "avg_registered" ? "va.avg_registered" : sortCol === "avg_voted" ? "va.avg_voted" : `s.${sortCol}`} ${order}
+    ORDER BY ${sortColumnSql} ${order}
     LIMIT ? OFFSET ?
   `;
 
@@ -453,15 +446,31 @@ ORDER BY group_name`;
   });
 });
 
-const VALID_SORT_COLUMNS = [
-  "risk_score", "turnout_rate", "turnout_zscore", "benford_score",
-  "peer_vote_deviation", "arithmetic_error", "vote_sum_mismatch",
-  "protocol_violation_count",
-  "section_code", "settlement_name",
-  "benford_risk", "peer_risk", "acf_risk",
-  "acf_multicomponent", "acf_turnout_shift_norm", "acf_party_shift_norm",
-  "registered_voters", "actual_voters",
-] as const;
+// Single source of truth for /:id/anomalies sort: key = accepted query value,
+// value = fully-qualified SQL column. Keys feed the whitelist, values are the
+// only strings ever interpolated into ORDER BY — never user input.
+const ANOMALY_SORT_SQL = {
+  risk_score: "ss.risk_score",
+  turnout_rate: "ss.turnout_rate",
+  turnout_zscore: "ss.turnout_zscore",
+  benford_score: "ss.benford_score",
+  peer_vote_deviation: "ss.peer_vote_deviation",
+  arithmetic_error: "ss.arithmetic_error",
+  vote_sum_mismatch: "ss.vote_sum_mismatch",
+  protocol_violation_count: "ss.protocol_violation_count",
+  section_code: "ss.section_code",
+  settlement_name: "l.settlement_name",
+  benford_risk: "ss.benford_risk",
+  peer_risk: "ss.peer_risk",
+  acf_risk: "ss.acf_risk",
+  acf_multicomponent: "ss.acf_multicomponent",
+  acf_turnout_shift_norm: "ss.acf_turnout_shift_norm",
+  acf_party_shift_norm: "ss.acf_party_shift_norm",
+  registered_voters: "p.registered_voters",
+  actual_voters: "p.actual_voters",
+} as const;
+type AnomalySortKey = keyof typeof ANOMALY_SORT_SQL;
+const VALID_SORT_COLUMNS = Object.keys(ANOMALY_SORT_SQL) as AnomalySortKey[];
 
 elections.get("/:id/anomalies", (c) => {
   const db = getDb();
@@ -483,9 +492,10 @@ elections.get("/:id/anomalies", (c) => {
   const limit = limitParam === "0" ? null : Math.max(parseInt(limitParam ?? "50", 10) || 50, 1);
   const offset = Math.max(parseInt(c.req.query("offset") ?? "0", 10) || 0, 0);
 
-  if (!VALID_SORT_COLUMNS.includes(sort as any)) {
+  if (!(sort in ANOMALY_SORT_SQL)) {
     return c.json({ error: `Invalid sort column. Must be one of: ${VALID_SORT_COLUMNS.join(", ")}` }, 400);
   }
+  const sortColumn = ANOMALY_SORT_SQL[sort as AnomalySortKey];
 
   const orderDir = order === "asc" ? "ASC" : "DESC";
 
@@ -538,15 +548,6 @@ elections.get("/:id/anomalies", (c) => {
   if (minViolations > 0) baseParams.push(minViolations);
   if (filterColumn && filterValue) baseParams.push(filterValue);
   if (sectionCode) baseParams.push(`%${sectionCode}%`);
-
-  // Sort column mapping: some columns come from other tables
-  const sortColumnMap: Record<string, string> = {
-    settlement_name: "l.settlement_name",
-    section_code: "ss.section_code",
-    registered_voters: "p.registered_voters",
-    actual_voters: "p.actual_voters",
-  };
-  const sortColumn = sortColumnMap[sort] ?? `ss.${sort}`;
 
   const sql = `SELECT ss.section_code, l.settlement_name, l.address, l.lat, l.lng, s.protocol_url,
        ss.risk_score, ss.turnout_rate, ss.turnout_zscore,
@@ -684,13 +685,12 @@ elections.get("/:id/sections/geo", (c) => {
   // Step 2: Top 5 parties per section (window function)
   const partyRows = db.prepare(`
     SELECT section_code, party_name, color, votes, pct FROM (
-      SELECT v.section_code, pa.canonical_name AS party_name, pa.color,
+      SELECT v.section_code, ${BALLOT_NAME_SQL} AS party_name, p.color,
              v.total AS votes,
              ROUND(v.total * 100.0 / NULLIF(SUM(v.total) OVER (PARTITION BY v.section_code), 0), 1) AS pct,
              ROW_NUMBER() OVER (PARTITION BY v.section_code ORDER BY v.total DESC) AS rn
       FROM votes v
-      JOIN election_parties ep ON ep.election_id = v.election_id AND ep.ballot_number = v.party_number
-      JOIN parties pa ON pa.id = ep.party_id
+      ${BALLOT_JOIN_SQL}
       JOIN sections s ON s.election_id = v.election_id AND s.section_code = v.section_code
       JOIN locations l ON l.id = s.location_id
       WHERE v.election_id = ?${filterClause}
@@ -763,15 +763,17 @@ elections.get("/:id/sections/:code", (c) => {
 
   if (!protocol) return c.json({ error: "Section not found" }, 404);
 
-  const parties = db.prepare(`
-    SELECT pa.canonical_name AS name, COALESCE(pa.short_name, pa.canonical_name) AS short_name,
-           pa.color, v.total AS votes, v.paper, v.machine
-    FROM votes v
-    JOIN election_parties ep ON ep.election_id = v.election_id AND ep.ballot_number = v.party_number
-    JOIN parties pa ON pa.id = ep.party_id
-    WHERE v.election_id = ? AND v.section_code = ? AND v.total > 0
-    ORDER BY v.total DESC
-  `).all(id, code) as { name: string; short_name: string; color: string; votes: number; paper: number; machine: number }[];
+  // Ballot list comes from the shared helper — single source of truth for the
+  // "candidate pair for presidents, party name otherwise" rule.
+  const ballotRows = getSectionBallot(db, id, code);
+  const parties = ballotRows.map((r) => ({
+    name: r.party_name,
+    short_name: r.party_short_name,
+    color: r.party_color,
+    votes: r.votes,
+    paper: r.paper,
+    machine: r.machine,
+  }));
 
   const validVotes = parties.reduce((sum, p) => sum + p.votes, 0);
 
@@ -875,59 +877,26 @@ elections.get("/:id/results", (c) => {
     return c.json({ error: "Election not found" }, 404);
   }
 
-  // Determine geographic filter — most specific wins
-  const kmetstvo = c.req.query("kmetstvo");
-  const localRegion = c.req.query("local_region");
-  const municipality = c.req.query("municipality");
-  const district = c.req.query("district");
-  const rik = c.req.query("rik");
+  const geo = resolveGeoFilter({
+    kmetstvo: c.req.query("kmetstvo"),
+    local_region: c.req.query("local_region"),
+    municipality: c.req.query("municipality"),
+    district: c.req.query("district"),
+    rik: c.req.query("rik"),
+  });
 
-  let geoColumn: string | null = null;
-  let geoValue: string | null = null;
+  const ballotRows = getAggregatedBallot(
+    db,
+    id,
+    geo ? { geoColumn: geo.column, geoValue: geo.value } : {},
+  );
 
-  if (kmetstvo) {
-    geoColumn = "l.kmetstvo_id";
-    geoValue = kmetstvo;
-  } else if (localRegion) {
-    geoColumn = "l.local_region_id";
-    geoValue = localRegion;
-  } else if (municipality) {
-    geoColumn = "l.municipality_id";
-    geoValue = municipality;
-  } else if (district) {
-    geoColumn = "l.district_id";
-    geoValue = district;
-  } else if (rik) {
-    geoColumn = "l.rik_id";
-    geoValue = rik;
-  }
-
-  let sql: string;
-  let params: unknown[];
-
-  if (geoColumn && geoValue) {
-    sql = `SELECT p.id AS party_id, COALESCE(ep.name_on_ballot, p.canonical_name) AS party_name, SUM(v.total) AS total_votes
-       FROM votes v
-       JOIN sections s ON s.election_id = v.election_id AND s.section_code = v.section_code
-       JOIN locations l ON l.id = s.location_id
-       JOIN election_parties ep ON ep.election_id = v.election_id AND ep.ballot_number = v.party_number
-       JOIN parties p ON p.id = ep.party_id
-       WHERE v.election_id = ? AND ${geoColumn} = ?
-       GROUP BY p.id, party_name
-       ORDER BY total_votes DESC`;
-    params = [id, geoValue];
-  } else {
-    sql = `SELECT p.id AS party_id, COALESCE(ep.name_on_ballot, p.canonical_name) AS party_name, SUM(v.total) AS total_votes
-       FROM votes v
-       JOIN election_parties ep ON ep.election_id = v.election_id AND ep.ballot_number = v.party_number
-       JOIN parties p ON p.id = ep.party_id
-       WHERE v.election_id = ?
-       GROUP BY p.id, party_name
-       ORDER BY total_votes DESC`;
-    params = [id];
-  }
-
-  const results = db.prepare(sql).all(...params);
+  // Preserve the existing response shape: { party_id, party_name, total_votes }.
+  const results = ballotRows.map((r) => ({
+    party_id: r.party_id,
+    party_name: r.party_name,
+    total_votes: r.votes,
+  }));
 
   return c.json({ election, results });
 });
@@ -998,14 +967,13 @@ elections.get("/:id/results/geo/districts", (c) => {
       SELECT
         l.district_id,
         ep.party_id,
-        COALESCE(ep.name_on_ballot, p.canonical_name) AS party_name,
+        ${BALLOT_NAME_SQL} AS party_name,
         p.color AS party_color,
         SUM(v.total) AS votes
       FROM votes v
       JOIN sections s ON s.election_id = v.election_id AND s.section_code = v.section_code
       JOIN locations l ON l.id = s.location_id
-      JOIN election_parties ep ON ep.election_id = v.election_id AND ep.ballot_number = v.party_number
-      JOIN parties p ON p.id = ep.party_id
+      ${BALLOT_JOIN_SQL}
       WHERE v.election_id = ?
       GROUP BY l.district_id, ep.party_id
     `)
@@ -1139,14 +1107,13 @@ elections.get("/:id/results/geo/municipalities", (c) => {
       SELECT
         l.municipality_id,
         ep.party_id,
-        COALESCE(ep.name_on_ballot, p.canonical_name) AS party_name,
+        ${BALLOT_NAME_SQL} AS party_name,
         p.color AS party_color,
         SUM(v.total) AS votes
       FROM votes v
       JOIN sections s ON s.election_id = v.election_id AND s.section_code = v.section_code
       JOIN locations l ON l.id = s.location_id
-      JOIN election_parties ep ON ep.election_id = v.election_id AND ep.ballot_number = v.party_number
-      JOIN parties p ON p.id = ep.party_id
+      ${BALLOT_JOIN_SQL}
       WHERE v.election_id = ?
       GROUP BY l.municipality_id, ep.party_id
     `)
@@ -1272,14 +1239,13 @@ elections.get("/:id/results/geo/riks", (c) => {
       SELECT
         l.rik_id,
         ep.party_id,
-        COALESCE(ep.name_on_ballot, p.canonical_name) AS party_name,
+        ${BALLOT_NAME_SQL} AS party_name,
         p.color AS party_color,
         SUM(v.total) AS votes
       FROM votes v
       JOIN sections s ON s.election_id = v.election_id AND s.section_code = v.section_code
       JOIN locations l ON l.id = s.location_id
-      JOIN election_parties ep ON ep.election_id = v.election_id AND ep.ballot_number = v.party_number
-      JOIN parties p ON p.id = ep.party_id
+      ${BALLOT_JOIN_SQL}
       WHERE v.election_id = ?
       GROUP BY l.rik_id, ep.party_id
     `)
@@ -1385,14 +1351,13 @@ elections.get("/:id/results/geo", (c) => {
       SELECT
         l.municipality_id,
         ep.party_id,
-        COALESCE(ep.name_on_ballot, p.canonical_name) AS party_name,
+        ${BALLOT_NAME_SQL} AS party_name,
         p.color AS party_color,
         SUM(v.total) AS votes
       FROM votes v
       JOIN sections s ON s.election_id = v.election_id AND s.section_code = v.section_code
       JOIN locations l ON l.id = s.location_id
-      JOIN election_parties ep ON ep.election_id = v.election_id AND ep.ballot_number = v.party_number
-      JOIN parties p ON p.id = ep.party_id
+      ${BALLOT_JOIN_SQL}
       WHERE v.election_id = ?
       GROUP BY l.municipality_id, ep.party_id
     `)
