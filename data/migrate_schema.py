@@ -60,9 +60,17 @@ def migrate_votes(conn: sqlite3.Connection) -> None:
             FOREIGN KEY (election_id) REFERENCES elections(id)
         ) WITHOUT ROWID;
 
-        INSERT OR IGNORE INTO votes
-        SELECT election_id, section_code, party_number, total, paper, machine
-        FROM votes_old;
+        -- A polling station can host more than one local election protocol
+        -- (e.g. one section serving 3 kmetstva produces 3 protocol rows for
+        -- mi2023_kmetstvo_r1). The parser writes each row to the temp votes
+        -- table; SUM here folds them so the WITHOUT ROWID PK accepts the
+        -- merged total. National-level elections only ever have one row per
+        -- (section, party) so SUM is a no-op for them.
+        INSERT INTO votes (election_id, section_code, party_number, total, paper, machine)
+        SELECT election_id, section_code, party_number,
+               SUM(total), SUM(paper), SUM(machine)
+        FROM votes_old
+        GROUP BY election_id, section_code, party_number;
 
         DROP TABLE votes_old;
     """)
