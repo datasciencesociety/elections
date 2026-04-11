@@ -1,10 +1,10 @@
 import type { ProtocolViolation } from "@/lib/api/types.js";
 
 /**
- * Lists protocol arithmetic violations for the selected section.
- * Renders nothing when there are none — the parent doesn't need a guard.
+ * Lists protocol arithmetic violations for a section. Renders nothing when
+ * the list is empty so the parent doesn't need a guard.
  */
-export function ViolationsSection({
+export function SectionViolations({
   violations,
 }: {
   violations: ProtocolViolation[];

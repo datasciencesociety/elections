@@ -10,8 +10,6 @@ import {
 /**
  * Pure helpers shared by every layer in `anomaly-map/map/`.
  *
- * - `pct2`: 3.999 → "3.99". Floor instead of round so we never report a
- *   section as 100% when it's 99.997%.
  * - `offsetOverlappingSections`: spreads stacked sections in a sunflower
  *   spiral around their original coordinate so a single dot doesn't hide
  *   ten neighbours.
@@ -23,10 +21,6 @@ import {
  * - `ensureTriangleIcon`: lazily registers the white triangle SDF icon used
  *   by the anomaly markers.
  */
-
-export function pct2(value: number): string {
-  return (Math.floor(value * 100) / 100).toFixed(2);
-}
 
 export function offsetOverlappingSections<
   T extends { lat: number | null; lng: number | null },

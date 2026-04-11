@@ -1,6 +1,6 @@
 import type { AnomalySection, SectionContext } from "@/lib/api/types.js";
-import { FormulaRow } from "../primitives.js";
-import { pct2 } from "../../map/utils.js";
+import { FormulaRow } from "@/components/score/index.js";
+import { pct2 } from "@/lib/utils.js";
 
 /**
  * Turnout card — shows the section's own turnout, a comparison table

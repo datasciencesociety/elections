@@ -1,5 +1,5 @@
 import type { AnomalySection } from "@/lib/api/types.js";
-import { FormulaRow, ScoreBar } from "../primitives.js";
+import { FormulaRow, ScoreBar } from "@/components/score/index.js";
 
 /**
  * Top-of-sidebar card with the combined score, a verbal verdict, and the

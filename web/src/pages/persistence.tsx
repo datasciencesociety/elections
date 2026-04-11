@@ -3,6 +3,11 @@ import { useSearchParams } from "react-router";
 import SectionPreview from "@/components/section-preview.js";
 import type { PersistenceSection as PersistentSection } from "@/lib/api/types.js";
 import { usePersistence } from "@/lib/hooks/use-persistence.js";
+import {
+  ScoreBadge,
+  SCORE_SOLID_CLASS,
+  scoreLevel,
+} from "@/components/score/index.js";
 
 type SortColumn =
   | "persistence_score"
@@ -16,22 +21,6 @@ type SortColumn =
   | "avg_registered"
   | "avg_voted"
   | "avg_turnout";
-
-function RiskBadge({ value }: { value: number }) {
-  const bg =
-    value >= 0.6
-      ? "bg-red-100 text-red-800"
-      : value >= 0.3
-        ? "bg-orange-100 text-orange-800"
-        : "bg-green-100 text-green-800";
-  return (
-    <span
-      className={`inline-block rounded px-1.5 py-0.5 text-[11px] font-mono font-semibold tabular-nums ${bg}`}
-    >
-      {value.toFixed(2)}
-    </span>
-  );
-}
 
 function FlagDots({ section, electionsCount }: { section: PersistentSection; electionsCount: number }) {
   const items = [
@@ -56,14 +45,6 @@ function FlagDots({ section, electionsCount }: { section: PersistentSection; ele
     </div>
   );
 }
-
-function riskColor(score: number): string {
-  if (score >= 0.6) return "bg-red-500";
-  if (score >= 0.3) return "bg-yellow-500";
-  if (score > 0) return "bg-green-500";
-  return "bg-gray-300";
-}
-
 
 function SortHeader({
   label,
@@ -225,7 +206,7 @@ export default function Persistence() {
                     </a>
                   </td>
                   <td className="px-2 py-1.5">{s.settlement_name ?? "—"}</td>
-                  <td className="px-2 py-1.5"><RiskBadge value={s.persistence_score} /></td>
+                  <td className="px-2 py-1.5"><ScoreBadge value={s.persistence_score} /></td>
                   <td className="px-2 py-1.5">
                     <div className="flex items-center gap-1">
                       <span className="font-mono font-semibold tabular-nums">{s.elections_flagged}</span>
@@ -234,7 +215,7 @@ export default function Persistence() {
                         {Array.from({ length: s.elections_present }, (_, i) => (
                           <div
                             key={i}
-                            className={`h-1.5 w-1.5 rounded-full ${i < s.elections_flagged ? riskColor(s.avg_risk) : "bg-gray-300"}`}
+                            className={`h-1.5 w-1.5 rounded-full ${i < s.elections_flagged ? SCORE_SOLID_CLASS[scoreLevel(s.avg_risk)] : "bg-gray-300"}`}
                           />
                         ))}
                       </div>
@@ -243,8 +224,8 @@ export default function Persistence() {
                   <td className="hidden px-2 py-1.5 font-mono tabular-nums md:table-cell">
                     {(s.consistency * 100).toFixed(0)}%
                   </td>
-                  <td className="hidden px-2 py-1.5 md:table-cell"><RiskBadge value={s.avg_risk} /></td>
-                  <td className="hidden px-2 py-1.5 lg:table-cell"><RiskBadge value={s.max_risk} /></td>
+                  <td className="hidden px-2 py-1.5 md:table-cell"><ScoreBadge value={s.avg_risk} /></td>
+                  <td className="hidden px-2 py-1.5 lg:table-cell"><ScoreBadge value={s.max_risk} /></td>
                   <td className="hidden px-2 py-1.5 md:table-cell">
                     <span className={`font-mono font-semibold tabular-nums ${s.avg_turnout > 1 ? "text-red-600" : ""}`}>
                       {(s.avg_turnout * 100).toFixed(1)}%

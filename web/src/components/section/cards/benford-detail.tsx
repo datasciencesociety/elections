@@ -1,5 +1,5 @@
 import type { AnomalySection, SectionDetail } from "@/lib/api/types.js";
-import { FormulaRow } from "../primitives.js";
+import { FormulaRow } from "@/components/score/index.js";
 
 /**
  * The actual Benford explanation rendered inside `BenfordCard`. Walks the

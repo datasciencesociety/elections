@@ -7,6 +7,7 @@ import type { AnomalyMethodology } from "@/lib/api/types.js";
 import { useAnomalies } from "@/lib/hooks/use-anomalies.js";
 import { useDistricts, useMunicipalities } from "@/lib/hooks/use-geography.js";
 import { useSectionsGeo } from "@/lib/hooks/use-sections.js";
+import { SectionView } from "@/components/section/index.js";
 
 import { BULGARIA_CENTER, BULGARIA_ZOOM } from "./map/constants.js";
 import { AllSectionsLayer } from "./map/all-sections-layer.js";
@@ -17,8 +18,6 @@ import { SelectedSectionRing } from "./map/selected-section-ring.js";
 
 import { FilterPanel } from "./filter-panel.js";
 import { AnomalyLegend } from "./anomaly-legend.js";
-import { AnomalySidebarContent } from "./sidebar/index.js";
-import { SimpleSidebarContent } from "./sidebar/simple-content.js";
 
 /**
  * The anomaly map page — section-level results overlaid with statistical
@@ -131,13 +130,11 @@ export default function AnomalyMap() {
     ? allSections.filter((s) => s.section_code.includes(sectionFilter))
     : allSections;
 
+  // The selected section gets fetched fresh by `<SectionView>` regardless of
+  // which layer it came from, but if we already have the anomaly row in the
+  // current overlay we pass it as `initialAnomaly` to skip the extra fetch.
   const riskMap = new globalThis.Map(riskSections.map((s) => [s.section_code, s]));
-  const baseMap = new globalThis.Map(
-    filteredAllSections.map((s) => [s.section_code, s]),
-  );
-  const selectedRiskSection = selectedCode ? riskMap.get(selectedCode) ?? null : null;
-  const selectedBaseSection =
-    selectedCode && !selectedRiskSection ? baseMap.get(selectedCode) ?? null : null;
+  const selectedAnomaly = selectedCode ? riskMap.get(selectedCode) ?? null : null;
 
   const handleSectionClick = (code: string) => {
     if (selectedCode !== code) {
@@ -213,22 +210,15 @@ export default function AnomalyMap() {
       {riskActive && <AnomalyLegend />}
 
       <Sidebar
-        open={!!selectedRiskSection || !!selectedBaseSection}
+        open={!!selectedCode}
         onClose={() => setParam("section", "")}
-        title={
-          selectedRiskSection?.section_code ?? selectedBaseSection?.section_code
-        }
+        title={selectedCode || undefined}
       >
-        {selectedRiskSection && (
-          <AnomalySidebarContent
-            section={selectedRiskSection}
-            electionId={electionId!}
-          />
-        )}
-        {selectedBaseSection && (
-          <SimpleSidebarContent
-            section={selectedBaseSection}
-            electionId={electionId!}
+        {selectedCode && electionId && (
+          <SectionView
+            electionId={electionId}
+            sectionCode={selectedCode}
+            initialAnomaly={selectedAnomaly}
           />
         )}
       </Sidebar>

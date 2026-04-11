@@ -1,6 +1,6 @@
 import type { AnomalySection, SectionContext } from "@/lib/api/types.js";
-import { FormulaRow, MethodologyCard } from "../primitives.js";
-import { pct2 } from "../../map/utils.js";
+import { FormulaRow, MethodologyCard } from "@/components/score/index.js";
+import { pct2 } from "@/lib/utils.js";
 
 /**
  * ACF (Anti-Corruption Fund) methodology — three sub-models bundled into

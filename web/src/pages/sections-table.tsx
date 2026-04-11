@@ -1,11 +1,12 @@
 import { useCallback } from "react";
 import { useParams, useSearchParams } from "react-router";
 import Sidebar from "@/components/sidebar.js";
-import { AnomalySidebarContent } from "./anomaly-map/sidebar/index.js";
+import { SectionView } from "@/components/section/index.js";
 import type { AnomalyMethodology, AnomalySection } from "@/lib/api/types.js";
 import { useAnomalies } from "@/lib/hooks/use-anomalies.js";
 import { useDistricts, useMunicipalities } from "@/lib/hooks/use-geography.js";
 import { useSectionViolations } from "@/lib/hooks/use-sections.js";
+import { ScoreBadge } from "@/components/score/index.js";
 
 // Truncate to 2 decimal places without rounding (3.999 → "3.99")
 function pct2(value: number): string {
@@ -25,18 +26,6 @@ type RiskSection = AnomalySection;
 type Methodology = Exclude<AnomalyMethodology, "protocol">;
 type ViolationFilter = "all" | "with_violations";
 type SortColumn = "risk_score" | "benford_risk" | "peer_risk" | "acf_risk" | "turnout_rate" | "section_code" | "settlement_name" | "protocol_violation_count" | "registered_voters" | "actual_voters";
-
-function RiskBadge({ value }: { value: number }) {
-  const bg =
-    value >= 0.6 ? "bg-red-100 text-red-800" :
-    value >= 0.3 ? "bg-orange-100 text-orange-800" :
-    "bg-green-100 text-green-800";
-  return (
-    <span className={`inline-block rounded px-1.5 py-0.5 text-[11px] font-mono font-semibold tabular-nums ${bg}`}>
-      {value.toFixed(2)}
-    </span>
-  );
-}
 
 function SortHeader({
   label,
@@ -362,10 +351,10 @@ export default function SectionsTable() {
                   <td className="whitespace-nowrap px-2 py-1.5 font-mono tabular-nums">{(s.registered_voters ?? 0).toLocaleString()}</td>
                   <td className="whitespace-nowrap px-2 py-1.5 font-mono tabular-nums">{(s.actual_voters ?? 0).toLocaleString()}</td>
                   <td className="whitespace-nowrap px-2 py-1.5 font-mono tabular-nums">{pct2(s.turnout_rate * 100)}%</td>
-                  <td className="whitespace-nowrap px-2 py-1.5"><RiskBadge value={s.risk_score} /></td>
-                  <td className="hidden whitespace-nowrap px-2 py-1.5 md:table-cell"><RiskBadge value={s.benford_risk} /></td>
-                  <td className="hidden whitespace-nowrap px-2 py-1.5 md:table-cell"><RiskBadge value={s.peer_risk} /></td>
-                  <td className="hidden whitespace-nowrap px-2 py-1.5 md:table-cell"><RiskBadge value={s.acf_risk} /></td>
+                  <td className="whitespace-nowrap px-2 py-1.5"><ScoreBadge value={s.risk_score} /></td>
+                  <td className="hidden whitespace-nowrap px-2 py-1.5 md:table-cell"><ScoreBadge value={s.benford_risk} /></td>
+                  <td className="hidden whitespace-nowrap px-2 py-1.5 md:table-cell"><ScoreBadge value={s.peer_risk} /></td>
+                  <td className="hidden whitespace-nowrap px-2 py-1.5 md:table-cell"><ScoreBadge value={s.acf_risk} /></td>
                   <td className="whitespace-nowrap px-2 py-1.5">
                     {s.protocol_violation_count > 0 ? (
                       <button
@@ -439,7 +428,11 @@ export default function SectionsTable() {
         title={selectedSection?.section_code}
       >
         {selectedSection && electionId && (
-          <AnomalySidebarContent section={selectedSection} electionId={electionId} />
+          <SectionView
+            electionId={electionId}
+            sectionCode={selectedSection.section_code}
+            initialAnomaly={selectedSection}
+          />
         )}
       </Sidebar>
     </div>

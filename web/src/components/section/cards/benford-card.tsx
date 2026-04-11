@@ -1,5 +1,5 @@
 import type { AnomalySection, SectionDetail } from "@/lib/api/types.js";
-import { MethodologyCard } from "../primitives.js";
+import { MethodologyCard } from "@/components/score/index.js";
 import { BenfordDetail } from "./benford-detail.js";
 
 /**
