@@ -86,57 +86,6 @@ function ViolationDetail({ electionId, sectionCode }: { electionId: string; sect
 
 const PAGE_SIZE = 100;
 
-/**
- * Merged header for Избиратели / Гласували / Активност. Renders one `<th>`
- * with three small sort buttons so all three metrics stay sortable while
- * the row below only uses one visual column.
- */
-function ActivityHeader({
-  sort,
-  order,
-  onSort,
-}: {
-  sort: SortColumn;
-  order: "asc" | "desc";
-  onSort: (col: SortColumn) => void;
-}) {
-  const keys: { col: SortColumn; label: string; full: string }[] = [
-    { col: "registered_voters", label: "изб.", full: "Избиратели в списъка" },
-    { col: "actual_voters", label: "гл.", full: "Гласували" },
-    { col: "turnout_rate", label: "%", full: "Активност (гласували / избиратели)" },
-  ];
-  return (
-    <th
-      className="whitespace-nowrap px-2 py-2 text-left text-[11px] font-medium text-muted-foreground"
-      title="Кликнете върху изб. / гл. / % за сортиране по всеки от трите показателя."
-    >
-      <div className="flex items-center gap-1.5">
-        <span>Активност</span>
-        <span className="flex gap-0.5">
-          {keys.map((k) => {
-            const active = sort === k.col;
-            return (
-              <button
-                key={k.col}
-                type="button"
-                onClick={() => onSort(k.col)}
-                title={k.full}
-                className={`rounded px-1 py-0 text-[10px] transition-colors ${
-                  active
-                    ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {k.label}
-                {active && (order === "desc" ? "↓" : "↑")}
-              </button>
-            );
-          })}
-        </span>
-      </div>
-    </th>
-  );
-}
 
 export default function SectionsTable() {
   const { electionId } = useParams<{ electionId: string }>();
@@ -237,7 +186,7 @@ export default function SectionsTable() {
     section_code: "№ секция",
     settlement_name: "населено място",
     protocol_violation_count: "нарушения",
-    registered_voters: "избиратели",
+    registered_voters: "списък",
     actual_voters: "гласували",
   };
   const sortLabel = sortLabelMap[sort] ?? sort;
@@ -426,7 +375,30 @@ export default function SectionsTable() {
             <tr>
               <SortHeader label="Секция" column="section_code" currentSort={sort} currentOrder={order} onSort={setSort} tooltip="Номер на избирателна секция. Кликнете за сортиране." />
               <SortHeader label="Населено място" column="settlement_name" currentSort={sort} currentOrder={order} onSort={setSort} tooltip="Град или село на секцията. Кликнете за сортиране." />
-              <ActivityHeader sort={sort} order={order} onSort={setSort} />
+              <SortHeader
+                label="Списък"
+                column="registered_voters"
+                currentSort={sort}
+                currentOrder={order}
+                onSort={setSort}
+                tooltip="Брой избиратели в списъка на секцията (регистрирани да гласуват)."
+              />
+              <SortHeader
+                label="Гласували"
+                column="actual_voters"
+                currentSort={sort}
+                currentOrder={order}
+                onSort={setSort}
+                tooltip="Брой реално гласували в секцията."
+              />
+              <SortHeader
+                label="Активност"
+                column="turnout_rate"
+                currentSort={sort}
+                currentOrder={order}
+                onSort={setSort}
+                tooltip="Активност (гласували / списък). Стойност над 100% е физически невъзможна и означава грешка в протокола."
+              />
               <SortHeader
                 label="Комб. риск"
                 column="risk_score"
@@ -491,14 +463,16 @@ export default function SectionsTable() {
                       )}
                     </span>
                   </td>
-                  <td
-                    className="whitespace-nowrap px-2 py-1.5 font-mono tabular-nums"
-                    title={`Избиратели: ${(s.registered_voters ?? 0).toLocaleString()} · Гласували: ${(s.actual_voters ?? 0).toLocaleString()} · Активност: ${pct2(s.turnout_rate * 100)}%`}
-                  >
-                    <span className="text-foreground">{(s.registered_voters ?? 0).toLocaleString()}</span>
-                    <span className="mx-1 text-muted-foreground/50">/</span>
-                    <span className="text-foreground">{(s.actual_voters ?? 0).toLocaleString()}</span>
-                    <span className="ml-2 text-muted-foreground">{pct2(s.turnout_rate * 100)}%</span>
+                  <td className="whitespace-nowrap px-2 py-1.5 font-mono tabular-nums">
+                    {(s.registered_voters ?? 0).toLocaleString()}
+                  </td>
+                  <td className="whitespace-nowrap px-2 py-1.5 font-mono tabular-nums">
+                    {(s.actual_voters ?? 0).toLocaleString()}
+                  </td>
+                  <td className="whitespace-nowrap px-2 py-1.5">
+                    <span className={`font-mono font-semibold tabular-nums ${s.turnout_rate > 1 ? "text-red-600" : ""}`}>
+                      {pct2(s.turnout_rate * 100)}%
+                    </span>
                   </td>
                   <td className="whitespace-nowrap px-2 py-1.5"><ScoreBadge value={s.risk_score} /></td>
                   <td className="hidden whitespace-nowrap px-2 py-1.5 md:table-cell"><ScoreBadge value={s.benford_risk} /></td>
@@ -554,7 +528,7 @@ export default function SectionsTable() {
                 </tr>
                 {expandedCode === s.section_code && s.protocol_violation_count > 0 && electionId && (
                   <tr key={`${s.section_code}-expand`} className="border-b border-border/50">
-                    <td colSpan={10} className="bg-muted/30 px-2 py-2">
+                    <td colSpan={12} className="bg-muted/30 px-2 py-2">
                       <ViolationDetail electionId={electionId} sectionCode={s.section_code} />
                     </td>
                   </tr>
@@ -563,7 +537,7 @@ export default function SectionsTable() {
             ))}
             {!loading && sections.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={12} className="px-4 py-8 text-center text-muted-foreground">
                   Няма секции, отговарящи на филтрите
                 </td>
               </tr>

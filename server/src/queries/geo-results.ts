@@ -160,7 +160,167 @@ export function getGeoResults(
     )
     .all() as { id: number; name: string; geo: string }[];
 
-  return areas.map((area) => buildGeoArea(area, voterMap, centroidMap, areaPartyMap));
+  const result = areas.map((area) =>
+    buildGeoArea(area, voterMap, centroidMap, areaPartyMap),
+  );
+
+  // Append a synthetic "Чужбина" aggregate for the municipality level only.
+  // Abroad sections have district_id / municipality_id / rik_id = NULL, so
+  // they're invisible in the joins above. We build one extra region that
+  // rolls up every abroad section and renders as a circle east of Bulgaria.
+  if (level === "municipality") {
+    const abroad = buildAbroadGeoArea(db, electionId);
+    if (abroad) result.push(abroad);
+  }
+
+  return result;
+}
+
+// ---------- abroad synthetic region ----------
+
+/**
+ * Circle polygon approximated as a 64-sided regular n-gon. Used as the
+ * synthetic boundary for the aggregated abroad region so the existing
+ * tile-renderer in district-pie-map can treat it like any other
+ * municipality.
+ */
+function buildCirclePolygon(
+  center: [number, number],
+  radius: number,
+  points = 64,
+): { type: "Polygon"; coordinates: [number, number][][] } {
+  const ring: [number, number][] = [];
+  for (let i = 0; i < points; i++) {
+    const angle = (i / points) * 2 * Math.PI;
+    ring.push([
+      center[0] + radius * Math.cos(angle),
+      center[1] + radius * Math.sin(angle),
+    ]);
+  }
+  ring.push(ring[0]); // close the ring
+  return { type: "Polygon", coordinates: [ring] };
+}
+
+function buildAbroadGeoArea(
+  db: DatabaseType,
+  electionId: number | string,
+): GeoArea | null {
+  const voters = db
+    .prepare(
+      `SELECT
+         SUM(p.registered_voters) AS registered_voters,
+         SUM(p.actual_voters)     AS actual_voters,
+         SUM(p.null_votes)        AS null_votes
+       FROM protocols p
+       JOIN sections s ON s.election_id = p.election_id AND s.section_code = p.section_code
+       JOIN locations l ON l.id = s.location_id
+       WHERE p.election_id = ? AND l.district_id IS NULL`,
+    )
+    .get(electionId) as
+    | {
+        registered_voters: number | null;
+        actual_voters: number | null;
+        null_votes: number | null;
+      }
+    | undefined;
+
+  if (!voters || !voters.actual_voters) return null;
+
+  const voteRows = db
+    .prepare(
+      `SELECT
+         ep.party_id,
+         ${BALLOT_NAME_SQL} AS party_name,
+         p.color            AS party_color,
+         SUM(v.total)       AS votes
+       FROM votes v
+       JOIN sections s ON s.election_id = v.election_id AND s.section_code = v.section_code
+       JOIN locations l ON l.id = s.location_id
+       ${BALLOT_JOIN_SQL}
+       WHERE v.election_id = ? AND l.district_id IS NULL
+       GROUP BY ep.party_id`,
+    )
+    .all(electionId) as {
+    party_id: number;
+    party_name: string;
+    party_color: string | null;
+    votes: number;
+  }[];
+
+  if (voteRows.length === 0) return null;
+
+  // Abroad voting quirk: `registered_voters` from the protocol is the
+  // PRE-registered count (~30k people who signed up before the election)
+  // but `actual_voters` includes walk-ins who showed up with an ID
+  // (~150k total). Using registered as the denominator makes party shares
+  // exceed 100% and breaks the tile renderer, so we treat the actual
+  // turnout as the effective "electorate" for the abroad region. There's
+  // no meaningful "non-voter" pool abroad either way.
+  const actual_voters = voters.actual_voters ?? 0;
+  const registered_voters = actual_voters;
+  const null_votes = voters.null_votes ?? 0;
+  const party_votes = voteRows.reduce((sum, r) => sum + r.votes, 0);
+  const total_votes = party_votes + null_votes;
+
+  const parties = voteRows
+    .map((r) => ({
+      party_id: r.party_id,
+      name: r.party_name,
+      color: r.party_color ?? "#CCCCCC",
+      votes: r.votes,
+      pct:
+        total_votes > 0
+          ? Math.round((r.votes / total_votes) * 10000) / 100
+          : 0,
+    }))
+    .sort((a, b) => b.votes - a.votes);
+
+  if (null_votes > 0) {
+    parties.push({
+      party_id: -1,
+      name: NULL_VOTES_LABEL,
+      color: NULL_VOTES_COLOR,
+      votes: null_votes,
+      pct:
+        total_votes > 0
+          ? Math.round((null_votes / total_votes) * 10000) / 100
+          : 0,
+    });
+    parties.sort((a, b) => b.votes - a.votes);
+  }
+
+  const winner = parties.find((p) => p.party_id !== -1) ?? null;
+
+  // Circle north of Bulgaria (over Romania geographically), so it is
+  // visible in the default map viewport without panning. Radius ~45 km,
+  // padding from Bulgaria's northern edge (~44.2°N) is ~0.3°.
+  const geo = buildCirclePolygon([25.5, 44.9], 0.4);
+
+  return {
+    // 99999 is safe because real municipality ids are small positive
+    // integers and -1 is already used as a "click on empty space"
+    // sentinel by the map click handler. Using a distinct out-of-range
+    // positive id avoids clashing with either.
+    id: 99999,
+    name: "Чужбина",
+    geo,
+    centroid: null,
+    registered_voters,
+    actual_voters,
+    // No "not showed up" pool abroad — registered is set equal to actual above.
+    non_voters: 0,
+    total_votes,
+    winner: winner
+      ? {
+          party_id: winner.party_id,
+          name: winner.name,
+          color: winner.color,
+          votes: winner.votes,
+          pct: winner.pct,
+        }
+      : null,
+    parties,
+  };
 }
 
 // ---------- legacy /results/geo (municipality, lean shape) ----------

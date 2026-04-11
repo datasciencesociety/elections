@@ -20,11 +20,22 @@ interface AggregatedParty {
   name: string;
   color: string;
   totalVotes: number;
-  pct: number;
+  /** Share of all registered voters (narrative denominator — includes
+   *  non-voters and "не подкрепям никого"). Used to show "only X% of
+   *  Bulgarians voted for this party." */
+  pctRegistered: number;
+  /** Share of party votes per CIK rules — excludes non-voters AND
+   *  "не подкрепям никого". This is the percentage that determines the
+   *  4% parliamentary threshold. null for the non-voter and null-vote
+   *  rows which by definition aren't party votes. */
+  pctCik: number | null;
 }
 
-const BULGARIA_CENTER: [number, number] = [24.8, 42.7];
-const BULGARIA_ZOOM = 7;
+// Shifted north + slightly zoomed out so the synthetic "Чужбина" circle
+// (center [25.5, 44.9], radius 0.4°) above Bulgaria is in the initial
+// viewport with padding from the country.
+const BULGARIA_CENTER: [number, number] = [25.3, 43.4];
+const BULGARIA_ZOOM = 6.8;
 const NON_VOTER_COLOR = "#c0c0c0";
 const TILE_SOURCE = "region-tiles";
 const TILE_LAYER = "region-tiles-fill";
@@ -172,35 +183,71 @@ function computeAllTiles(
   return { type: "FeatureCollection", features: allFeatures };
 }
 
+/** A party row is "counted for CIK" if it's a real party. The synthetic
+ *  "не подкрепям никого" row is given party_id -1 by the server; the
+ *  "Негласували" aggregate has no party_id (it's not in `region.parties`
+ *  at all — we append it manually). So a party is CIK-eligible iff
+ *  party_id > 0. */
+function isCikEligible(partyId: number): boolean {
+  return partyId > 0;
+}
+
 function aggregateParties(
   regions: GeoRegion[],
   showNonVoters: boolean,
 ): AggregatedParty[] {
-  const byName = new Map<string, { color: string; votes: number }>();
-  let grandTotal = 0;
+  const byName = new Map<
+    string,
+    { color: string; votes: number; partyId: number }
+  >();
+  let registeredTotal = 0;
+  let cikTotal = 0;
 
   for (const r of regions) {
-    const total = showNonVoters ? r.registered_voters : r.total_votes;
-    grandTotal += total;
-
+    registeredTotal += r.registered_voters;
     for (const p of r.parties) {
+      if (isCikEligible(p.party_id)) cikTotal += p.votes;
       const existing = byName.get(p.name);
-      if (existing) { existing.votes += p.votes; }
-      else { byName.set(p.name, { color: p.color || "#555", votes: p.votes }); }
+      if (existing) {
+        existing.votes += p.votes;
+      } else {
+        byName.set(p.name, {
+          color: p.color || "#555",
+          votes: p.votes,
+          partyId: p.party_id,
+        });
+      }
     }
     if (showNonVoters) {
       const nv = r.registered_voters - r.actual_voters;
       if (nv > 0) {
         const existing = byName.get("Негласували");
-        if (existing) { existing.votes += nv; }
-        else { byName.set("Негласували", { color: NON_VOTER_COLOR, votes: nv }); }
+        if (existing) {
+          existing.votes += nv;
+        } else {
+          byName.set("Негласували", {
+            color: NON_VOTER_COLOR,
+            votes: nv,
+            partyId: -2, // sentinel — not a party
+          });
+        }
       }
     }
   }
 
   const result: AggregatedParty[] = [];
-  for (const [name, { color, votes }] of byName) {
-    result.push({ name, color, totalVotes: votes, pct: grandTotal > 0 ? (votes / grandTotal) * 100 : 0 });
+  for (const [name, { color, votes, partyId }] of byName) {
+    result.push({
+      name,
+      color,
+      totalVotes: votes,
+      pctRegistered:
+        registeredTotal > 0 ? (votes / registeredTotal) * 100 : 0,
+      pctCik:
+        isCikEligible(partyId) && cikTotal > 0
+          ? (votes / cikTotal) * 100
+          : null,
+    });
   }
   result.sort((a, b) => b.totalVotes - a.totalVotes);
   return result;
@@ -211,18 +258,37 @@ function aggregateRegionParties(
   region: GeoRegion,
   showNonVoters: boolean,
 ): AggregatedParty[] {
-  const total = showNonVoters ? region.registered_voters : region.total_votes;
-  if (total <= 0) return [];
+  const registeredTotal = region.registered_voters;
+  const cikTotal = region.parties
+    .filter((p) => isCikEligible(p.party_id))
+    .reduce((sum, p) => sum + p.votes, 0);
+
+  if (registeredTotal <= 0) return [];
 
   const result: AggregatedParty[] = [];
 
   for (const p of region.parties) {
-    result.push({ name: p.name, color: p.color || "#555", totalVotes: p.votes, pct: (p.votes / total) * 100 });
+    result.push({
+      name: p.name,
+      color: p.color || "#555",
+      totalVotes: p.votes,
+      pctRegistered: (p.votes / registeredTotal) * 100,
+      pctCik:
+        isCikEligible(p.party_id) && cikTotal > 0
+          ? (p.votes / cikTotal) * 100
+          : null,
+    });
   }
   if (showNonVoters) {
     const nv = region.registered_voters - region.actual_voters;
     if (nv > 0) {
-      result.push({ name: "Негласували", color: NON_VOTER_COLOR, totalVotes: nv, pct: (nv / total) * 100 });
+      result.push({
+        name: "Негласували",
+        color: NON_VOTER_COLOR,
+        totalVotes: nv,
+        pctRegistered: (nv / registeredTotal) * 100,
+        pctCik: null,
+      });
     }
   }
 
@@ -465,11 +531,23 @@ function PartyLegend({
               <span className="min-w-0 flex-1 truncate text-[11px]">
                 {p.name}
               </span>
-              <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+              <span
+                className="shrink-0 text-[10px] tabular-nums text-muted-foreground"
+                title="Брой гласове за тази опция"
+              >
                 {p.totalVotes.toLocaleString("bg-BG")}
               </span>
-              <span className="w-12 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground">
-                {p.pct.toFixed(2)}%
+              <span
+                className="w-11 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground/60"
+                title="Дял от всички избиратели в списъка (включва негласували). Показва колко от общо избирателите са гласували за тази опция."
+              >
+                {p.pctRegistered.toFixed(2)}%
+              </span>
+              <span
+                className="w-12 shrink-0 text-right text-[10px] font-medium tabular-nums text-foreground"
+                title="Дял от гласовете за партии по правилата на ЦИК: изключва негласувалите и 'не подкрепям никого'. Това е процентът, по който се определя 4% праг за парламента."
+              >
+                {p.pctCik !== null ? `${p.pctCik.toFixed(2)}%` : "—"}
               </span>
             </button>
           );
@@ -483,7 +561,7 @@ export default function DistrictPieMap() {
   const { electionId } = useParams<{ electionId: string }>();
 
   const [showNonVoters, setShowNonVoters] = useState(true);
-  const [geoLevel, setGeoLevel] = useState<GeoLevel>("municipalities");
+  const [geoLevel] = useState<GeoLevel>("municipalities");
   const [selectedRegion, setSelectedRegion] = useState<GeoRegion | null>(null);
   const [hoveredParty, setHoveredParty] = useState<string | null>(null);
   const [tappedParty, setTappedParty] = useState<string | null>(null);
@@ -594,27 +672,6 @@ export default function DistrictPieMap() {
             <span className="text-xs text-red-600">{error}</span>
           </div>
         )}
-        <div className="flex items-center gap-1 rounded-md border bg-background/95 px-1 py-1 shadow-md backdrop-blur-sm">
-          {(["riks", "districts", "municipalities"] as GeoLevel[]).map(
-            (level) => (
-              <button
-                key={level}
-                onClick={() => {
-                  setSelectedRegion(null);
-                  setTappedParty(null);
-                  setGeoLevel(level);
-                }}
-                className={`rounded px-1.5 py-0.5 text-[11px] transition-colors md:px-2.5 md:py-1 md:text-xs ${
-                  geoLevel === level
-                    ? "bg-foreground text-background font-medium"
-                    : "text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                {level === "riks" ? "МИР" : level === "districts" ? "Области" : "Общини"}
-              </button>
-            ),
-          )}
-        </div>
         <label className="flex cursor-pointer items-center gap-1.5 rounded-md border bg-background/95 px-3 py-2 text-xs shadow-md backdrop-blur-sm">
           <input
             type="checkbox"
