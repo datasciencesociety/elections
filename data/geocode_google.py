@@ -134,16 +134,35 @@ def geocode_google(query: str) -> tuple[float, float, str, str] | None:
     return (lat, lng, formatted, location_type)
 
 
-def geocode(queries: list[str]) -> tuple[float, float] | None:
+def _in_bbox(lat: float, lng: float, bbox: tuple[float, float, float, float], margin: float = 0.05) -> bool:
+    min_lat, max_lat, min_lng, max_lng = bbox
+    return (min_lat - margin <= lat <= max_lat + margin
+            and min_lng - margin <= lng <= max_lng + margin)
+
+
+def geocode(
+    queries: list[str],
+    target_bbox: tuple[float, float, float, float] | None = None,
+) -> tuple[float, float] | None:
     """Try each query against cache first, then Google API.
-    Caches every result (hit or miss)."""
-    # Check cache for all queries first
+    Caches every result (hit or miss).
+
+    If `target_bbox` is given, each candidate (cached or fresh) that falls
+    outside the bbox is skipped so the next query has a chance. This keeps
+    a ROOFTOP hit in the wrong town from winning over a town-centroid
+    fallback in the right town.
+    """
+    def _accept(lat: float, lng: float) -> bool:
+        return target_bbox is None or _in_bbox(lat, lng, target_bbox)
+
+    # Check cache for all queries first; accept the first in-bbox cached hit.
     for query in queries:
         cached = cache_lookup(query)
-        if cached == "uncached":
+        if cached == "uncached" or cached is None:
             continue
-        if cached is not None:
-            return cached  # (lat, lng)
+        lat, lng = cached
+        if _accept(lat, lng):
+            return cached
 
     # Cache miss — call Google
     if not API_KEY:
@@ -151,13 +170,15 @@ def geocode(queries: list[str]) -> tuple[float, float] | None:
 
     for query in queries:
         if cache_lookup(query) != "uncached":
-            continue  # already cached as None (failed)
+            continue  # already cached (hit or miss); handled above or below
 
         result = geocode_google(query)
         if result:
             lat, lng, formatted, loc_type = result
             cache_store(query, lat, lng, formatted, loc_type)
-            return (lat, lng)
+            if _accept(lat, lng):
+                return (lat, lng)
+            # Out-of-bbox result cached but skipped — next query might land in.
         else:
             cache_store(query, None, None)
 
@@ -166,22 +187,108 @@ def geocode(queries: list[str]) -> tuple[float, float] | None:
 
 # ── Query builders ───────────────────────────────────────────────────────────
 
+# Bulgarian ordinal words → digit form that Google indexes.
+# Masculine -ти / feminine -та / neuter -то / masculine-soft -ри / feminine-soft -ра
+# and a few irregulars (Втори/Втора, Седми/Седма, Осми/Осма).
+_ORDINAL_MAP = {
+    'ПЪРВИ': '1-ВИ', 'ПЪРВА': '1-ВА', 'ПЪРВО': '1-ВО',
+    'ВТОРИ': '2-РИ', 'ВТОРА': '2-РА', 'ВТОРО': '2-РО',
+    'ТРЕТИ': '3-ТИ', 'ТРЕТА': '3-ТА', 'ТРЕТО': '3-ТО',
+    'ЧЕТВЪРТИ': '4-ТИ', 'ЧЕТВЪРТА': '4-ТА', 'ЧЕТВЪРТО': '4-ТО',
+    'ПЕТИ': '5-ТИ', 'ПЕТА': '5-ТА', 'ПЕТО': '5-ТО',
+    'ШЕСТИ': '6-ТИ', 'ШЕСТА': '6-ТА', 'ШЕСТО': '6-ТО',
+    'СЕДМИ': '7-МИ', 'СЕДМА': '7-МА', 'СЕДМО': '7-МО',
+    'ОСМИ': '8-МИ', 'ОСМА': '8-МА', 'ОСМО': '8-МО',
+    'ДЕВЕТИ': '9-ТИ', 'ДЕВЕТА': '9-ТА', 'ДЕВЕТО': '9-ТО',
+    'ДЕСЕТИ': '10-ТИ', 'ДЕСЕТА': '10-ТА', 'ДЕСЕТО': '10-ТО',
+    'ЕДИНАДЕСЕТИ': '11-ТИ', 'ЕДИНАДЕСЕТА': '11-ТА',
+    'ДВАНАДЕСЕТИ': '12-ТИ', 'ДВАНАДЕСЕТА': '12-ТА',
+    'ТРИНАДЕСЕТИ': '13-ТИ', 'ТРИНАДЕСЕТА': '13-ТА',
+    'ЧЕТИРИНАДЕСЕТИ': '14-ТИ', 'ЧЕТИРИНАДЕСЕТА': '14-ТА',
+    'ПЕТНАДЕСЕТИ': '15-ТИ', 'ПЕТНАДЕСЕТА': '15-ТА',
+    'ШЕСТНАДЕСЕТИ': '16-ТИ', 'ШЕСТНАДЕСЕТА': '16-ТА',
+    'СЕДЕМНАДЕСЕТИ': '17-ТИ', 'СЕДЕМНАДЕСЕТА': '17-ТА',
+    'ОСЕМНАДЕСЕТИ': '18-ТИ', 'ОСЕМНАДЕСЕТА': '18-ТА',
+    'ДЕВЕТНАДЕСЕТИ': '19-ТИ', 'ДЕВЕТНАДЕСЕТА': '19-ТА',
+    'ДВАДЕСЕТИ': '20-ТИ', 'ДВАДЕСЕТА': '20-ТА',
+}
+_ORDINAL_RE = re.compile(r'\b(' + '|'.join(_ORDINAL_MAP) + r')\b')
+
+# Compound ordinals "двадесет и първа" → "21-ва" (rare but present).
+_COMPOUND_ORDINALS = {
+    'ДВАДЕСЕТ И ПЪРВИ': '21-ВИ', 'ДВАДЕСЕТ И ПЪРВА': '21-ВА',
+    'ДВАДЕСЕТ И ВТОРИ': '22-РИ', 'ДВАДЕСЕТ И ВТОРА': '22-РА',
+    'ДВАДЕСЕТ И ТРЕТИ': '23-ТИ', 'ДВАДЕСЕТ И ТРЕТА': '23-ТА',
+    'ДВАДЕСЕТ И ЧЕТВЪРТИ': '24-ТИ', 'ДВАДЕСЕТ И ЧЕТВЪРТА': '24-ТА',
+    'ДВАДЕСЕТ И ПЕТИ': '25-ТИ', 'ДВАДЕСЕТ И ПЕТА': '25-ТА',
+}
+_COMPOUND_RE = re.compile(r'\b(' + '|'.join(_COMPOUND_ORDINALS) + r')\b')
+
+
+def _normalize_ordinals(s: str) -> str:
+    """Convert spelled-out ordinals to the digit form Google indexes.
+    `ШЕСТИ СЕПТЕМВРИ` → `6-ТИ СЕПТЕМВРИ`, `ТРЕТИ МАРТ` → `3-ТИ МАРТ`."""
+    s = _COMPOUND_RE.sub(lambda m: _COMPOUND_ORDINALS[m.group(1)], s)
+    return _ORDINAL_RE.sub(lambda m: _ORDINAL_MAP[m.group(1)], s)
+
+
 def extract_street_query(address: str) -> str | None:
-    """Extract street + number from CIK address for geocoding."""
+    """Extract street + house number from CIK address for geocoding.
+
+    Rules:
+      - Recognise УЛ./БУЛ./ПЛ. followed by the name.
+      - A `№` must be followed by digits (1+), optionally with a space and an
+        optional trailing letter (e.g. №15, № 151, №21А). `№` on its own is
+        noise and is dropped.
+      - CIK often writes `бул. „Захари Стоянов", №15` — the comma between the
+        closing quote and the number splits the street from its number. We
+        collapse a comma-before-№ into a plain space so they stay contiguous.
+      - Spelled-out ordinals in the street name are converted to digit form
+        (`ТРЕТИ МАРТ` → `3-ТИ МАРТ`) — Google returns ROOFTOP for the digit
+        form and only street-centroid for the spelled form.
+    """
+    # Upper-case + strip every typographic quote variant we've seen.
     addr = address.upper()
-    m = re.search(r'(?:УЛ\.|БУЛ\.|ПЛ\.)\s*["""]?\s*([^,"""\n]+)', addr)
-    if m:
-        street = m.group(0).strip().rstrip(',.')
-        street = re.sub(r'["""\u201c\u201d\u201e]', '', street)
-        street = re.sub(r'№\s*', '', street)
-        street = re.sub(r'\s+', ' ', street).strip()
-        return street
-    return None
+    addr = re.sub(r'["\u201c\u201d\u201e\u00ab\u00bb\u2018\u2019\u201a]', '', addr)
+    # Glue street to its number when CIK separates them with a comma.
+    addr = re.sub(r'\s*,\s*№', ' №', addr)
+
+    m = re.search(r'(УЛ\.|БУЛ\.|ПЛ\.)\s*([^,\n]+)', addr)
+    if not m:
+        return None
+    street_type = m.group(1)
+    rest = _normalize_ordinals(m.group(2).strip().rstrip(',.'))
+
+    # Require digits after №. A bare № with nothing after it is noise.
+    num_match = re.search(r'№\s*(\d+[А-Я]?)', rest)
+    if num_match:
+        street_name = rest[:num_match.start()].strip().rstrip(',.')
+        number = num_match.group(1)
+        if street_name:
+            return f"{street_type} {street_name} №{number}"
+        return None
+
+    # No number — drop any stray bare № and return just the street name.
+    rest = re.sub(r'\s*№\s*$', '', rest).strip()
+    if not rest:
+        return None
+    return f"{street_type} {rest}"
 
 
-def clean_address(address: str, settlement: str | None, municipality: str | None = None) -> list[str]:
-    """Build geocoding queries for domestic locations."""
-    queries = []
+def clean_address(
+    address: str,
+    settlement: str | None,
+    municipality: str | None = None,
+    district: str | None = None,
+) -> list[str]:
+    """Build geocoding queries for domestic locations.
+
+    Every query always carries the full hierarchy town → muni → district →
+    country. Village names duplicate across oblasts (Бяла is a municipality
+    in Бургас, Русе and Варна; Ситово in Силистра and Пловдив; Черковна in
+    multiple oblasts), so district is the only reliable disambiguator.
+    """
+    queries: list[str] = []
     addr = address.strip()
 
     town = "София"
@@ -192,7 +299,16 @@ def clean_address(address: str, settlement: str | None, municipality: str | None
         if town_clean:
             town = town_clean
 
-    muni = municipality if municipality and municipality != town else None
+    # Full-hierarchy suffix appended to every query. Leave out components that
+    # duplicate the town (a Бургас-oblast section in a town called "Бургас" is
+    # fine with just "Бургас, България").
+    parts = [town]
+    if municipality and municipality != town:
+        parts.append(f"община {municipality}")
+    if district and district != town and district != municipality:
+        parts.append(f"{district} област")
+    parts.append("България")
+    suffix = ", ".join(parts)
 
     clean = re.sub(r'^ГР\.?\s*СОФИЯ\s*,?\s*', '', addr, flags=re.IGNORECASE)
     clean = re.sub(r'^гр\.?\s*София\s*,?\s*', '', clean, flags=re.IGNORECASE)
@@ -201,30 +317,27 @@ def clean_address(address: str, settlement: str | None, municipality: str | None
     street = extract_street_query(addr)
 
     if is_village:
-        # Villages first: settlement + municipality (Google ignores village names
-        # in street queries and matches generic streets like "ул. Първа" to cities)
-        if muni:
-            queries.append(f"{town}, община {muni}, България")
-        queries.append(f"{town}, България")
-        # Then try full address with village context
-        if clean and len(clean) > 5 and muni:
-            queries.append(f"{clean}, {town}, {muni}, България")
+        # Villages first: Google has almost no street-level data, so the town
+        # centroid with full hierarchy is the most reliable answer.
+        queries.append(suffix)
+        if clean and len(clean) > 5:
+            queries.append(f"{clean}, {suffix}")
     else:
-        # Cities: street-first is reliable
-        if street and muni:
-            queries.append(f"{street}, {town}, {muni}, България")
-        elif street:
-            queries.append(f"{street}, {town}, България")
+        if street:
+            queries.append(f"{street}, {suffix}")
 
         if clean and len(clean) > 5:
-            if muni:
-                queries.append(f"{clean}, {town}, {muni}, България")
-            queries.append(f"{clean}, {town}, България")
+            queries.append(f"{clean}, {suffix}")
 
         kv_match = re.search(r'кв\.?\s*([^,]+)', addr, re.IGNORECASE)
         if kv_match and street:
             kv = kv_match.group(1).strip().rstrip(',.')
-            queries.append(f"{street} кв. {kv}, {town}, България")
+            queries.append(f"{street} кв. {kv}, {suffix}")
+
+        # Final fallback: town centroid with full hierarchy. Used when Google
+        # has no street data for the specific town and would otherwise return
+        # a ROOFTOP match from a similarly-named street elsewhere.
+        queries.append(suffix)
 
     return queries
 
@@ -256,7 +369,27 @@ def clean_address_abroad(address: str, settlement: str | None) -> list[str]:
 
 # ── Municipality validation ──────────────────────────────────────────────────
 
-def _load_municipality_bboxes() -> dict[str, tuple[float, float, float, float]]:
+def _normalize_muni_name(name: str) -> str:
+    """Canonical form for municipality name comparison.
+
+    GADM uses `aitos`, `starazagora`, `veliko tarnovo` → `velikotarnovo`; our
+    transliterator produces `aytos`, `stara zagora`, `veliko tarnovo`. To
+    compare them we lowercase, drop spaces/hyphens, and map й→i.
+    """
+    s = _translit(name).lower()
+    s = s.replace('y', 'i')  # aytos → aitos, veliki → veliki (unchanged)
+    s = re.sub(r'[\s\-\']+', '', s)
+    return s
+
+
+def _load_municipality_bboxes() -> dict[tuple[str | None, str], tuple[float, float, float, float]]:
+    """Return a lookup keyed by (district_key, muni_key).
+
+    GADM has duplicate municipality names (e.g. Byala exists in both Ruse and
+    Varna oblasts), so the muni key alone is not unique. We key by
+    (district, muni), and additionally fill a (None, muni) entry pointing at
+    the unique bbox for munis that appear in only one oblast.
+    """
     if not GADM_PATH.exists():
         return {}
     with open(GADM_PATH) as f:
@@ -277,12 +410,38 @@ def _load_municipality_bboxes() -> dict[str, tuple[float, float, float, float]]:
         lats = [c[1] for c in coords]
         return min(lats), max(lats), min(lngs), max(lngs)
 
-    bboxes = {}
+    by_muni: dict[str, list[tuple[str, tuple]]] = {}
     for feat in geo['features']:
         bbox = get_bbox(feat['geometry'])
-        if bbox:
-            bboxes[feat['properties']['NAME_2'].lower()] = bbox
+        if not bbox:
+            continue
+        district_key = _normalize_muni_name(feat['properties']['NAME_1'])
+        muni_key = _normalize_muni_name(feat['properties']['NAME_2'])
+        by_muni.setdefault(muni_key, []).append((district_key, bbox))
+
+    bboxes: dict[tuple[str | None, str], tuple[float, float, float, float]] = {}
+    for muni_key, entries in by_muni.items():
+        for district_key, bbox in entries:
+            bboxes[(district_key, muni_key)] = bbox
+        # Unique muni (no collision) — allow fallback lookup without district.
+        if len(entries) == 1:
+            bboxes[(None, muni_key)] = entries[0][1]
     return bboxes
+
+
+def _lookup_bbox(
+    bboxes: dict[tuple[str | None, str], tuple[float, float, float, float]],
+    municipality: str | None,
+    district: str | None,
+) -> tuple[float, float, float, float] | None:
+    if not municipality:
+        return None
+    muni_key = _normalize_muni_name(municipality)
+    if district:
+        hit = bboxes.get((_normalize_muni_name(district), muni_key))
+        if hit is not None:
+            return hit
+    return bboxes.get((None, muni_key))
 
 
 def validate_municipality_bounds(conn: sqlite3.Connection) -> int:
@@ -292,9 +451,10 @@ def validate_municipality_bounds(conn: sqlite3.Connection) -> int:
         return 0
 
     rows = conn.execute("""
-        SELECT DISTINCT l.id, l.lat, l.lng, m.name
+        SELECT DISTINCT l.id, l.lat, l.lng, m.name, d.name
         FROM locations l
         JOIN municipalities m ON l.municipality_id = m.id
+        LEFT JOIN districts d ON d.id = l.district_id
         LEFT JOIN riks r ON r.id = l.rik_id
         WHERE l.lat IS NOT NULL
           AND (r.oik_prefix IS NULL OR r.oik_prefix != '32')
@@ -302,13 +462,10 @@ def validate_municipality_bounds(conn: sqlite3.Connection) -> int:
 
     MARGIN = 0.05
     bad_ids = []
-    for loc_id, lat, lng, muni in rows:
-        key = _translit(muni).lower()
-        bbox = None
-        for bk, bv in bboxes.items():
-            if bk == key or bk in key or key in bk:
-                bbox = bv
-                break
+    for loc_id, lat, lng, muni, district in rows:
+        # Use (district, muni) lookup — muni name alone is not unique
+        # (Бяла exists in both Русе and Варна). Unknown munis are skipped.
+        bbox = _lookup_bbox(bboxes, muni, district)
         if not bbox:
             continue
         min_lat, max_lat, min_lng, max_lng = bbox
@@ -338,14 +495,17 @@ def main():
     print(f"Cache: {len(_cache):,} entries loaded from {CACHE_PATH.name}")
 
     conn = sqlite3.connect(DB_PATH)
+    bboxes = _load_municipality_bboxes()
 
     missing = conn.execute("""
         SELECT l.id, l.address, l.settlement_name,
                CASE WHEN r.oik_prefix = '32' THEN 1 ELSE 0 END AS is_abroad,
-               m.name as municipality
+               m.name as municipality,
+               d.name as district
         FROM locations l
         LEFT JOIN riks r ON r.id = l.rik_id
         LEFT JOIN municipalities m ON m.id = l.municipality_id
+        LEFT JOIN districts d ON d.id = l.district_id
         WHERE l.lat IS NULL
           AND l.address IS NOT NULL AND l.address != ''
           AND COALESCE(l.location_type, 'regular') NOT IN ('mobile', 'ship')
@@ -363,11 +523,11 @@ def main():
         print(f"Limited to: {len(missing)}")
 
     if args.dry_run:
-        for loc_id, addr, settlement, is_abroad, municipality in missing[:30]:
+        for loc_id, addr, settlement, is_abroad, municipality, district in missing[:30]:
             if is_abroad:
                 queries = clean_address_abroad(addr, settlement)
             else:
-                queries = clean_address(addr, settlement, municipality)
+                queries = clean_address(addr, settlement, municipality, district)
             # Check if any query is cached
             cached = any(cache_lookup(q) != "uncached" for q in queries)
             tag = "ABR" if is_abroad else "DOM"
@@ -381,11 +541,13 @@ def main():
     api_calls = 0
     save_every = 25
 
-    for i, (loc_id, addr, settlement, is_abroad, municipality) in enumerate(missing, 1):
+    for i, (loc_id, addr, settlement, is_abroad, municipality, district) in enumerate(missing, 1):
         if is_abroad:
             queries = clean_address_abroad(addr, settlement)
+            target_bbox = None
         else:
-            queries = clean_address(addr, settlement, municipality)
+            queries = clean_address(addr, settlement, municipality, district)
+            target_bbox = _lookup_bbox(bboxes, municipality, district)
 
         if not queries:
             failed += 1
@@ -394,7 +556,7 @@ def main():
         # Check cache first
         was_cached = any(cache_lookup(q) != "uncached" for q in queries)
 
-        result = geocode(queries)
+        result = geocode(queries, target_bbox=target_bbox)
 
         if result:
             lat, lng = result

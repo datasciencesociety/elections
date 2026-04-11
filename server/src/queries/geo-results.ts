@@ -95,12 +95,12 @@ export function getGeoResults(
             .prepare(
               `SELECT
                  l.${cfg.locationColumn} AS area_id,
-                 SUM(p.registered_voters * l.lat) / SUM(p.registered_voters) AS weighted_lat,
-                 SUM(p.registered_voters * l.lng) / SUM(p.registered_voters) AS weighted_lng
+                 SUM(p.registered_voters * COALESCE(s.lat, l.lat)) / SUM(p.registered_voters) AS weighted_lat,
+                 SUM(p.registered_voters * COALESCE(s.lng, l.lng)) / SUM(p.registered_voters) AS weighted_lng
                FROM protocols p
                JOIN sections s ON s.election_id = p.election_id AND s.section_code = p.section_code
                JOIN locations l ON l.id = s.location_id
-               WHERE p.election_id = ? AND l.lat IS NOT NULL AND l.lng IS NOT NULL AND p.registered_voters > 0
+               WHERE p.election_id = ? AND COALESCE(s.lat, l.lat) IS NOT NULL AND COALESCE(s.lng, l.lng) IS NOT NULL AND p.registered_voters > 0
                GROUP BY l.${cfg.locationColumn}`,
             )
             .all(electionId) as {

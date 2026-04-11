@@ -239,7 +239,9 @@ export function getSectionsGeo(
 
   const sectionRows = db
     .prepare(
-      `SELECT s.section_code, l.settlement_name, l.lat, l.lng,
+      `SELECT s.section_code, l.settlement_name,
+              COALESCE(s.lat, l.lat) AS lat,
+              COALESCE(s.lng, l.lng) AS lng,
               p.registered_voters, p.actual_voters
          FROM sections s
          JOIN locations l ON l.id = s.location_id
