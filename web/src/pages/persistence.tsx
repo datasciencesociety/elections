@@ -1,39 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useCallback } from "react";
 import { useSearchParams } from "react-router";
 import SectionPreview from "@/components/section-preview.js";
-
-interface PersistentSection {
-  section_code: string;
-  settlement_name: string | null;
-  lat: number | null;
-  lng: number | null;
-  elections_present: number;
-  elections_flagged: number;
-  persistence_score: number;
-  consistency: number;
-  weighted_avg_risk: number;
-  avg_risk: number;
-  max_risk: number;
-  total_violations: number;
-  total_arith_errors: number;
-  total_vote_mismatches: number;
-  benford_flags: number;
-  peer_flags: number;
-  acf_flags: number;
-  protocol_flags: number;
-  avg_registered: number;
-  avg_voted: number;
-  avg_turnout: number;
-}
-
-
-interface PersistenceResponse {
-  sections: PersistentSection[];
-  total: number;
-  limit: number;
-  offset: number;
-  elections_count: number;
-}
+import type { PersistenceSection as PersistentSection } from "@/lib/api/types.js";
+import { usePersistence } from "@/lib/hooks/use-persistence.js";
 
 type SortColumn =
   | "persistence_score"
@@ -125,9 +94,6 @@ function SortHeader({
 
 export default function Persistence() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [data, setData] = useState<PersistenceResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const LIMIT = 50;
 
   // Read state from URL
@@ -150,34 +116,16 @@ export default function Persistence() {
     }, { replace: true });
   }, [setSearchParams]);
 
-  const fetchData = useCallback(() => {
-    setLoading(true);
-    const params = new URLSearchParams({
-      sort,
-      order,
-      limit: String(LIMIT),
-      offset: String(offset),
-      min_elections: String(minElections),
-      exclude_special: String(excludeSpecial),
-    });
-    if (sectionSearch) params.set("section", sectionSearch);
-
-    fetch(`/api/elections/persistence?${params}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch");
-        return r.json();
-      })
-      .then((d: PersistenceResponse) => {
-        setData(d);
-        setError(null);
-      })
-      .catch(() => setError("Грешка при зареждане"))
-      .finally(() => setLoading(false));
-  }, [sort, order, offset, minElections, excludeSpecial, sectionSearch]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const { data, isLoading: loading, isError } = usePersistence({
+    sort,
+    order,
+    limit: LIMIT,
+    offset,
+    minElections,
+    excludeSpecial,
+    section: sectionSearch || undefined,
+  });
+  const error = isError ? "Грешка при зареждане" : null;
 
   const handleSort = (col: SortColumn) => {
     if (sort === col) {

@@ -2,14 +2,24 @@ import "./index.css";
 import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from "react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { trackPageView } from "./lib/analytics.js";
 import Layout from "./components/layout.js";
 import DistrictPieMap from "./pages/district-pie-map.js";
-import RiskMap from "./pages/risk-map.js";
+import AnomalyMap from "./pages/anomaly-map.js";
 import SectionsTable from "./pages/sections-table.js";
 import Persistence from "./pages/persistence.js";
 import SectionDetail from "./pages/section-detail.js";
 import MissingCoordinates from "./pages/missing-coordinates.js";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // Track page views on route change
 function AnalyticsTracker() {
@@ -40,30 +50,32 @@ function RedirectAnomalies() {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <BrowserRouter>
-      <AnalyticsTracker />
-      <Routes>
-        <Route element={<Layout />}>
-          {/* Main views */}
-          <Route path="/:electionId/results" element={<DistrictPieMap />} />
-          <Route path="/:electionId/sections" element={<RiskMap />} />
-          <Route path="/:electionId/table" element={<SectionsTable />} />
-          <Route path="/persistence" element={<Persistence />} />
-          <Route path="/section/:sectionCode" element={<SectionDetail />} />
-          <Route path="/help/coordinates" element={<MissingCoordinates />} />
-          {/* Redirect old risk URL to combined sections page */}
-          <Route path="/:electionId/risk" element={<RedirectToSections />} />
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AnalyticsTracker />
+        <Routes>
+          <Route element={<Layout />}>
+            {/* Main views */}
+            <Route path="/:electionId/results" element={<DistrictPieMap />} />
+            <Route path="/:electionId/sections" element={<AnomalyMap />} />
+            <Route path="/:electionId/table" element={<SectionsTable />} />
+            <Route path="/persistence" element={<Persistence />} />
+            <Route path="/section/:sectionCode" element={<SectionDetail />} />
+            <Route path="/help/coordinates" element={<MissingCoordinates />} />
+            {/* Redirect old risk URL to combined sections page */}
+            <Route path="/:electionId/risk" element={<RedirectToSections />} />
 
-          {/* Default: Layout handles redirect to latest election */}
-          <Route path="/" element={<></>} />
-        </Route>
+            {/* Default: Layout handles redirect to latest election */}
+            <Route path="/" element={<></>} />
+          </Route>
 
-        {/* Old URL redirects (outside layout since they just redirect) */}
-        <Route path="/district-map/:electionId" element={<RedirectToResults />} />
-        <Route path="/risk-map/:electionId" element={<RedirectToSections />} />
-        <Route path="/elections/:id" element={<RedirectElection />} />
-        <Route path="/elections/:id/anomalies" element={<RedirectAnomalies />} />
-      </Routes>
-    </BrowserRouter>
+          {/* Old URL redirects (outside layout since they just redirect) */}
+          <Route path="/district-map/:electionId" element={<RedirectToResults />} />
+          <Route path="/risk-map/:electionId" element={<RedirectToSections />} />
+          <Route path="/elections/:id" element={<RedirectElection />} />
+          <Route path="/elections/:id/anomalies" element={<RedirectAnomalies />} />
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
   </StrictMode>
 );

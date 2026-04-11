@@ -1,7 +1,11 @@
-import { useEffect, useState, useCallback } from "react";
+import { useCallback } from "react";
 import { useParams, useSearchParams } from "react-router";
 import Sidebar from "@/components/sidebar.js";
-import { RiskSidebarContent, type RiskSection } from "./risk-map.js";
+import { RiskSidebarContent } from "./anomaly-map.js";
+import type { AnomalyMethodology, AnomalySection } from "@/lib/api/types.js";
+import { useAnomalies } from "@/lib/hooks/use-anomalies.js";
+import { useDistricts, useMunicipalities } from "@/lib/hooks/use-geography.js";
+import { useSectionViolations } from "@/lib/hooks/use-sections.js";
 
 // Truncate to 2 decimal places without rounding (3.999 → "3.99")
 function pct2(value: number): string {
@@ -15,20 +19,10 @@ const SECTION_TYPE_LABELS: Record<string, string> = {
   prison: "Затвор",
 };
 
-interface GeoEntity {
-  id: number;
-  name: string;
-}
-
-interface Violation {
-  rule_id: string;
-  description: string;
-  expected_value: string;
-  actual_value: string;
-  severity: string;
-}
-
-type Methodology = "combined" | "benford" | "peer" | "acf";
+type RiskSection = AnomalySection;
+// This page uses the four "score" methodologies — protocol filter lives in
+// the violation filter below, not in the methodology toggle.
+type Methodology = Exclude<AnomalyMethodology, "protocol">;
 type ViolationFilter = "all" | "with_violations";
 type SortColumn = "risk_score" | "benford_risk" | "peer_risk" | "acf_risk" | "turnout_rate" | "section_code" | "settlement_name" | "protocol_violation_count" | "registered_voters" | "actual_voters";
 
@@ -72,16 +66,9 @@ function SortHeader({
 }
 
 function ViolationDetail({ electionId, sectionCode }: { electionId: string; sectionCode: string }) {
-  const [violations, setViolations] = useState<Violation[] | null>(null);
-
-  useEffect(() => {
-    fetch(`/api/elections/${electionId}/violations/${sectionCode}`)
-      .then((r) => r.ok ? r.json() : { violations: [] })
-      .then((d: { violations: Violation[] }) => setViolations(d.violations))
-      .catch(() => setViolations([]));
-  }, [electionId, sectionCode]);
-
-  if (violations === null) return <span className="text-[10px] text-muted-foreground">...</span>;
+  const { data, isLoading } = useSectionViolations(electionId, sectionCode);
+  if (isLoading) return <span className="text-[10px] text-muted-foreground">...</span>;
+  const violations = data?.violations ?? [];
   if (violations.length === 0) return null;
 
   return (
@@ -146,49 +133,25 @@ export default function SectionsTable() {
     }, { replace: true });
   };
 
-  const [sections, setSections] = useState<RiskSection[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [districts, setDistricts] = useState<GeoEntity[]>([]);
-  const [municipalities, setMunicipalities] = useState<GeoEntity[]>([]);
+  const { data: districts = [] } = useDistricts();
+  const { data: municipalities = [] } = useMunicipalities(district || undefined);
 
-  useEffect(() => {
-    fetch("/api/geography/districts").then((r) => r.json()).then(setDistricts);
-  }, []);
-
-  useEffect(() => {
-    if (!district) { setMunicipalities([]); return; }
-    fetch(`/api/geography/municipalities?district=${district}`).then((r) => r.json()).then(setMunicipalities);
-  }, [district]);
-
-  useEffect(() => {
-    if (!electionId) return;
-    setLoading(true);
-
-    const params = new URLSearchParams();
-    params.set("min_risk", String(minRisk));
-    params.set("sort", sort);
-    params.set("order", order);
-    params.set("limit", String(PAGE_SIZE));
-    params.set("offset", String(page * PAGE_SIZE));
-    if (methodology !== "combined") params.set("methodology", methodology);
-    if (violationFilter === "with_violations") {
-      params.set("min_violations", "1");
-      if (!includeSpecial) params.set("exclude_special", "true");
-    }
-    if (municipality) params.set("municipality", municipality);
-    else if (district) params.set("district", district);
-    if (sectionFilter) params.set("section", sectionFilter);
-
-    fetch(`/api/elections/${electionId}/anomalies?${params}`)
-      .then((r) => r.json())
-      .then((data) => {
-        setSections(data.sections ?? []);
-        setTotal(data.total ?? 0);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [electionId, sort, order, methodology, violationFilter, includeSpecial, minRisk, district, municipality, sectionFilter, page]);
+  const { data: anomaliesData, isLoading: loading } = useAnomalies({
+    electionId: electionId!,
+    minRisk,
+    methodology,
+    sort,
+    order,
+    limit: PAGE_SIZE,
+    offset: page * PAGE_SIZE,
+    minViolations: violationFilter === "with_violations" ? 1 : undefined,
+    excludeSpecial: violationFilter === "with_violations" && !includeSpecial,
+    district: district || undefined,
+    municipality: municipality || undefined,
+    section: sectionFilter || undefined,
+  });
+  const sections: RiskSection[] = anomaliesData?.sections ?? [];
+  const total = anomaliesData?.total ?? 0;
 
   const selectedSection = selectedCode ? sections.find((s) => s.section_code === selectedCode) ?? null : null;
   const totalPages = Math.ceil(total / PAGE_SIZE);

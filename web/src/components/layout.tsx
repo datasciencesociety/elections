@@ -9,13 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-interface Election {
-  id: number;
-  name: string;
-  date: string;
-  type: string;
-}
+import { useElections } from "@/lib/hooks/use-elections.js";
 
 const NAV_ITEMS = [
   { label: "Резултати", path: "results" },
@@ -33,15 +27,8 @@ const REPORT_FORM_URL =
 export default function Layout() {
   const { electionId } = useParams<{ electionId: string }>();
   const navigate = useNavigate();
-  const [elections, setElections] = useState<Election[]>([]);
+  const { data: elections = [] } = useElections();
   const [menuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/elections")
-      .then((res) => res.json())
-      .then(setElections)
-      .catch(() => {});
-  }, []);
 
   // Redirect to latest election only from root path
   const isRootPath = window.location.pathname === "/";

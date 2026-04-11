@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams } from "react-router";
 import { trackEvent } from "@/lib/analytics.js";
 import { Map, useMap } from "@/components/ui/map";
@@ -6,120 +6,29 @@ import Sidebar from "@/components/sidebar.js";
 import LocationCorrection from "@/components/location-correction.js";
 import BallotList from "@/components/ballot-list";
 import MapLibreGL from "maplibre-gl";
+import type {
+  AnomalyMethodology,
+  AnomalySection,
+  SectionDetail,
+  SectionGeo,
+} from "@/lib/api/types.js";
+import { useAnomalies } from "@/lib/hooks/use-anomalies.js";
+import { useDistricts, useMunicipalities } from "@/lib/hooks/use-geography.js";
+import { useGeoResultsLean } from "@/lib/hooks/use-geo-results.js";
+import {
+  useSectionDetail,
+  useSectionViolations,
+  useSectionsGeo,
+} from "@/lib/hooks/use-sections.js";
+import { buildProtocolLinks } from "@/lib/cik-links.js";
 
-interface Election {
-  id: number;
-  name: string;
-  date: string;
-  type: string;
-}
-
-export interface RiskSection {
-  section_code: string;
-  settlement_name: string;
-  address: string | null;
-  lat: number | null;
-  lng: number | null;
-  risk_score: number;
-  benford_risk: number;
-  peer_risk: number;
-  acf_risk: number;
-  turnout_rate: number;
-  turnout_zscore: number;
-  benford_score: number;
-  benford_chi2: number;
-  benford_p: number;
-  ekatte_turnout_zscore: number;
-  ekatte_turnout_zscore_norm: number;
-  peer_vote_deviation: number;
-  peer_vote_deviation_norm: number;
-  arithmetic_error: number;
-  vote_sum_mismatch: number;
-  protocol_violation_count: number;
-  acf_turnout_outlier: number;
-  acf_winner_outlier: number;
-  acf_invalid_outlier: number;
-  acf_multicomponent: number;
-  acf_turnout_shift: number | null;
-  acf_turnout_shift_norm: number;
-  acf_party_shift: number | null;
-  acf_party_shift_norm: number;
-  section_type: string;
-  protocol_url: string | null;
-  registered_voters: number | null;
-  actual_voters: number | null;
-}
-
-interface AnomaliesResponse {
-  election: Election;
-  sections: RiskSection[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
-interface GeoEntity {
-  id: number;
-  name: string;
-}
-
-type Methodology = "combined" | "benford" | "peer" | "acf" | "protocol";
-
-interface SectionGeo {
-  section_code: string;
-  lat: number;
-  lng: number;
-  settlement_name: string;
-  registered_voters: number;
-  actual_voters: number;
-  winner_party: string | null;
-  winner_color: string;
-  winner_pct: number;
-  parties: { name: string; color: string; votes: number; pct: number }[];
-}
+// Risk-section type used internally — alias for clarity in this file.
+type RiskSection = AnomalySection;
+type Methodology = AnomalyMethodology;
 
 // Truncate to 2 decimal places without rounding (3.999 → "3.99")
 function pct2(value: number): string {
   return (Math.floor(value * 100) / 100).toFixed(2);
-}
-
-// CIK results URL config per election ID.
-// suffix: protocol URL suffix per election era (from scrape_cik_addresses.py _proto_suffix):
-//   pi2021 (Apr 2021): no suffix — URLs are just {code}.html
-//   pi2021_07, pvrns2021, ns2022: always .0
-//   ns2023, mi2023*: always .1
-//   europe2024+, pe202410+: .0 (machine) or .1 (no machine) — we default to .0
-const CIK_ELECTION_MAP: Record<number, { prefix: string; type: "p" | "pk"; suffix: string; dataEl: number; video?: string }> = {
-  1:  { prefix: "pe202410",         type: "p",  suffix: ".0", dataEl: 64, video: "pe202410" },
-  2:  { prefix: "pe202410_ks",      type: "pk", suffix: ".0", dataEl: 2,  video: "pe202410" },
-  3:  { prefix: "europe2024/ns",    type: "p",  suffix: ".0", dataEl: 64, video: "europe2024" },
-  4:  { prefix: "europe2024/ep",    type: "p",  suffix: ".0", dataEl: 64, video: "europe2024" },
-  5:  { prefix: "mi2023/os",        type: "p",  suffix: ".1", dataEl: 1 },
-  6:  { prefix: "mi2023/kmet",      type: "p",  suffix: ".1", dataEl: 2 },
-  7:  { prefix: "mi2023/ko",        type: "p",  suffix: ".1", dataEl: 4 },
-  8:  { prefix: "mi2023/kr",        type: "p",  suffix: ".1", dataEl: 8 },
-  9:  { prefix: "mi2023_tur2/kmet", type: "p",  suffix: ".1", dataEl: 2 },
-  10: { prefix: "mi2023_tur2/ko",   type: "p",  suffix: ".1", dataEl: 4 },
-  11: { prefix: "mi2023_tur2/kr",   type: "p",  suffix: ".1", dataEl: 8 },
-  12: { prefix: "ns2023",           type: "p",  suffix: ".1", dataEl: 64, video: "ns2023" },
-  13: { prefix: "ns2022",           type: "p",  suffix: ".0", dataEl: 64, video: "ns2022" },
-  14: { prefix: "pvrns2021/tur1",   type: "p",  suffix: ".0", dataEl: 64,  video: "pvrns2021" },
-  15: { prefix: "pvrns2021/tur1",   type: "p",  suffix: ".0", dataEl: 256, video: "pvrns2021" },
-  16: { prefix: "pvrns2021/tur2",   type: "p",  suffix: ".0", dataEl: 256, video: "pvrns2021" },
-  17: { prefix: "pi2021_07",        type: "p",  suffix: ".0", dataEl: 64, video: "pi2021_07" },
-  18: { prefix: "pi2021",           type: "p",  suffix: "",   dataEl: 64, video: "pi2021" },
-};
-
-function buildProtocolLinks(sectionCode: string, electionId: number) {
-  const config = CIK_ELECTION_MAP[electionId];
-  if (!config) return null;
-  const rik = sectionCode.slice(0, 2);
-  const s = config.suffix; // e.g. ".0", ".1", or "" (empty for pi2021)
-  return {
-    protocol: `https://results.cik.bg/${config.prefix}/rezultati/${rik}.html#/${config.type}/${config.dataEl}/${sectionCode}${s}.html`,
-    scan: `https://results.cik.bg/${config.prefix}/rezultati/${rik}.html#/s/${config.dataEl}/${sectionCode}${s}.pdf`,
-    video: config.video ? `https://evideo.bg/${config.video}/${rik}.html#${sectionCode}` : null,
-  };
 }
 
 const SECTION_TYPE_LABELS: Record<string, string> = {
@@ -367,44 +276,39 @@ function CircleLayer({
 // Municipality boundary outlines for context
 function MunicipalityOutlines({ electionId }: { electionId: string }) {
   const { map, isLoaded } = useMap();
+  const { data } = useGeoResultsLean(electionId);
 
   useEffect(() => {
-    if (!map || !isLoaded || !electionId) return;
+    if (!map || !isLoaded || !data?.municipalities) return;
 
-    fetch(`/api/elections/${electionId}/results/geo`)
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => {
-        if (!data?.municipalities) return;
-        const fc = {
-          type: "FeatureCollection",
-          features: data.municipalities.map((m: any) => ({
-            type: "Feature",
-            geometry: m.geo,
-            properties: { name: m.name },
-          })),
-        };
+    const fc = {
+      type: "FeatureCollection",
+      features: data.municipalities.map((m) => ({
+        type: "Feature",
+        geometry: m.geo,
+        properties: { name: m.name },
+      })),
+    };
 
-        const existing = map.getSource(MUNI_SOURCE);
-        if (existing) {
-          (existing as MapLibreGL.GeoJSONSource).setData(fc as any);
-        } else {
-          map.addSource(MUNI_SOURCE, { type: "geojson", data: fc as any });
-        }
+    const existing = map.getSource(MUNI_SOURCE);
+    if (existing) {
+      (existing as MapLibreGL.GeoJSONSource).setData(fc as any);
+    } else {
+      map.addSource(MUNI_SOURCE, { type: "geojson", data: fc as any });
+    }
 
-        if (!map.getLayer(MUNI_BORDER_LAYER)) {
-          // Add before circle layers so circles render on top
-          map.addLayer({
-            id: MUNI_BORDER_LAYER,
-            type: "line",
-            source: MUNI_SOURCE,
-            paint: {
-              "line-color": "rgba(100,100,100,0.25)",
-              "line-width": 0.8,
-            },
-          });
-        }
-      })
-      .catch(() => {});
+    if (!map.getLayer(MUNI_BORDER_LAYER)) {
+      // Add before circle layers so circles render on top
+      map.addLayer({
+        id: MUNI_BORDER_LAYER,
+        type: "line",
+        source: MUNI_SOURCE,
+        paint: {
+          "line-color": "rgba(100,100,100,0.25)",
+          "line-width": 0.8,
+        },
+      });
+    }
 
     return () => {
       try {
@@ -412,7 +316,7 @@ function MunicipalityOutlines({ electionId }: { electionId: string }) {
         if (map.getSource(MUNI_SOURCE)) map.removeSource(MUNI_SOURCE);
       } catch { /* map already destroyed */ }
     };
-  }, [map, isLoaded, electionId]);
+  }, [map, isLoaded, data]);
 
   return null;
 }
@@ -598,31 +502,28 @@ function AllSectionsLayer({
   return null;
 }
 
-// Sidebar for non-risk sections — fetch risk scores and show same detail
+// Sidebar for non-anomaly sections — also fetches the per-section anomaly
+// row in case this section has scores (but not enough to be flagged in the
+// current methodology + threshold view).
 function SimpleSidebarContent({ section, electionId }: { section: SectionGeo; electionId: string }) {
-  const [riskData, setRiskData] = useState<RiskSection | null>(null);
+  const { data: anomalyData } = useAnomalies({
+    electionId,
+    minRisk: 0,
+    limit: 1,
+    section: section.section_code,
+  });
+  const riskData = anomalyData?.sections?.[0] ?? null;
 
-  useEffect(() => {
-    // Try to fetch anomaly data for this section (even if not flagged as risky)
-    fetch(`/api/elections/${electionId}/anomalies?min_risk=0&limit=1&section=${section.section_code}`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data?.sections?.length > 0) {
-          setRiskData(data.sections[0]);
-        }
-      })
-      .catch(() => {});
-  }, [electionId, section.section_code]);
+  // Hook must be called unconditionally (before any early return).
+  const { data: sectionDetail, isLoading: detailLoading } = useSectionDetail(
+    electionId,
+    section.section_code,
+  );
 
-  // Hook must be called unconditionally (before any early return)
-  const { data: sectionDetail, loading: detailLoading } = useSectionDetail(electionId, section.section_code);
-
-  // If we got risk data, show the full risk sidebar
   if (riskData) {
     return <RiskSidebarContent section={riskData} electionId={electionId} />;
   }
 
-  // Fallback: show basic results while loading or if no score data exists
   return (
     <div className="space-y-4">
       <div>
@@ -630,7 +531,12 @@ function SimpleSidebarContent({ section, electionId }: { section: SectionGeo; el
         <div className="text-sm text-muted-foreground">{section.settlement_name}</div>
       </div>
 
-      <SectionResults data={sectionDetail} loading={detailLoading} electionId={electionId} sectionCode={section.section_code} />
+      <SectionResults
+        data={sectionDetail ?? null}
+        loading={detailLoading}
+        electionId={electionId}
+        sectionCode={section.section_code}
+      />
     </div>
   );
 }
@@ -695,82 +601,15 @@ function MethodologyCard({
   );
 }
 
-interface SectionProtocol {
-  registered_voters: number;
-  actual_voters: number;
-  received_ballots: number;
-  added_voters: number;
-  invalid_votes: number;
-  null_votes: number;
-  valid_votes: number;
-  machine_count: number;
-}
-
-interface SectionParty {
-  name: string;
-  short_name: string;
-  color: string;
-  votes: number;
-  paper: number;
-  machine: number;
-  pct: number;
-}
-
-interface SectionContext {
-  municipality_name: string | null;
-  rik_avg_turnout: number | null;
-  ekatte_avg_turnout: number | null;
-  ekatte_peer_count: number | null;
-  municipality_avg_turnout: number | null;
-  municipality_turnout_q3: number | null;
-  prev_election: { id: number; name: string; date: string } | null;
-  prev_turnout: number | null;
-}
-
-interface SectionDetail {
-  protocol: SectionProtocol;
-  parties: SectionParty[];
-  context: SectionContext;
-}
-
-function useSectionDetail(electionId: string, sectionCode: string) {
-  const [data, setData] = useState<SectionDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    setData(null);
-    fetch(`/api/elections/${electionId}/sections/${sectionCode}`)
-      .then((r) => r.ok ? r.json() : null)
-      .then(setData)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [electionId, sectionCode]);
-
-  return { data, loading };
-}
-
-interface Violation {
+// Local-only Violation type alias matches the API one but is exposed here
+// for the legacy ViolationsSection prop signature.
+type Violation = {
   rule_id: string;
   description: string;
-  expected_value: string;
-  actual_value: string;
+  expected_value: string | null;
+  actual_value: string | null;
   severity: string;
-}
-
-function useViolations(electionId: string, sectionCode: string) {
-  const [violations, setViolations] = useState<Violation[]>([]);
-
-  useEffect(() => {
-    setViolations([]);
-    fetch(`/api/elections/${electionId}/violations/${sectionCode}`)
-      .then((r) => r.ok ? r.json() : { violations: [] })
-      .then((d: { violations: Violation[] }) => setViolations(d.violations))
-      .catch(() => {});
-  }, [electionId, sectionCode]);
-
-  return violations;
-}
+};
 
 function ViolationsSection({ violations }: { violations: Violation[] }) {
   if (violations.length === 0) return null;
@@ -870,7 +709,7 @@ function SectionResults({ data, loading, electionId, sectionCode, protocolUrl }:
 // Benford's Law expected distribution for first digits 1-9
 const BENFORD_EXPECTED = [0.301, 0.176, 0.125, 0.097, 0.079, 0.067, 0.058, 0.051, 0.046];
 
-function BenfordDetail({ section: s, parties }: { section: RiskSection; parties: SectionParty[] | null }) {
+function BenfordDetail({ section: s, parties }: { section: RiskSection; parties: SectionDetail["parties"] | null }) {
   // Build per-party first-digit data
   const partyDigits: { name: string; votes: number; digit: number }[] = [];
   const digitCounts = new Array(9).fill(0);
@@ -1001,8 +840,15 @@ export function RiskSidebarContent({ section, electionId }: { section: RiskSecti
   const s = section;
   const turnoutPct = pct2(s.turnout_rate * 100);
   const risk = s.risk_score;
-  const { data: sectionDetail, loading: detailLoading } = useSectionDetail(electionId, s.section_code);
-  const violations = useViolations(electionId, s.section_code);
+  const { data: sectionDetail, isLoading: detailLoading } = useSectionDetail(
+    electionId,
+    s.section_code,
+  );
+  const { data: violationsData } = useSectionViolations(
+    electionId,
+    s.section_code,
+  );
+  const violations = violationsData?.violations ?? [];
   const ctx = sectionDetail?.context ?? null;
 
   const riskLabel = risk >= 0.6
@@ -1048,7 +894,7 @@ export function RiskSidebarContent({ section, electionId }: { section: RiskSecti
       </div>
 
       {/* Section results */}
-      <SectionResults data={sectionDetail} loading={detailLoading} electionId={electionId} sectionCode={s.section_code} protocolUrl={s.protocol_url} />
+      <SectionResults data={sectionDetail ?? null} loading={detailLoading} electionId={electionId} sectionCode={s.section_code} protocolUrl={s.protocol_url} />
 
       {/* Overall risk */}
       <div className="rounded-lg border border-border p-3">
@@ -1373,7 +1219,7 @@ export function RiskSidebarContent({ section, electionId }: { section: RiskSecti
   );
 }
 
-export default function RiskMap() {
+export default function AnomalyMap() {
   const { electionId } = useParams<{ electionId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -1416,80 +1262,39 @@ export default function RiskMap() {
   const sectionFilter = searchParams.get("q") ?? "";
   const setSectionFilter = (v: string) => setParam("q", v);
 
-  // All sections (base layer)
-  const [allSections, setAllSections] = useState<SectionGeo[]>([]);
-  const [baseLoading, setBaseLoading] = useState(true);
-
-  // Risk sections (overlay)
-  const [riskSections, setRiskSections] = useState<RiskSection[]>([]);
-  const [total, setTotal] = useState(0);
-  const [riskLoading, setRiskLoading] = useState(false);
-
   const [showBaseSections, setShowBaseSections] = useState(true);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const [districts, setDistricts] = useState<GeoEntity[]>([]);
-  const [municipalities, setMunicipalities] = useState<GeoEntity[]>([]);
 
-  // Fetch all sections (base layer), filtered by location
-  useEffect(() => {
-    if (!electionId) return;
-    setBaseLoading(true);
-    const params = new URLSearchParams();
-    if (municipality) params.set("municipality", municipality);
-    else if (district) params.set("district", district);
-    const qs = params.toString();
-    fetch(`/api/elections/${electionId}/sections/geo${qs ? `?${qs}` : ""}`)
-      .then((res) => res.json())
-      .then((data) => setAllSections(data.sections ?? []))
-      .catch(() => {})
-      .finally(() => setBaseLoading(false));
-  }, [electionId, district, municipality]);
+  // Geo lookups for the filter dropdowns
+  const { data: districts = [] } = useDistricts();
+  const { data: municipalities = [] } = useMunicipalities(district || undefined);
 
-  // Fetch districts on mount
-  useEffect(() => {
-    fetch("/api/geography/districts")
-      .then((r) => r.json())
-      .then(setDistricts);
-  }, []);
+  // All sections in this election (base layer)
+  const { data: sectionsGeoData, isLoading: baseLoading } = useSectionsGeo(
+    electionId,
+    {
+      district: district || undefined,
+      municipality: municipality || undefined,
+    },
+  );
+  const allSections = sectionsGeoData?.sections ?? [];
 
-  // Fetch municipalities when district changes
-  useEffect(() => {
-    if (!district) {
-      setMunicipalities([]);
-      return;
-    }
-    fetch(`/api/geography/municipalities?district=${district}`)
-      .then((r) => r.json())
-      .then(setMunicipalities);
-  }, [district]);
-
-  // Fetch anomaly sections (only when risk filter is active)
-  useEffect(() => {
-    if (!electionId || minRisk <= 0) {
-      setRiskSections([]);
-      setTotal(0);
-      return;
-    }
-    setRiskLoading(true);
-
-    const params = new URLSearchParams();
-    params.set("min_risk", methodology === "protocol" ? "1" : String(minRisk));
-    params.set("sort", methodology === "protocol" ? "protocol_violation_count" : "risk_score");
-    params.set("order", "desc");
-    params.set("limit", "0");
-    if (methodology !== "combined") params.set("methodology", methodology);
-    if (municipality) params.set("municipality", municipality);
-    else if (district) params.set("district", district);
-
-    fetch(`/api/elections/${electionId}/anomalies?${params}`)
-      .then((r) => r.json())
-      .then((data: AnomaliesResponse) => {
-        setRiskSections(data.sections);
-        setTotal(data.total);
-      })
-      .catch(() => {})
-      .finally(() => setRiskLoading(false));
-  }, [electionId, minRisk, methodology, district, municipality]);
+  // Anomaly overlay — only fetched when the risk filter is active
+  const riskActive = minRisk > 0;
+  const { data: anomaliesData, isFetching: riskLoading } = useAnomalies(
+    {
+      electionId: electionId!,
+      minRisk,
+      methodology,
+      district: district || undefined,
+      municipality: municipality || undefined,
+      sort: methodology === "protocol" ? "protocol_violation_count" : "risk_score",
+      order: "desc",
+      limit: 0,
+    },
+    riskActive,
+  );
+  const riskSections = anomaliesData?.sections ?? [];
 
   // Filter sections by section code search
   const filteredAllSections = sectionFilter
@@ -1507,8 +1312,6 @@ export default function RiskMap() {
     }
     setParam("section", selectedCode === code ? "" : code);
   };
-
-  const riskActive = minRisk > 0;
 
   const methodologies: { key: Methodology; label: string }[] = [
     { key: "combined", label: "Комбиниран" },

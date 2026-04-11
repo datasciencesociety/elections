@@ -1,35 +1,16 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router";
 import LocationCorrection from "@/components/location-correction.js";
-
-interface MissingLocation {
-  id: number;
-  settlement_name: string;
-  address: string;
-  ekatte: string;
-  section_codes: string;
-  section_count: number;
-}
+import type { MissingCoordinatesLocation as MissingLocation } from "@/lib/api/types.js";
+import { useMissingCoordinates } from "@/lib/hooks/use-geography.js";
 
 export default function MissingCoordinates() {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parseInt(searchParams.get("page") ?? "1");
   const search = searchParams.get("q") ?? "";
 
-  const [data, setData] = useState<{ total: number; pages: number; locations: MissingLocation[] } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading: loading } = useMissingCoordinates({ page, search });
   const [correcting, setCorrecting] = useState<MissingLocation | null>(null);
-
-  useEffect(() => {
-    setLoading(true);
-    const params = new URLSearchParams({ page: String(page) });
-    if (search) params.set("search", search);
-    fetch(`/api/geography/missing-coordinates?${params}`)
-      .then((r) => r.json())
-      .then(setData)
-      .catch(() => setData(null))
-      .finally(() => setLoading(false));
-  }, [page, search]);
 
   const setParam = (key: string, value: string) => {
     setSearchParams((prev) => {

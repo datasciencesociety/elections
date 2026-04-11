@@ -1,23 +1,17 @@
 import { useEffect, useState } from "react";
+import { useQueries } from "@tanstack/react-query";
 import { Map as MapGL, MapMarker, MarkerContent, MapControls } from "@/components/ui/map";
 import LocationCorrection from "@/components/location-correction";
 import BallotList from "@/components/ballot-list";
-
-interface ElectionHistory {
-  election_id: number;
-  election_name: string;
-  election_date: string;
-  election_type: string;
-  risk_score: number;
-  benford_risk: number;
-  peer_risk: number;
-  acf_risk: number;
-  turnout_rate: number;
-  arithmetic_error: number;
-  vote_sum_mismatch: number;
-  protocol_violation_count: number;
-  protocol_url: string | null;
-}
+import type {
+  PersistenceHistoryEntry as ElectionHistory,
+  ProtocolViolation,
+  SectionDetail as SectionDetailData,
+  SectionViolationsResponse,
+} from "@/lib/api/types.js";
+import { usePersistenceSectionHistory } from "@/lib/hooks/use-persistence.js";
+import { getSectionDetail, getSectionViolations } from "@/lib/api/sections.js";
+import { getAnomalies } from "@/lib/api/anomalies.js";
 
 interface SectionLocation {
   settlement_name: string;
@@ -29,32 +23,9 @@ interface SectionLocation {
 interface ElectionDetail {
   election_id: number;
   election_name: string;
-  protocol: {
-    registered_voters: number;
-    actual_voters: number;
-    received_ballots: number;
-    added_voters: number;
-    invalid_votes: number;
-    null_votes: number;
-    valid_votes: number;
-    machine_count: number;
-  };
-  parties: {
-    name: string;
-    short_name: string;
-    color: string;
-    votes: number;
-    paper: number;
-    machine: number;
-    pct: number;
-  }[];
-  violations: {
-    rule_id: string;
-    description: string;
-    expected_value: string;
-    actual_value: string;
-    severity: string;
-  }[];
+  protocol: SectionDetailData["protocol"];
+  parties: SectionDetailData["parties"];
+  violations: ProtocolViolation[];
 }
 
 function RiskBadge({ value }: { value: number }) {
@@ -153,64 +124,73 @@ function ElectionCard({ detail, history }: { detail: ElectionDetail; history: El
 }
 
 export default function SectionPreview({ sectionCode }: { sectionCode: string }) {
-  const [history, setHistory] = useState<ElectionHistory[] | null>(null);
   const [location, setLocation] = useState<SectionLocation | null>(null);
-  const [details, setDetails] = useState<Map<number, ElectionDetail>>(new Map());
-  const [loading, setLoading] = useState(true);
-  const [loadingDetails, setLoadingDetails] = useState(false);
   const [showCorrection, setShowCorrection] = useState(false);
 
-  useEffect(() => {
-    setLoading(true);
-    setDetails(new Map());
-    setLocation(null);
-    setHistory(null);
-    fetch(`/api/elections/persistence/${sectionCode}`)
-      .then((r) => r.json())
-      .then((d: { elections: ElectionHistory[] }) => setHistory(d.elections))
-      .catch(() => setHistory([]))
-      .finally(() => setLoading(false));
-  }, [sectionCode]);
+  const { data: historyData, isLoading: loading } = usePersistenceSectionHistory(sectionCode);
+  const history: ElectionHistory[] | null = historyData?.elections ?? null;
 
-  useEffect(() => {
-    if (!history?.length) return;
-    setLoadingDetails(true);
+  const detailQueries = useQueries({
+    queries: (history ?? []).flatMap((h) => [
+      {
+        queryKey: ["section-detail", h.election_id, sectionCode],
+        queryFn: () => getSectionDetail(h.election_id, sectionCode),
+      },
+      {
+        queryKey: ["section-violations", h.election_id, sectionCode],
+        queryFn: () => getSectionViolations(h.election_id, sectionCode),
+      },
+    ]),
+  });
 
-    const fetches = history.map((h) =>
-      Promise.all([
-        fetch(`/api/elections/${h.election_id}/sections/${sectionCode}`).then((r) => r.ok ? r.json() : null),
-        fetch(`/api/elections/${h.election_id}/violations/${sectionCode}`).then((r) => r.ok ? r.json() : { violations: [] }),
-      ]).then(([sectionData, violationData]) => {
-        if (!sectionData) return null;
-        return {
+  const loadingDetails = detailQueries.some((q) => q.isLoading);
+
+  const details = new Map<number, ElectionDetail>();
+  if (history) {
+    for (let i = 0; i < history.length; i++) {
+      const h = history[i];
+      const sectionData = detailQueries[i * 2]?.data as SectionDetailData | undefined;
+      const violationData = detailQueries[i * 2 + 1]?.data as
+        | SectionViolationsResponse
+        | undefined;
+      if (sectionData) {
+        details.set(h.election_id, {
           election_id: h.election_id,
           election_name: h.election_name,
           protocol: sectionData.protocol,
           parties: sectionData.parties,
-          violations: violationData.violations ?? [],
-        } as ElectionDetail;
-      }),
-    );
-
-    Promise.all(fetches).then((results) => {
-      const m = new Map<number, ElectionDetail>();
-      for (const r of results) {
-        if (r) m.set(r.election_id, r);
+          violations: violationData?.violations ?? [],
+        });
       }
-      setDetails(m);
+    }
+  }
 
-      const first = results.find((r) => r);
-      if (first) {
-        fetch(`/api/elections/${first.election_id}/anomalies?section=${sectionCode}&min_risk=0&limit=1`)
-          .then((r) => r.json())
-          .then((d) => {
-            const sec = d.sections?.[0];
-            if (sec) setLocation({ settlement_name: sec.settlement_name, address: sec.address, lat: sec.lat, lng: sec.lng });
-          })
-          .catch(() => {});
-      }
-      setLoadingDetails(false);
-    });
+  useEffect(() => {
+    setLocation(null);
+    if (!sectionCode || !history?.length) return;
+    let cancelled = false;
+    getAnomalies({
+      electionId: history[0].election_id,
+      minRisk: 0,
+      limit: 1,
+      section: sectionCode,
+    })
+      .then((d) => {
+        if (cancelled) return;
+        const sec = d.sections?.[0];
+        if (sec) {
+          setLocation({
+            settlement_name: sec.settlement_name,
+            address: sec.address,
+            lat: sec.lat,
+            lng: sec.lng,
+          });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [history, sectionCode]);
 
   if (loading) {

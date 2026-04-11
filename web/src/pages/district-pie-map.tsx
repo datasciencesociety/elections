@@ -6,41 +6,15 @@ import MapLibreGL from "maplibre-gl";
 import bbox from "@turf/bbox";
 import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 import { point as turfPoint } from "@turf/helpers";
+import { useGeoResults } from "@/lib/hooks/use-geo-results.js";
+import type { GeoLevel } from "@/lib/api/geo-results.js";
+import type { Election, GeoArea } from "@/lib/api/types.js";
 
-interface Election {
-  id: number;
-  name: string;
-  date: string;
-  type: string;
-}
-
-interface PartyEntry {
-  party_id: number;
-  name: string;
-  color: string;
-  votes: number;
-  pct: number;
-}
-
-interface GeoRegion {
-  id: number;
-  name: string;
+// Local alias — district-pie-map narrows the geometry to polygon variants.
+type GeoRegion = Omit<GeoArea, "geo"> & {
   geo: GeoJSON.Polygon | GeoJSON.MultiPolygon;
-  registered_voters: number;
-  actual_voters: number;
-  non_voters: number;
-  total_votes: number;
-  winner: {
-    party_id: number;
-    name: string;
-    color: string;
-    votes: number;
-    pct: number;
-  } | null;
-  parties: PartyEntry[];
-}
+};
 
-type GeoLevel = "districts" | "municipalities" | "riks";
 
 interface AggregatedParty {
   name: string;
@@ -422,22 +396,6 @@ function TileDensityLayer({
   return null;
 }
 
-function fetchRegions(
-  electionId: string,
-  level: GeoLevel,
-): Promise<{ election: Election; regions: GeoRegion[] }> {
-  return fetch(`/api/elections/${electionId}/results/geo/${level}`)
-    .then((res) => {
-      if (res.status === 404) throw new Error("Election not found");
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json();
-    })
-    .then((data) => ({
-      election: data.election,
-      regions: data[level] as GeoRegion[],
-    }));
-}
-
 interface LegendStats {
   registered: number;
   actual: number;
@@ -524,10 +482,6 @@ function PartyLegend({
 export default function DistrictPieMap() {
   const { electionId } = useParams<{ electionId: string }>();
 
-  const [election, setElection] = useState<Election | null>(null);
-  const [regions, setRegions] = useState<GeoRegion[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showNonVoters, setShowNonVoters] = useState(true);
   const [geoLevel, setGeoLevel] = useState<GeoLevel>("municipalities");
   const [selectedRegion, setSelectedRegion] = useState<GeoRegion | null>(null);
@@ -537,25 +491,21 @@ export default function DistrictPieMap() {
   // Active party = hover takes priority over tap
   const activeParty = hoveredParty ?? tappedParty;
 
+  const {
+    data: geoData,
+    isLoading: loading,
+    error: queryError,
+  } = useGeoResults(electionId, geoLevel);
+  const election: Election | null = geoData?.election ?? null;
+  const regions: GeoRegion[] = (geoData?.areas ?? []) as GeoRegion[];
+  const error = queryError instanceof Error ? queryError.message : null;
   const isLocalElection = election?.type.startsWith("local_") ?? false;
 
+  // Reset transient selection state whenever the underlying dataset changes.
   useEffect(() => {
-    if (!electionId) return;
-    setLoading(true);
-    setError(null);
-    setRegions([]);
-    setElection(null);
     setSelectedRegion(null);
     setHoveredParty(null);
     setTappedParty(null);
-
-    fetchRegions(electionId, geoLevel)
-      .then(({ election: el, regions: r }) => {
-        setElection(el);
-        setRegions(r);
-      })
-      .catch((err: Error) => setError(err.message))
-      .finally(() => setLoading(false));
   }, [electionId, geoLevel]);
 
   const regionMap = useMemo(
