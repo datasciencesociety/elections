@@ -442,10 +442,19 @@ def parse_cik_parties_ordered(filepath: str, election_id: int, cur: sqlite3.Curs
 def parse_local_candidates(filepath: str, election_id: int, cur: sqlite3.Cursor) -> int:
     """
     Parse candidates file. Handles multiple format variants:
-      standard (6+):   rik_code;rik_name;party_num;party_name;list_pos;name
-      council-2011(4): rik_code;party_num;list_pos;name
-      mayor-2011 (3):  rik_code;party_num;name
+      council/list (7): rik_code;rik_name;party_num;party_name;list_pos;name;
+      mayor (6):        rik_code;sub_rik_name;party_num;party_name;name;
+      council-2011(4):  rik_code;party_num;list_pos;name
+      mayor-2011 (3):   rik_code;party_num;name
       kmetstvo-2011(5): rik_code;settle_code;settle_name;party_num;name
+
+    Mayor format is the modern (mi2023+) format for the three mayor-type local
+    elections (local_mayor / kmetstvo / neighbourhood). It has no list position
+    and the candidate name lives in field index 4. The second field is the
+    sub-RIK name (settlement name for kmetstvo, neighbourhood label for
+    neighbourhood, municipality label for the main mayor) — stored in
+    list_position so a downstream step can resolve it back to the matching
+    sections.rik_code.
     """
     count = 0
     rows = []
@@ -473,8 +482,16 @@ def parse_local_candidates(filepath: str, election_id: int, cur: sqlite3.Cursor)
             # kmetstvo-2011: rik_code;settle_code;settle_name;party_num;name
             party_num = safe_int(p[3])
             cand_name = p[4].strip()
+        elif n == 6:
+            # mayor (mi2023+): rik_code;sub_rik_name;party_num;party_name;name;
+            # No list position. Field 4 is the candidate, field 5 is the
+            # trailing empty after the final semicolon.
+            party_num = safe_int(p[2])
+            list_pos  = p[1].strip()  # sub_rik_name (settlement / neighbourhood / municipality label)
+            cand_name = p[4].strip()
         else:
-            # standard 6+ field format: rik_code;rik_name;party_num;party_name;list_pos;name
+            # council / list format (7+ fields):
+            # rik_code;rik_name;party_num;party_name;list_pos;name
             party_num = safe_int(p[2])
             list_pos  = p[4].strip() if n > 4 else ""
             cand_name = p[5].strip() if n > 5 else ""

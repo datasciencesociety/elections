@@ -33,6 +33,10 @@ LOCAL_TYPES = {
     "local_council", "local_mayor",
     "local_mayor_kmetstvo", "local_mayor_neighbourhood",
 }
+# Mayor-type elections need their candidate.rik_code rewritten so it lines up
+# with sections.rik_code (which is the EKATTE for kmetstvo, the neighbourhood
+# code for neighbourhood). The municipality-level mayor already matches.
+SUB_RIK_LOCAL_TYPES = {"local_mayor_kmetstvo", "local_mayor_neighbourhood"}
 
 
 # ---------------------------------------------------------------------------
@@ -118,6 +122,91 @@ def update_candidate_fks(cur: sqlite3.Cursor) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Sub-RIK normalisation for mayor-type elections
+# ---------------------------------------------------------------------------
+
+def normalize_sub_rik_codes(cur: sqlite3.Cursor) -> tuple[int, int]:
+    """
+    For kmetstvo / neighbourhood mayor elections, the parser stores candidates
+    with rik_code = the 3-digit municipality OIK from CIK and list_position =
+    the sub-RIK label (settlement name for kmetstvo, "01. Одесос"-style label
+    for neighbourhood). Sections, however, are keyed by sections.rik_code which
+    is the EKATTE / neighbourhood code, not the municipality.
+
+    Rewrite candidates.rik_code so it points at the same sub-RIK code that
+    sections use. The match is (election, sub-RIK label) constrained by the
+    section_code's first four digits, which encode the same oblast+municipality
+    that the candidate file uses (with a leading zero stripped).
+
+    Without this step, server-side joins between sections and candidates can
+    only succeed for municipality-level mayor (where rik_code already matches),
+    leaving the kmetstvo and neighbourhood ballots showing party names.
+    """
+    elections = cur.execute(
+        "SELECT id FROM elections WHERE type IN (?, ?)",
+        tuple(SUB_RIK_LOCAL_TYPES),
+    ).fetchall()
+    if not elections:
+        return (0, 0)
+
+    rewritten = 0
+    unmatched = 0
+    skipped_already = 0
+    for (election_id,) in elections:
+        # Build (sub_rik_label, mun_prefix) → section.rik_code map for this
+        # election from sections — uses section_code's first 4 chars as the
+        # municipality fingerprint.
+        section_map: dict[tuple[str, str], str] = {}
+        valid_rik_codes: set[str] = set()
+        for rik_code, rik_name, section_code in cur.execute(
+            "SELECT rik_code, rik_name, section_code FROM sections WHERE election_id = ?",
+            (election_id,),
+        ):
+            if not rik_name or not rik_code or not section_code or len(section_code) < 4:
+                continue
+            section_map.setdefault((rik_name, section_code[:4]), rik_code)
+            valid_rik_codes.add(rik_code)
+
+        cand_rows = cur.execute(
+            "SELECT id, rik_code, list_position FROM candidates "
+            "WHERE election_id = ? AND list_position IS NOT NULL AND list_position != ''",
+            (election_id,),
+        ).fetchall()
+
+        updates: list[tuple[str, int]] = []
+        for cid, cand_rik, sub_label in cand_rows:
+            # Idempotency: if the candidate already points at a valid section
+            # rik_code for this election, leave it alone.
+            if cand_rik in valid_rik_codes:
+                skipped_already += 1
+                continue
+            if cand_rik is None:
+                unmatched += 1
+                continue
+            try:
+                mun_prefix = f"{int(cand_rik):04d}"
+            except (TypeError, ValueError):
+                unmatched += 1
+                continue
+            new_code = section_map.get((sub_label, mun_prefix))
+            if new_code is None:
+                unmatched += 1
+                continue
+            updates.append((new_code, cid))
+
+        if updates:
+            cur.executemany(
+                "UPDATE candidates SET rik_code = ? WHERE id = ?",
+                updates,
+            )
+            rewritten += len(updates)
+
+    if skipped_already:
+        print(f"  (already normalised: {skipped_already})")
+    return (rewritten, unmatched)
+
+
+# ---------------------------------------------------------------------------
 # Stats
 # ---------------------------------------------------------------------------
 
@@ -189,6 +278,10 @@ def main() -> None:
 
     print("Updating candidates FKs…")
     update_candidate_fks(cur)
+
+    print("Normalising sub-RIK codes for kmetstvo / neighbourhood candidates…")
+    rewritten, unmatched = normalize_sub_rik_codes(cur)
+    print(f"  rewritten: {rewritten}, unmatched: {unmatched}")
 
     conn.commit()
     print_stats(cur)

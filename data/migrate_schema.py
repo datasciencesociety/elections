@@ -194,6 +194,8 @@ def ensure_indexes(conn: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_sections_code ON sections(section_code);
         CREATE INDEX IF NOT EXISTS idx_sections_location ON sections(location_id);
         CREATE INDEX IF NOT EXISTS idx_sections_election_location ON sections(election_id, location_id);
+        -- powers the section→rik_code lookup used by the mayor candidate join
+        CREATE INDEX IF NOT EXISTS idx_sections_election_code ON sections(election_id, section_code);
 
         -- locations geography
         CREATE INDEX IF NOT EXISTS idx_loc_municipality_id ON locations(municipality_id);
@@ -222,6 +224,8 @@ def ensure_indexes(conn: sqlite3.Connection) -> None:
 
         -- candidates
         CREATE INDEX IF NOT EXISTS idx_candidates_election ON candidates(election_id);
+        -- powers the mayor candidate join: votes → candidates by (election, ballot, sub-rik)
+        CREATE INDEX IF NOT EXISTS idx_candidates_join ON candidates(election_id, party_number, rik_code);
 
         -- section_scores
         CREATE INDEX IF NOT EXISTS idx_scores_risk ON section_scores(risk_score DESC);
