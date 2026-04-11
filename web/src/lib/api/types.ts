@@ -264,6 +264,46 @@ export interface GeoEntity {
   name: string;
 }
 
+export interface District extends GeoEntity {
+  section_count: number;
+}
+
+export interface AbroadSummary {
+  section_count: number;
+  country_count: number;
+}
+
+// ---------- browse ----------
+
+export interface BrowseLocation {
+  location_id: number;
+  settlement_name: string | null;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+  section_count: number;
+  section_code: string;
+}
+
+export interface DistrictBrowseLocation extends BrowseLocation {
+  municipality_id: number | null;
+  municipality_name: string | null;
+}
+
+export interface DistrictBrowseResponse {
+  district: { id: number; name: string };
+  locations: DistrictBrowseLocation[];
+}
+
+export interface AbroadBrowseLocation extends BrowseLocation {
+  country: string;
+  city: string;
+}
+
+export interface AbroadBrowseResponse {
+  locations: AbroadBrowseLocation[];
+}
+
 export interface MissingCoordinatesLocation {
   id: number;
   settlement_name: string;
@@ -278,4 +318,33 @@ export interface MissingCoordinatesResponse {
   page: number;
   pages: number;
   locations: MissingCoordinatesLocation[];
+}
+
+// ---------- section siblings ----------
+
+export interface SiblingSection {
+  section_code: string;
+  registered_voters: number | null;
+  actual_voters: number | null;
+  turnout_rate: number | null;
+  winner_party: string | null;
+  winner_color: string | null;
+  winner_pct: number | null;
+}
+
+export interface SectionSiblingsResponse {
+  location: {
+    id: number;
+    settlement_name: string | null;
+    address: string | null;
+    lat: number | null;
+    lng: number | null;
+  };
+  latest_election: {
+    id: number;
+    name: string;
+    date: string;
+    type: string;
+  } | null;
+  siblings: SiblingSection[];
 }

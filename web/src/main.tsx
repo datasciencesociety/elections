@@ -11,6 +11,8 @@ import SectionsTable from "./pages/sections-table.js";
 import Persistence from "./pages/persistence.js";
 import SectionDetail from "./pages/section-detail.js";
 import MissingCoordinates from "./pages/missing-coordinates.js";
+import Landing from "./pages/landing.js";
+import { BrowseAbroad, BrowseDistrict } from "./pages/browse.js";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,6 +57,13 @@ createRoot(document.getElementById("root")!).render(
         <AnalyticsTracker />
         <Routes>
           <Route element={<Layout />}>
+            {/* Landing */}
+            <Route path="/" element={<Landing />} />
+
+            {/* Browse drill-down */}
+            <Route path="/browse/district/:id" element={<BrowseDistrict />} />
+            <Route path="/browse/abroad" element={<BrowseAbroad />} />
+
             {/* Main views */}
             <Route path="/:electionId/results" element={<DistrictPieMap />} />
             <Route path="/:electionId/sections" element={<AnomalyMap />} />
@@ -64,9 +73,6 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/help/coordinates" element={<MissingCoordinates />} />
             {/* Redirect old risk URL to combined sections page */}
             <Route path="/:electionId/risk" element={<RedirectToSections />} />
-
-            {/* Default: Layout handles redirect to latest election */}
-            <Route path="/" element={<></>} />
           </Route>
 
           {/* Old URL redirects (outside layout since they just redirect) */}

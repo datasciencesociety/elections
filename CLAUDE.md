@@ -132,9 +132,17 @@ web/                        # Vite + React + MapLibre frontend
 - **Web:** TypeScript, React 19, Vite 6, MapLibre GL, React Query, Tailwind v4.
 - **Infra:** Docker container, deployed via the workflows in `.github/`.
 
+## Hosting
+
+The web frontend is hosted at:
+- **map.izborenmonitor.com**
+- **karta.izborenmonitor.com**
+
 ## `.internal/` directory
 
 Gitignored. Contains the internal-only build pipeline (`.internal/import.sh`), maintainer planning notes, additional CIK exports for the pre-2021 era, and LLM context files. Nothing in `.internal/` is required to run the public pipeline (`data/import.sh`) or to build/run the server and web frontend against the released `elections.db`.
+
+**Start with [`.internal/index.md`](.internal/index.md)** for a map of what's in there — product voice, launch planning, operational docs, and maintainer tooling. In particular, before writing any public copy, landing page content, or error messages, read `.internal/voice.md`.
 
 ## Georgi's focus
 

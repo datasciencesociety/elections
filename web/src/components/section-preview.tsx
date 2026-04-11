@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   PersistenceHistoryEntry as ElectionHistory,
   AnomalySection,
@@ -43,13 +43,24 @@ export default function SectionPreview({
     usePersistenceSectionHistory(sectionCode);
   const history: ElectionHistory[] | null = historyData?.elections ?? null;
 
+  // Server returns oldest→newest for the sparkline's benefit. Everything
+  // else (the per-election cards below, the anomaly-meta lookup for the
+  // location block) wants newest-first, so derive historyDesc once.
+  // Memoized so the array reference is stable across renders — otherwise
+  // the useEffect below fires on every render and causes flicker.
+  const historyDesc: ElectionHistory[] | null = useMemo(
+    () => (history ? [...history].reverse() : null),
+    [history],
+  );
+
   // Pull location info from the most recent election in the history.
   useEffect(() => {
     setAnomalyMeta(null);
-    if (!sectionCode || !history?.length) return;
+    if (!sectionCode || !historyDesc?.length) return;
+    const latest = historyDesc[0];
     let cancelled = false;
     getAnomalies({
-      electionId: history[0].election_id,
+      electionId: latest.election_id,
       minRisk: 0,
       limit: 1,
       section: sectionCode,
@@ -63,7 +74,7 @@ export default function SectionPreview({
     return () => {
       cancelled = true;
     };
-  }, [history, sectionCode]);
+  }, [historyDesc, sectionCode]);
 
   if (loading) {
     return (
@@ -89,9 +100,9 @@ export default function SectionPreview({
   return (
     <div className="space-y-3">
       {/* Shared location block: header, mini-map, suggest-location */}
-      {anomalyMeta && (
+      {anomalyMeta && historyDesc && (
         <SectionLocation
-          electionId={history[0].election_id}
+          electionId={historyDesc[0].election_id}
           sectionCode={sectionCode}
           settlementName={anomalyMeta.settlement_name}
           address={anomalyMeta.address}
@@ -105,7 +116,7 @@ export default function SectionPreview({
       <div className="grid grid-cols-4 gap-2">
         <Stat label="Избори" value={history.length} />
         <Stat
-          label="Флагнати"
+          label="Отбелязани"
           value={
             <>
               {flaggedCount}
@@ -168,9 +179,9 @@ export default function SectionPreview({
         </button>
       </div>
 
-      {/* Per-election cards — shared SectionElection in compact mode */}
+      {/* Per-election cards — newest first */}
       <div className="space-y-2">
-        {history.map((h) => (
+        {historyDesc!.map((h) => (
           <div
             key={h.election_id}
             className={`rounded-lg border border-border border-l-[3px] ${SCORE_BORDER_LEFT_CLASS[scoreLevel(h.risk_score)]} bg-background p-3`}

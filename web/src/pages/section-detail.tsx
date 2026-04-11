@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router";
 import { trackEvent } from "@/lib/analytics.js";
 import type {
   PersistenceHistoryEntry as ElectionHistory,
   AnomalySection,
+  SiblingSection,
 } from "@/lib/api/types.js";
 import { usePersistenceSectionHistory } from "@/lib/hooks/use-persistence.js";
+import { useSectionSiblings } from "@/lib/hooks/use-geography.js";
 import { getAnomalies } from "@/lib/api/anomalies.js";
 import {
   ScoreBadge,
@@ -17,6 +19,7 @@ import {
   SectionLocation,
   SectionElection,
 } from "@/components/section/index.js";
+import MethodologyExplainer from "@/components/methodology-explainer.js";
 
 const REPORT_FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSdLB0n9twfFQyiD4mIpAX_fYc_-N5bUhfkKpVJa6_-Oxv5CAQ/viewform";
@@ -48,16 +51,29 @@ export default function SectionDetail() {
 
   const { data: historyData, isLoading: loading } = usePersistenceSectionHistory(sectionCode);
   const history: ElectionHistory[] | null = historyData?.elections ?? null;
+  const { data: siblingsData } = useSectionSiblings(sectionCode);
+
+  // Server returns history sorted oldest → newest (chronological). The
+  // sparkline reads that order (old on the left, new on the right) so we
+  // keep `history` as-is for the timeline. Everything else — the breakdown
+  // table, the per-election cards, and the anomaly-meta lookup — wants the
+  // most recent first, so we derive `historyDesc`. Memoized so the array
+  // reference stays stable across renders; otherwise the useEffect below
+  // re-fires on every render and causes flicker.
+  const historyDesc: ElectionHistory[] | null = useMemo(
+    () => (history ? [...history].reverse() : null),
+    [history],
+  );
 
   // Pull location info from the most recent election that has a row in
   // section_scores. The same anomaly row is also passed as `initialAnomaly`
   // to the matching SectionElection so that one fewer query fires.
   useEffect(() => {
-    if (!sectionCode || !history?.length) return;
-    const first = history[0];
+    if (!sectionCode || !historyDesc?.length) return;
+    const latest = historyDesc[0];
     let cancelled = false;
     getAnomalies({
-      electionId: first.election_id,
+      electionId: latest.election_id,
       minRisk: 0,
       limit: 1,
       section: sectionCode,
@@ -71,7 +87,7 @@ export default function SectionDetail() {
     return () => {
       cancelled = true;
     };
-  }, [history, sectionCode]);
+  }, [historyDesc, sectionCode]);
 
   if (loading) {
     return (
@@ -129,7 +145,7 @@ export default function SectionDetail() {
             rel="noopener noreferrer"
             className="rounded border border-border px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-[#ce463c] hover:text-[#ce463c]"
           >
-            Докладвай проблем
+            Докладвай разминаване
           </a>
         </div>
 
@@ -142,7 +158,7 @@ export default function SectionDetail() {
             <span
               className={`rounded-full px-3 py-0.5 text-xs font-semibold ${flaggedChipClass}`}
             >
-              {flaggedCount}/{history.length} флагнати
+              {flaggedCount}/{history.length} отбелязани
             </span>
           </div>
           <div className="mt-3 h-0.5 w-12 bg-[#ce463c]" />
@@ -152,7 +168,7 @@ export default function SectionDetail() {
         {anomalyMeta && (
           <div className="mb-6 rounded border border-border bg-card p-4">
             <SectionLocation
-              electionId={anomalyMeta ? history[0].election_id : ""}
+              electionId={anomalyMeta && historyDesc ? historyDesc[0].election_id : ""}
               sectionCode={sectionCode}
               settlementName={anomalyMeta.settlement_name}
               address={anomalyMeta.address}
@@ -162,6 +178,17 @@ export default function SectionDetail() {
             />
           </div>
         )}
+
+        {/* Sibling sections at the same address — peer check */}
+        {siblingsData &&
+          siblingsData.siblings.length >= 2 &&
+          siblingsData.latest_election && (
+            <SiblingsStrip
+              currentCode={sectionCode}
+              siblings={siblingsData.siblings}
+              latestElectionName={siblingsData.latest_election.name}
+            />
+          )}
 
         {/* Stats strip */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -217,6 +244,9 @@ export default function SectionDetail() {
           </div>
         </div>
 
+        {/* Methodology explainer — click to expand */}
+        <MethodologyExplainer className="mb-6" />
+
         {/* Per-election score breakdown table */}
         <div className="mb-6 overflow-x-auto rounded border border-border bg-card">
           <table className="w-full text-xs">
@@ -238,7 +268,7 @@ export default function SectionDetail() {
               </tr>
             </thead>
             <tbody>
-              {history.map((h) => (
+              {historyDesc!.map((h) => (
                 <tr
                   key={h.election_id}
                   className="border-b border-border/50 transition-colors hover:bg-muted/30"
@@ -295,7 +325,7 @@ export default function SectionDetail() {
           <h2 className="font-display text-lg font-semibold">
             Протоколи по избори
           </h2>
-          {history.map((h) => (
+          {historyDesc!.map((h) => (
             <div
               key={h.election_id}
               className={`rounded border border-border border-l-[3px] ${SCORE_BORDER_LEFT_CLASS[scoreLevel(h.risk_score)]} bg-card p-4`}
@@ -308,6 +338,94 @@ export default function SectionDetail() {
               />
             </div>
           ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Horizontal strip of sibling sections at the same physical address.
+ * Each chip shows turnout % and the winning party's share from the latest
+ * election so a reader can eyeball peer divergence at a glance. Clicking a
+ * chip navigates to that sibling's detail page.
+ */
+function SiblingsStrip({
+  currentCode,
+  siblings,
+  latestElectionName,
+}: {
+  currentCode: string;
+  siblings: SiblingSection[];
+  latestElectionName: string;
+}) {
+  return (
+    <div className="mb-6 rounded border border-border bg-card p-4">
+      <h2 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+        Други секции на този адрес ({siblings.length}) · {latestElectionName}
+      </h2>
+      <div className="-mx-4 overflow-x-auto px-4 pb-1">
+        <div className="flex gap-2 md:flex-wrap">
+          {siblings.map((s) => {
+            const isCurrent = s.section_code === currentCode;
+            const turnoutPct =
+              s.turnout_rate != null ? (s.turnout_rate * 100).toFixed(1) : "—";
+            const winnerPct =
+              s.winner_pct != null ? s.winner_pct.toFixed(1) : "—";
+            const chip = (
+              <div
+                className={`flex min-w-[9rem] shrink-0 flex-col gap-1 rounded-lg border px-3 py-2 transition-all ${
+                  isCurrent
+                    ? "border-[#ce463c] bg-[#ce463c08]"
+                    : "border-border bg-background hover:border-foreground/30"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-xs font-semibold tabular-nums text-foreground">
+                    {s.section_code}
+                  </span>
+                  {isCurrent && (
+                    <span className="text-[9px] font-medium uppercase tracking-wider text-[#ce463c]">
+                      Избрана
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{
+                      backgroundColor: s.winner_color ?? "#999",
+                    }}
+                  />
+                  <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+                    {s.winner_party ?? "—"}
+                  </span>
+                  <span className="font-mono text-[11px] tabular-nums text-foreground">
+                    {winnerPct}%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="uppercase tracking-wider text-muted-foreground">
+                    Активност
+                  </span>
+                  <span className="font-mono tabular-nums text-muted-foreground">
+                    {turnoutPct}%
+                  </span>
+                </div>
+              </div>
+            );
+            return isCurrent ? (
+              <div key={s.section_code}>{chip}</div>
+            ) : (
+              <Link
+                key={s.section_code}
+                to={`/section/${s.section_code}`}
+                className="block"
+              >
+                {chip}
+              </Link>
+            );
+          })}
         </div>
       </div>
     </div>

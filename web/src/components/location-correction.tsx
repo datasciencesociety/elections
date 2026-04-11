@@ -2,9 +2,40 @@ import { useState, useEffect, useRef } from "react";
 import { Map, useMap } from "@/components/ui/map";
 import MapLibreGL from "maplibre-gl";
 
-const SUBMIT_URL =
+export const SUBMIT_URL =
   ((import.meta as any).env?.VITE_CORRECTION_SHEET_URL as string | undefined) ??
   "https://script.google.com/macros/s/AKfycbwPXGgqgruuWemNRAft0UtufkZhsm8CINDBjvN2liGVYrIlYjxlDnd5sSbxw-GPjyur/exec";
+
+/**
+ * Fire-and-forget confirmation that the auto-geocoded location is correct.
+ * Hits the same Google Apps Script endpoint used for corrections, with
+ * `type=confirm` so the maintainer can filter the sheet later.
+ *
+ * Uses GET + no-cors for the same reason the correction flow does: Google
+ * Apps Script doesn't do CORS for POST from browsers. The response is
+ * opaque, so we treat any resolved promise as success.
+ */
+export async function submitLocationConfirmation(args: {
+  sectionCode: string;
+  electionId: string | number;
+  settlementName: string;
+  address: string | null;
+  lat: number;
+  lng: number;
+}): Promise<void> {
+  if (!SUBMIT_URL) throw new Error("Missing VITE_CORRECTION_SHEET_URL");
+  const params = new URLSearchParams({
+    type: "confirm",
+    section_code: args.sectionCode,
+    election_id: String(args.electionId),
+    lat: String(args.lat),
+    lng: String(args.lng),
+    settlement_name: args.settlementName,
+    address: args.address ?? "",
+    timestamp: new Date().toISOString(),
+  });
+  await fetch(`${SUBMIT_URL}?${params}`, { mode: "no-cors" });
+}
 
 const BULGARIA_CENTER: [number, number] = [25.5, 42.7];
 

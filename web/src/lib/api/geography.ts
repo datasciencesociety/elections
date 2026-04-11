@@ -1,5 +1,13 @@
 import { apiGet } from "./client.js";
-import type { GeoEntity, MissingCoordinatesResponse } from "./types.js";
+import type {
+  AbroadBrowseResponse,
+  AbroadSummary,
+  District,
+  DistrictBrowseResponse,
+  GeoEntity,
+  MissingCoordinatesResponse,
+  SectionSiblingsResponse,
+} from "./types.js";
 
 /**
  * Geographic reference lookups — read from `riks`, `districts`,
@@ -7,8 +15,24 @@ import type { GeoEntity, MissingCoordinatesResponse } from "./types.js";
  * and the missing-coordinates contributor page.
  */
 
-export function getDistricts(): Promise<GeoEntity[]> {
-  return apiGet<GeoEntity[]>("/geography/districts");
+export function getDistricts(): Promise<District[]> {
+  return apiGet<District[]>("/geography/districts");
+}
+
+export function getAbroadSummary(): Promise<AbroadSummary> {
+  return apiGet<AbroadSummary>("/geography/abroad-summary");
+}
+
+export function getDistrictBrowse(
+  districtId: number | string,
+): Promise<DistrictBrowseResponse> {
+  return apiGet<DistrictBrowseResponse>(
+    `/geography/district/${districtId}/browse`,
+  );
+}
+
+export function getAbroadBrowse(): Promise<AbroadBrowseResponse> {
+  return apiGet<AbroadBrowseResponse>("/geography/abroad/browse");
 }
 
 export function getRiks(): Promise<GeoEntity[]> {
@@ -41,4 +65,17 @@ export function getMissingCoordinates(query: {
     page: query.page,
     search: query.search,
   });
+}
+
+/**
+ * Peer check: all sibling sections at the same physical location, with
+ * latest-election turnout + winner. Used by search (multi-section results)
+ * and by section-detail to render the peer-comparison strip.
+ */
+export function getSectionSiblings(
+  sectionCode: string,
+): Promise<SectionSiblingsResponse> {
+  return apiGet<SectionSiblingsResponse>(
+    `/geography/section-siblings/${encodeURIComponent(sectionCode)}`,
+  );
 }

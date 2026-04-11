@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Outlet, NavLink, useParams, useNavigate } from "react-router";
+import { Outlet, NavLink, Link, useParams, useNavigate, useLocation } from "react-router";
 import { trackEvent } from "@/lib/analytics.js";
 import { Menu, X } from "lucide-react";
 import {
@@ -10,6 +10,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useElections } from "@/lib/hooks/use-elections.js";
+import SearchBox from "@/components/search-box.js";
+import AppFooter from "@/components/app-footer.js";
 
 const NAV_ITEMS = [
   { label: "Резултати", path: "results" },
@@ -21,27 +23,17 @@ const STANDALONE_NAV = [
   { label: "Системни", path: "/persistence" },
 ] as const;
 
-const REPORT_FORM_URL =
-  "https://docs.google.com/forms/d/e/1FAIpQLSdLB0n9twfFQyiD4mIpAX_fYc_-N5bUhfkKpVJa6_-Oxv5CAQ/viewform";
-
 export default function Layout() {
   const { electionId } = useParams<{ electionId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: elections = [] } = useElections();
   const [menuOpen, setMenuOpen] = useState(false);
-
-  // Redirect to latest election only from root path
-  const isRootPath = window.location.pathname === "/";
-  useEffect(() => {
-    if (isRootPath && elections.length > 0) {
-      navigate(`/${elections[0].id}/results`, { replace: true });
-    }
-  }, [isRootPath, elections, navigate]);
 
   // Close menu on navigation
   useEffect(() => {
     setMenuOpen(false);
-  }, [electionId]);
+  }, [electionId, location.pathname]);
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `rounded px-2.5 py-1.5 text-xs font-medium uppercase tracking-wide transition-colors ${
@@ -54,10 +46,13 @@ export default function Layout() {
     <div className="flex h-screen w-full flex-col">
       {/* Navbar — top bar */}
       <nav className="flex shrink-0 items-center gap-2 border-b border-border bg-background px-3 py-2 md:h-11 md:px-4 md:py-0">
-        {/* App title */}
-        <span className="font-display text-lg font-semibold tracking-tight text-foreground">
-          Избори
-        </span>
+        {/* App title — clickable back to landing */}
+        <Link
+          to="/"
+          className="font-display text-lg font-semibold tracking-tight text-foreground transition-colors hover:text-[#ce463c]"
+        >
+          Изборен монитор
+        </Link>
 
         {/* Thin vertical divider */}
         <span className="hidden h-4 w-px bg-border md:block" />
@@ -111,19 +106,9 @@ export default function Layout() {
           ))}
         </div>
 
-        {/* Desktop help actions */}
-        <div className="hidden items-center gap-1 md:ml-auto md:flex">
-          <NavLink to="/help/coordinates" className={navLinkClass}>
-            Помогни
-          </NavLink>
-          <a
-            href={`${REPORT_FORM_URL}?entry.1736983913=${encodeURIComponent(window.location.href)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded px-2.5 py-1.5 text-xs font-medium uppercase tracking-wide text-[#ce463c] transition-colors hover:bg-[#ce463c10]"
-          >
-            Проблем?
-          </a>
+        {/* Desktop search — right-aligned */}
+        <div className="hidden w-full max-w-xs md:ml-auto md:block">
+          <SearchBox variant="compact" placeholder="Търсете секция..." />
         </div>
 
         {/* Mobile hamburger */}
@@ -161,26 +146,24 @@ export default function Layout() {
               {item.label}
             </NavLink>
           ))}
-          <div className="my-1 h-px bg-border" />
-          <NavLink to="/help/coordinates" onClick={() => setMenuOpen(false)} className={navLinkClass}>
-            Помогни
-          </NavLink>
-          <a
-            href={`${REPORT_FORM_URL}?entry.1736983913=${encodeURIComponent(window.location.href)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => setMenuOpen(false)}
-            className="rounded px-2.5 py-1.5 text-xs font-medium uppercase tracking-wide text-[#ce463c] transition-colors hover:bg-[#ce463c10]"
-          >
-            Проблем?
-          </a>
         </div>
       )}
+
+      {/* Mobile-only search row — persistent and above the fold without the hamburger in the way */}
+      <div className="relative z-30 shrink-0 border-b border-border bg-background px-3 py-1.5 md:hidden">
+        <SearchBox
+          variant="compact"
+          placeholder="Търсете секция по адрес, град или училище..."
+        />
+      </div>
 
       {/* Main content */}
       <main className="relative flex-1 overflow-hidden">
         <Outlet />
       </main>
+
+      {/* Global footer — community + report link on every page */}
+      <AppFooter />
     </div>
   );
 }
