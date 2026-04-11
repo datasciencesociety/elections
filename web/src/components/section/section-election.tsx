@@ -64,7 +64,6 @@ export function SectionElection({
       <SectionLinks
         electionId={electionId}
         sectionCode={sectionCode}
-        storedProtocolUrl={anomaly?.protocol_url}
       />
 
       <SectionProtocolSummary

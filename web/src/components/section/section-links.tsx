@@ -1,36 +1,23 @@
 import { buildProtocolLinks } from "@/lib/cik-links.js";
 
 /**
- * Three CIK links — protocol page, scanned PDF, optional video. The DB's
- * stored `protocol_url` is preferred when present (the import pipeline sets
- * it for newer elections); we fall back to a generated URL otherwise so
- * older elections don't lose their link silently.
+ * Two CIK links — numeric protocol page and the scanned PDF. Both are
+ * generated from `cik-links.ts`, which owns the per-election URL shape
+ * (prefix, area slice length, `.0` / `.1` suffix, dataEl). The DB's
+ * `sections.protocol_url` column is ignored here — it was produced by an
+ * earlier pipeline that hard-coded the mi2023 URL shape incorrectly, and
+ * keeping two generators in sync is a losing game.
  *
- * The "scanned PDF" URL for stored links is derived by swapping the
- * protocol-page fragment to the scan fragment. The "video" link only
- * exists for elections that had a vote-counting livestream.
+ * Video is gone: CIK's evideo.bg recordings 404 for every past cycle.
  */
 export function SectionLinks({
   electionId,
   sectionCode,
-  storedProtocolUrl,
 }: {
   electionId: string | number;
   sectionCode: string;
-  storedProtocolUrl?: string | null;
 }) {
-  const generated = buildProtocolLinks(sectionCode, Number(electionId));
-  const links = storedProtocolUrl
-    ? {
-        protocol: storedProtocolUrl,
-        scan: storedProtocolUrl
-          .replace("#/p/", "#/s/")
-          .replace("#/pk/", "#/s/")
-          .replace(/\.html$/, ".pdf"),
-        video: generated?.video ?? null,
-      }
-    : generated;
-
+  const links = buildProtocolLinks(sectionCode, Number(electionId));
   if (!links) return null;
 
   return (
@@ -51,16 +38,6 @@ export function SectionLinks({
       >
         Сканиран
       </a>
-      {links.video && (
-        <a
-          href={links.video}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 hover:underline"
-        >
-          Видео
-        </a>
-      )}
     </div>
   );
 }

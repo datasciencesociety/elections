@@ -1,19 +1,25 @@
 /**
- * Build CIK protocol/scan/video links for a section in a given election.
+ * Build CIK protocol + scan links for a section in a given election.
  *
- * CIK uses different URL prefixes per election cycle and different "data
- * element" codes for each ballot type within a single year. The mapping was
- * reverse-engineered from `data/scrape_cik_addresses.py` and the per-election
- * suffix rules:
+ * CIK's results page uses a hash router. The landing URL for a given area is
+ * `{prefix}/rezultati/{area}.html`, and the fragment drives the modal:
+ *     #/p/{dataEl}/{sectionCode}{protoSuffix}.html  — numeric protocol
+ *     #/s/{dataEl}/{sectionCode}{scanSuffix}.pdf    — scanned PDF
  *
- *   pi2021 (Apr 2021):     no suffix — URLs are just {code}.html
- *   pi2021_07 / pvrns2021 / ns2022:  ".0"
- *   ns2023 / mi2023*:                ".1"
- *   europe2024+ / pe202410+:         ".0" (machine) or ".1" (no machine)
- *                                    we default to ".0"
+ * Two things differ per election:
+ *   • `areaLen` — how many leading digits of the section code form the
+ *     page path. National elections use 2 (oblast / RIK). mi2023 local
+ *     elections use 4 (oblast + municipality) because the page is a
+ *     per-municipality roll-up.
+ *   • `protoSuffix` / `scanSuffix` — the ".0" / ".1" discriminator. These
+ *     are not always the same — mi2023 protocols use `.1.html` while the
+ *     scanned PDFs use `.0.pdf`. Earlier cycles (pi2021) use no suffix.
  *
- * The `dataEl` field is the URL fragment that selects which ballot the
- * results page should display (parliament, president, council, etc.).
+ * `dataEl` is the internal CIK ballot id (64 = parliament/president,
+ * 256 = president round, 1/2/4/8 = council/mayor/kmetstvo/neighbourhood).
+ *
+ * Video links are intentionally omitted: CIK takes the evideo.bg recordings
+ * down after every cycle and the old links 404 for every past election.
  *
  * If you add a new election to the database, add a row here too — otherwise
  * `buildProtocolLinks` returns null and the sidebar drops the CIK link.
@@ -22,36 +28,40 @@
 interface CikConfig {
   prefix: string;
   type: "p" | "pk";
-  suffix: string;
+  protoSuffix: string;
+  scanSuffix: string;
   dataEl: number;
-  video?: string;
+  /** Leading digits of section_code used for the `/rezultati/{area}.html` path. */
+  areaLen: number;
 }
 
 export const CIK_ELECTION_MAP: Record<number, CikConfig> = {
-  1: { prefix: "pe202410", type: "p", suffix: ".0", dataEl: 64, video: "pe202410" },
-  2: { prefix: "pe202410_ks", type: "pk", suffix: ".0", dataEl: 2, video: "pe202410" },
-  3: { prefix: "europe2024/ns", type: "p", suffix: ".0", dataEl: 64, video: "europe2024" },
-  4: { prefix: "europe2024/ep", type: "p", suffix: ".0", dataEl: 64, video: "europe2024" },
-  5: { prefix: "mi2023/os", type: "p", suffix: ".1", dataEl: 1 },
-  6: { prefix: "mi2023/kmet", type: "p", suffix: ".1", dataEl: 2 },
-  7: { prefix: "mi2023/ko", type: "p", suffix: ".1", dataEl: 4 },
-  8: { prefix: "mi2023/kr", type: "p", suffix: ".1", dataEl: 8 },
-  9: { prefix: "mi2023_tur2/kmet", type: "p", suffix: ".1", dataEl: 2 },
-  10: { prefix: "mi2023_tur2/ko", type: "p", suffix: ".1", dataEl: 4 },
-  11: { prefix: "mi2023_tur2/kr", type: "p", suffix: ".1", dataEl: 8 },
-  12: { prefix: "ns2023", type: "p", suffix: ".1", dataEl: 64, video: "ns2023" },
-  13: { prefix: "ns2022", type: "p", suffix: ".0", dataEl: 64, video: "ns2022" },
-  14: { prefix: "pvrns2021/tur1", type: "p", suffix: ".0", dataEl: 64, video: "pvrns2021" },
-  15: { prefix: "pvrns2021/tur1", type: "p", suffix: ".0", dataEl: 256, video: "pvrns2021" },
-  16: { prefix: "pvrns2021/tur2", type: "p", suffix: ".0", dataEl: 256, video: "pvrns2021" },
-  17: { prefix: "pi2021_07", type: "p", suffix: ".0", dataEl: 64, video: "pi2021_07" },
-  18: { prefix: "pi2021", type: "p", suffix: "", dataEl: 64, video: "pi2021" },
+  1: { prefix: "pe202410", type: "p", protoSuffix: ".0", scanSuffix: ".0", dataEl: 64, areaLen: 2 },
+  2: { prefix: "pe202410_ks", type: "pk", protoSuffix: ".0", scanSuffix: ".0", dataEl: 2, areaLen: 2 },
+  3: { prefix: "europe2024/ns", type: "p", protoSuffix: ".0", scanSuffix: ".0", dataEl: 64, areaLen: 2 },
+  4: { prefix: "europe2024/ep", type: "p", protoSuffix: ".0", scanSuffix: ".0", dataEl: 64, areaLen: 2 },
+  // mi2023 — hash router lives under mi2023/tur{N}/rezultati/{4-digit-mun}.html.
+  // Protocols: .1.html. Scanned PDFs: .0.pdf. All 4 election types share the
+  // same page; dataEl selects council / mayor / kmetstvo / neighbourhood.
+  5: { prefix: "mi2023/tur1", type: "p", protoSuffix: ".1", scanSuffix: ".0", dataEl: 1, areaLen: 4 },
+  6: { prefix: "mi2023/tur1", type: "p", protoSuffix: ".1", scanSuffix: ".0", dataEl: 2, areaLen: 4 },
+  7: { prefix: "mi2023/tur1", type: "p", protoSuffix: ".1", scanSuffix: ".0", dataEl: 4, areaLen: 4 },
+  8: { prefix: "mi2023/tur1", type: "p", protoSuffix: ".1", scanSuffix: ".0", dataEl: 8, areaLen: 4 },
+  9: { prefix: "mi2023/tur2", type: "p", protoSuffix: ".1", scanSuffix: ".0", dataEl: 2, areaLen: 4 },
+  10: { prefix: "mi2023/tur2", type: "p", protoSuffix: ".1", scanSuffix: ".0", dataEl: 4, areaLen: 4 },
+  11: { prefix: "mi2023/tur2", type: "p", protoSuffix: ".1", scanSuffix: ".0", dataEl: 8, areaLen: 4 },
+  12: { prefix: "ns2023", type: "p", protoSuffix: ".1", scanSuffix: ".1", dataEl: 64, areaLen: 2 },
+  13: { prefix: "ns2022", type: "p", protoSuffix: ".0", scanSuffix: ".0", dataEl: 64, areaLen: 2 },
+  14: { prefix: "pvrns2021/tur1", type: "p", protoSuffix: ".0", scanSuffix: ".0", dataEl: 64, areaLen: 2 },
+  15: { prefix: "pvrns2021/tur1", type: "p", protoSuffix: ".0", scanSuffix: ".0", dataEl: 256, areaLen: 2 },
+  16: { prefix: "pvrns2021/tur2", type: "p", protoSuffix: ".0", scanSuffix: ".0", dataEl: 256, areaLen: 2 },
+  17: { prefix: "pi2021_07", type: "p", protoSuffix: ".0", scanSuffix: ".0", dataEl: 64, areaLen: 2 },
+  18: { prefix: "pi2021", type: "p", protoSuffix: "", scanSuffix: "", dataEl: 64, areaLen: 2 },
 };
 
 export interface ProtocolLinks {
   protocol: string;
   scan: string;
-  video: string | null;
 }
 
 export function buildProtocolLinks(
@@ -60,13 +70,10 @@ export function buildProtocolLinks(
 ): ProtocolLinks | null {
   const config = CIK_ELECTION_MAP[electionId];
   if (!config) return null;
-  const rik = sectionCode.slice(0, 2);
-  const s = config.suffix;
+  const area = sectionCode.slice(0, config.areaLen);
+  const base = `https://results.cik.bg/${config.prefix}/rezultati/${area}.html`;
   return {
-    protocol: `https://results.cik.bg/${config.prefix}/rezultati/${rik}.html#/${config.type}/${config.dataEl}/${sectionCode}${s}.html`,
-    scan: `https://results.cik.bg/${config.prefix}/rezultati/${rik}.html#/s/${config.dataEl}/${sectionCode}${s}.pdf`,
-    video: config.video
-      ? `https://evideo.bg/${config.video}/${rik}.html#${sectionCode}`
-      : null,
+    protocol: `${base}#/${config.type}/${config.dataEl}/${sectionCode}${config.protoSuffix}.html`,
+    scan: `${base}#/s/${config.dataEl}/${sectionCode}${config.scanSuffix}.pdf`,
   };
 }
