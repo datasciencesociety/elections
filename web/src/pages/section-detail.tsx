@@ -1,147 +1,46 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
-import { useQueries } from "@tanstack/react-query";
 import { trackEvent } from "@/lib/analytics.js";
-import { Map as MapGL, MapMarker, MarkerContent, MapControls } from "@/components/ui/map";
-import BallotList from "@/components/ballot-list";
 import type {
   PersistenceHistoryEntry as ElectionHistory,
-  SectionDetail as SectionDetailData,
-  SectionViolationsResponse,
-  ProtocolViolation,
+  AnomalySection,
 } from "@/lib/api/types.js";
 import { usePersistenceSectionHistory } from "@/lib/hooks/use-persistence.js";
-import {
-  getSectionDetail,
-  getSectionViolations,
-} from "@/lib/api/sections.js";
 import { getAnomalies } from "@/lib/api/anomalies.js";
-
-interface SectionLocation {
-  settlement_name: string;
-  address: string | null;
-  lat: number | null;
-  lng: number | null;
-}
-
-interface ElectionDetail {
-  election_id: number;
-  election_name: string;
-  election_date: string;
-  protocol: SectionDetailData["protocol"];
-  parties: SectionDetailData["parties"];
-  violations: ProtocolViolation[];
-}
-
-function riskClass(score: number): string {
-  if (score >= 0.6) return "risk-bg-high";
-  if (score >= 0.3) return "risk-bg-medium";
-  return "risk-bg-low";
-}
-
-function riskColor(score: number): string {
-  if (score >= 0.6) return "#ce463c";
-  if (score >= 0.3) return "#c4860b";
-  return "#2d8a4e";
-}
-
-function RiskBadge({ value, size = "sm" }: { value: number; size?: "sm" | "lg" }) {
-  const cls = riskClass(value);
-  const sizeClass = size === "lg" ? "text-sm px-2 py-0.5" : "text-[11px] px-1.5 py-0.5";
-  return (
-    <span className={`inline-block rounded font-mono font-semibold tabular-nums ${cls} ${sizeClass}`}>
-      {value.toFixed(2)}
-    </span>
-  );
-}
-
-function riskBorder(score: number): string {
-  if (score >= 0.6) return "border-l-[#ce463c]";
-  if (score >= 0.3) return "border-l-[#c4860b]";
-  return "border-l-[#2d8a4e]";
-}
-
-const METHODOLOGY_DESC: Record<string, string> = {
-  benford: "Анализ по закона на Бенфорд — разпределението на първите цифри на гласовете.",
-  peer: "Сравнение с подобни секции в същото населено място.",
-  acf: "Комбинирани фактори — активност, победител, невалидни бюлетини.",
-};
-
-function MethodologyScore({ label, value, descKey }: { label: string; value: number; descKey: string }) {
-  return (
-    <div className="group relative flex items-center gap-1.5">
-      <span className="text-[10px] text-muted-foreground">{label}</span>
-      <RiskBadge value={value} />
-      <div className="pointer-events-none absolute bottom-full left-0 z-20 mb-1 hidden w-52 rounded border border-border bg-card p-2 text-[10px] text-muted-foreground shadow-md group-hover:block">
-        {METHODOLOGY_DESC[descKey]}
-      </div>
-    </div>
-  );
-}
-
-function ElectionCard({ detail, history }: { detail: ElectionDetail; history: ElectionHistory }) {
-  const p = detail.protocol;
-  const turnout = p.registered_voters > 0 ? (p.actual_voters / p.registered_voters) * 100 : 0;
-
-  return (
-    <div className={`rounded border border-border border-l-[3px] ${riskBorder(history.risk_score)} bg-card`}>
-      <div className="flex flex-wrap items-center gap-2 px-4 py-2">
-        <h3 className="flex-1 font-display text-sm font-semibold">{detail.election_name}</h3>
-        <div className="flex items-center gap-1.5">
-          <RiskBadge value={history.risk_score} />
-          {history.protocol_violation_count > 0 && (
-            <span className="risk-bg-high rounded px-1.5 py-0.5 text-[10px] font-medium">
-              {history.protocol_violation_count} нарушения
-            </span>
-          )}
-          {history.arithmetic_error === 1 && (
-            <span className="risk-bg-medium rounded px-1.5 py-0.5 text-[10px] font-medium">АГ</span>
-          )}
-        </div>
-      </div>
-
-      <div className="grid gap-0 border-t border-border/50 md:grid-cols-[1fr_1fr]">
-        <div className="border-b border-border/50 px-4 py-2 md:border-b-0 md:border-r">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[11px]">
-            <div><span className="text-muted-foreground">Записани</span> <span className="font-mono tabular-nums">{p.registered_voters.toLocaleString()}</span></div>
-            <div><span className="text-muted-foreground">Гласували</span> <span className="font-mono tabular-nums">{p.actual_voters.toLocaleString()}</span></div>
-            <div>
-              <span className="text-muted-foreground">Активност</span>{" "}
-              <span className={`font-mono font-semibold tabular-nums ${turnout > 100 ? "risk-high" : ""}`}>{turnout.toFixed(1)}%</span>
-            </div>
-            <div><span className="text-muted-foreground">Дописани</span> <span className="font-mono tabular-nums">{p.added_voters}</span></div>
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <MethodologyScore label="Б" value={history.benford_risk} descKey="benford" />
-            <MethodologyScore label="С" value={history.peer_risk} descKey="peer" />
-            <MethodologyScore label="А" value={history.acf_risk} descKey="acf" />
-          </div>
-        </div>
-        <div className="px-4 py-2">
-          <BallotList entries={detail.parties} variant="stacked-bar" density="md" />
-        </div>
-      </div>
-
-      {detail.violations.length > 0 && (
-        <div className="space-y-0.5 border-t border-border/50 px-4 py-2">
-          {detail.violations.map((v, i) => (
-            <div key={i} className={`rounded px-2 py-0.5 text-[10px] ${v.severity === "error" ? "risk-bg-high" : "risk-bg-medium"}`}>
-              <span className="font-medium">{v.rule_id}</span> {v.description}
-              <span className="ml-1 opacity-70">({v.actual_value} вм. {v.expected_value})</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+import {
+  ScoreBadge,
+  SCORE_HEX,
+  SCORE_BORDER_LEFT_CLASS,
+  scoreLevel,
+} from "@/components/score/index.js";
+import {
+  SectionLocation,
+  SectionElection,
+} from "@/components/section/index.js";
 
 const REPORT_FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSdLB0n9twfFQyiD4mIpAX_fYc_-N5bUhfkKpVJa6_-Oxv5CAQ/viewform";
 
+/**
+ * Standalone page for a single section across every election it appears in.
+ *
+ * Layout:
+ *   - back link + report-problem button
+ *   - editorial header (section code + flagged ratio chip)
+ *   - <SectionLocation> — settlement / address / mini-map / suggest-location
+ *   - stats strip (elections / avg / max / total violations)
+ *   - score-over-time sparkline
+ *   - breakdown table (one row per election with the per-methodology scores)
+ *   - one <SectionElection compact> per election in the history
+ *
+ * Everything that's also shown in other surfaces (the location block, the
+ * per-election protocol cards) comes from `components/section/`. The page
+ * chrome (header, stats strip, sparkline, breakdown table) stays here
+ * because it's specific to the cross-election overview.
+ */
 export default function SectionDetail() {
   const { sectionCode } = useParams<{ sectionCode: string }>();
-  const [location, setLocation] = useState<SectionLocation | null>(null);
+  const [anomalyMeta, setAnomalyMeta] = useState<AnomalySection | null>(null);
 
   useEffect(() => {
     if (sectionCode) trackEvent("view_section_detail", { section_code: sectionCode });
@@ -150,62 +49,23 @@ export default function SectionDetail() {
   const { data: historyData, isLoading: loading } = usePersistenceSectionHistory(sectionCode);
   const history: ElectionHistory[] | null = historyData?.elections ?? null;
 
-  // Per-election section detail + violations, fetched in parallel
-  const detailQueries = useQueries({
-    queries: (history ?? []).flatMap((h) => [
-      {
-        queryKey: ["section-detail", h.election_id, sectionCode],
-        queryFn: () => getSectionDetail(h.election_id, sectionCode!),
-        enabled: !!sectionCode,
-      },
-      {
-        queryKey: ["section-violations", h.election_id, sectionCode],
-        queryFn: () => getSectionViolations(h.election_id, sectionCode!),
-        enabled: !!sectionCode,
-      },
-    ]),
-  });
-
-  const loadingDetails = detailQueries.some((q) => q.isLoading);
-
-  const details = new Map<number, ElectionDetail>();
-  if (history) {
-    for (let i = 0; i < history.length; i++) {
-      const h = history[i];
-      const sectionData = detailQueries[i * 2]?.data as SectionDetailData | undefined;
-      const violationData = detailQueries[i * 2 + 1]?.data as
-        | SectionViolationsResponse
-        | undefined;
-      if (sectionData) {
-        details.set(h.election_id, {
-          election_id: h.election_id,
-          election_name: h.election_name,
-          election_date: h.election_date,
-          protocol: sectionData.protocol,
-          parties: sectionData.parties,
-          violations: violationData?.violations ?? [],
-        });
-      }
-    }
-  }
-
-  // Pull settlement/coordinates from the most recent election that has data.
+  // Pull location info from the most recent election that has a row in
+  // section_scores. The same anomaly row is also passed as `initialAnomaly`
+  // to the matching SectionElection so that one fewer query fires.
   useEffect(() => {
     if (!sectionCode || !history?.length) return;
     const first = history[0];
     let cancelled = false;
-    getAnomalies({ electionId: first.election_id, minRisk: 0, limit: 1, section: sectionCode })
+    getAnomalies({
+      electionId: first.election_id,
+      minRisk: 0,
+      limit: 1,
+      section: sectionCode,
+    })
       .then((d) => {
         if (cancelled) return;
         const sec = d.sections?.[0];
-        if (sec) {
-          setLocation({
-            settlement_name: sec.settlement_name,
-            address: sec.address,
-            lat: sec.lat,
-            lng: sec.lng,
-          });
-        }
+        if (sec) setAnomalyMeta(sec);
       })
       .catch(() => {});
     return () => {
@@ -214,14 +74,25 @@ export default function SectionDetail() {
   }, [history, sectionCode]);
 
   if (loading) {
-    return <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Зареждане...</div>;
+    return (
+      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+        Зареждане...
+      </div>
+    );
   }
 
-  if (!history?.length) {
+  if (!history?.length || !sectionCode) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2">
-        <div className="text-sm text-muted-foreground">Няма данни за секция {sectionCode}</div>
-        <Link to="/persistence" className="text-xs text-muted-foreground hover:text-foreground">&larr; Назад</Link>
+        <div className="text-sm text-muted-foreground">
+          Няма данни за секция {sectionCode}
+        </div>
+        <Link
+          to="/persistence"
+          className="text-xs text-muted-foreground hover:text-foreground"
+        >
+          &larr; Назад
+        </Link>
       </div>
     );
   }
@@ -229,16 +100,27 @@ export default function SectionDetail() {
   const flaggedCount = history.filter((h) => h.risk_score >= 0.3).length;
   const avgRisk = history.reduce((s, h) => s + h.risk_score, 0) / history.length;
   const maxRisk = Math.max(...history.map((h) => h.risk_score));
-  const totalViolations = history.reduce((s, h) => s + h.protocol_violation_count, 0);
-  const hasCoords = location?.lat != null && location?.lng != null;
+  const totalViolations = history.reduce(
+    (s, h) => s + h.protocol_violation_count,
+    0,
+  );
   const flaggedPct = flaggedCount / history.length;
+  const flaggedChipClass =
+    flaggedPct >= 0.8
+      ? "risk-bg-high"
+      : flaggedPct >= 0.5
+        ? "risk-bg-medium"
+        : "risk-bg-low";
 
   return (
     <div className="h-full overflow-auto">
       <div className="mx-auto max-w-5xl px-4 py-6 md:px-8 md:py-8">
-        {/* Back + actions */}
+        {/* Back + report problem */}
         <div className="mb-4 flex items-center justify-between">
-          <Link to="/persistence" className="text-xs text-muted-foreground transition-colors hover:text-foreground">
+          <Link
+            to="/persistence"
+            className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
             &larr; Системни
           </Link>
           <a
@@ -251,140 +133,154 @@ export default function SectionDetail() {
           </a>
         </div>
 
-        {/* Header — editorial */}
+        {/* Editorial header */}
         <div className="mb-6">
           <div className="flex flex-wrap items-baseline gap-3">
             <h1 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">
               {sectionCode}
             </h1>
-            <span className={`rounded-full px-3 py-0.5 text-xs font-semibold ${
-              flaggedPct >= 0.8 ? "risk-bg-high" : flaggedPct >= 0.5 ? "risk-bg-medium" : "risk-bg-low"
-            }`}>
+            <span
+              className={`rounded-full px-3 py-0.5 text-xs font-semibold ${flaggedChipClass}`}
+            >
               {flaggedCount}/{history.length} флагнати
             </span>
           </div>
-          {location && (
-            <p className="mt-1 text-sm text-muted-foreground">
-              {location.settlement_name}
-              {location.address && <span className="ml-1">&mdash; {location.address}</span>}
-            </p>
-          )}
-          {/* Thin brand accent line */}
           <div className="mt-3 h-0.5 w-12 bg-[#ce463c]" />
         </div>
 
+        {/* Shared location block — header + map + suggest-location */}
+        {anomalyMeta && (
+          <div className="mb-6 rounded border border-border bg-card p-4">
+            <SectionLocation
+              electionId={anomalyMeta ? history[0].election_id : ""}
+              sectionCode={sectionCode}
+              settlementName={anomalyMeta.settlement_name}
+              address={anomalyMeta.address}
+              sectionType={anomalyMeta.section_type}
+              lat={anomalyMeta.lat}
+              lng={anomalyMeta.lng}
+            />
+          </div>
+        )}
+
         {/* Stats strip */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded border border-border bg-card p-3">
-            <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Избори</div>
-            <div className="mt-1 font-display text-2xl font-semibold tabular-nums">{history.length}</div>
-          </div>
-          <div className="rounded border border-border bg-card p-3" style={{ borderTopColor: riskColor(avgRisk), borderTopWidth: 2 }}>
-            <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Ср. риск</div>
-            <div className="mt-1"><RiskBadge value={avgRisk} size="lg" /></div>
-          </div>
-          <div className="rounded border border-border bg-card p-3" style={{ borderTopColor: riskColor(maxRisk), borderTopWidth: 2 }}>
-            <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Макс. риск</div>
-            <div className="mt-1"><RiskBadge value={maxRisk} size="lg" /></div>
-          </div>
-          <div className="rounded border border-border bg-card p-3" style={{ borderTopColor: totalViolations > 0 ? "#ce463c" : "transparent", borderTopWidth: 2 }}>
-            <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Нарушения</div>
-            <div className={`mt-1 font-display text-2xl font-semibold tabular-nums ${totalViolations > 0 ? "risk-high" : ""}`}>
-              {totalViolations}
-            </div>
+          <StatTile label="Избори" value={history.length} />
+          <StatTile
+            label="Ср. риск"
+            valueNode={<ScoreBadge value={avgRisk} size="lg" />}
+            accent={SCORE_HEX[scoreLevel(avgRisk)]}
+          />
+          <StatTile
+            label="Макс. риск"
+            valueNode={<ScoreBadge value={maxRisk} size="lg" />}
+            accent={SCORE_HEX[scoreLevel(maxRisk)]}
+          />
+          <StatTile
+            label="Нарушения"
+            value={totalViolations}
+            valueClass={totalViolations > 0 ? "risk-high" : ""}
+            accent={totalViolations > 0 ? "#ce463c" : "transparent"}
+          />
+        </div>
+
+        {/* Score-over-time sparkline */}
+        <div className="mb-6 rounded border border-border bg-card p-4">
+          <h2 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            Риск през годините
+          </h2>
+          <div className="flex items-end gap-1">
+            {history.map((h) => (
+              <div
+                key={h.election_id}
+                className="group flex flex-1 flex-col items-center gap-0.5"
+              >
+                <span className="font-mono text-[9px] tabular-nums text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
+                  {h.risk_score.toFixed(2)}
+                </span>
+                <div
+                  className="w-full rounded-t transition-all group-hover:opacity-80"
+                  style={{
+                    height: `${Math.max(8, h.risk_score * 96)}px`,
+                    backgroundColor: SCORE_HEX[scoreLevel(h.risk_score)],
+                  }}
+                  title={`${h.election_name}: ${h.risk_score.toFixed(3)}`}
+                />
+                <span
+                  className="max-w-full truncate text-[7px] leading-tight text-muted-foreground"
+                  title={h.election_name}
+                >
+                  {h.election_date.slice(2, 7)}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Map + Timeline */}
-        <div className="mb-6 grid gap-4 md:grid-cols-[1fr_1fr]">
-          {hasCoords ? (
-            <div className="h-56 overflow-hidden rounded border border-border md:h-64">
-              <MapGL viewport={{ center: [location!.lng!, location!.lat!], zoom: 15, bearing: 0, pitch: 0 }}>
-                <MapMarker latitude={location!.lat!} longitude={location!.lng!}>
-                  <MarkerContent>
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-[#ce463c] shadow-md">
-                      <div className="h-2 w-2 rounded-full bg-white" />
-                    </div>
-                  </MarkerContent>
-                </MapMarker>
-                <MapControls position="bottom-right" showZoom showCompass={false} />
-              </MapGL>
-            </div>
-          ) : (
-            <div className="flex h-56 items-center justify-center rounded border border-border bg-muted/30 text-xs text-muted-foreground md:h-64">
-              Няма координати
-            </div>
-          )}
-
-          <div className="flex flex-col rounded border border-border bg-card p-4">
-            <h2 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Риск през годините</h2>
-            <div className="flex flex-1 items-end gap-1">
-              {history.map((h) => (
-                <div key={h.election_id} className="group flex flex-1 flex-col items-center gap-0.5">
-                  <span className="font-mono text-[9px] tabular-nums text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
-                    {h.risk_score.toFixed(2)}
-                  </span>
-                  <div
-                    className="w-full rounded-t transition-all group-hover:opacity-80"
-                    style={{
-                      height: `${Math.max(8, h.risk_score * 96)}px`,
-                      backgroundColor: riskColor(h.risk_score),
-                    }}
-                    title={`${h.election_name}: ${h.risk_score.toFixed(3)}`}
-                  />
-                  <span className="max-w-full truncate text-[7px] leading-tight text-muted-foreground" title={h.election_name}>
-                    {h.election_date.slice(2, 7)}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-2 flex items-center gap-3 text-[9px] text-muted-foreground">
-              <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-[#ce463c]" /> &ge; 0.6</span>
-              <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-[#c4860b]" /> 0.3–0.6</span>
-              <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-[#2d8a4e]" /> &lt; 0.3</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Risk breakdown table */}
+        {/* Per-election score breakdown table */}
         <div className="mb-6 overflow-x-auto rounded border border-border bg-card">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-border text-[10px] uppercase tracking-wider text-muted-foreground">
                 <th className="px-3 py-2.5 text-left font-medium">Избори</th>
                 <th className="px-2 py-2.5 text-left font-medium">Риск</th>
-                <th className="hidden px-2 py-2.5 text-left font-medium sm:table-cell">Бенфорд</th>
-                <th className="hidden px-2 py-2.5 text-left font-medium sm:table-cell">Сравнение</th>
-                <th className="hidden px-2 py-2.5 text-left font-medium sm:table-cell">АКФ</th>
+                <th className="hidden px-2 py-2.5 text-left font-medium sm:table-cell">
+                  Бенфорд
+                </th>
+                <th className="hidden px-2 py-2.5 text-left font-medium sm:table-cell">
+                  Сравнение
+                </th>
+                <th className="hidden px-2 py-2.5 text-left font-medium sm:table-cell">
+                  АКФ
+                </th>
                 <th className="px-2 py-2.5 text-left font-medium">Активност</th>
                 <th className="px-2 py-2.5 text-left font-medium">Проблеми</th>
               </tr>
             </thead>
             <tbody>
               {history.map((h) => (
-                <tr key={h.election_id} className="border-b border-border/50 transition-colors hover:bg-muted/30">
+                <tr
+                  key={h.election_id}
+                  className="border-b border-border/50 transition-colors hover:bg-muted/30"
+                >
                   <td className="px-3 py-2">
                     <span className="text-xs">{h.election_name}</span>
                   </td>
-                  <td className="px-2 py-2"><RiskBadge value={h.risk_score} /></td>
-                  <td className="hidden px-2 py-2 sm:table-cell"><RiskBadge value={h.benford_risk} /></td>
-                  <td className="hidden px-2 py-2 sm:table-cell"><RiskBadge value={h.peer_risk} /></td>
-                  <td className="hidden px-2 py-2 sm:table-cell"><RiskBadge value={h.acf_risk} /></td>
                   <td className="px-2 py-2">
-                    <span className={`font-mono tabular-nums ${h.turnout_rate > 1 ? "font-semibold risk-high" : ""}`}>
+                    <ScoreBadge value={h.risk_score} />
+                  </td>
+                  <td className="hidden px-2 py-2 sm:table-cell">
+                    <ScoreBadge value={h.benford_risk} />
+                  </td>
+                  <td className="hidden px-2 py-2 sm:table-cell">
+                    <ScoreBadge value={h.peer_risk} />
+                  </td>
+                  <td className="hidden px-2 py-2 sm:table-cell">
+                    <ScoreBadge value={h.acf_risk} />
+                  </td>
+                  <td className="px-2 py-2">
+                    <span
+                      className={`font-mono tabular-nums ${h.turnout_rate > 1 ? "font-semibold risk-high" : ""}`}
+                    >
                       {(h.turnout_rate * 100).toFixed(1)}%
                     </span>
                   </td>
                   <td className="px-2 py-2">
                     <div className="flex gap-1">
                       {h.protocol_violation_count > 0 && (
-                        <span className="risk-bg-high rounded px-1 py-0.5 text-[10px]">Пр:{h.protocol_violation_count}</span>
+                        <span className="risk-bg-high rounded px-1 py-0.5 text-[10px]">
+                          Пр:{h.protocol_violation_count}
+                        </span>
                       )}
                       {h.arithmetic_error === 1 && (
-                        <span className="risk-bg-medium rounded px-1 py-0.5 text-[10px]">АГ</span>
+                        <span className="risk-bg-medium rounded px-1 py-0.5 text-[10px]">
+                          АГ
+                        </span>
                       )}
                       {h.vote_sum_mismatch === 1 && (
-                        <span className="risk-bg-medium rounded px-1 py-0.5 text-[10px]">НС</span>
+                        <span className="risk-bg-medium rounded px-1 py-0.5 text-[10px]">
+                          НС
+                        </span>
                       )}
                     </div>
                   </td>
@@ -394,20 +290,62 @@ export default function SectionDetail() {
           </table>
         </div>
 
-        {/* Per-election protocol cards */}
-        {loadingDetails && (
-          <div className="py-6 text-center text-xs text-muted-foreground">Зареждане на протоколи...</div>
-        )}
+        {/* Per-election cards — shared SectionElection in compact mode */}
+        <div className="space-y-3">
+          <h2 className="font-display text-lg font-semibold">
+            Протоколи по избори
+          </h2>
+          {history.map((h) => (
+            <div
+              key={h.election_id}
+              className={`rounded border border-border border-l-[3px] ${SCORE_BORDER_LEFT_CLASS[scoreLevel(h.risk_score)]} bg-card p-4`}
+            >
+              <SectionElection
+                electionId={h.election_id}
+                sectionCode={sectionCode}
+                electionName={h.election_name}
+                compact
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-        {details.size > 0 && (
-          <div className="space-y-3">
-            <h2 className="font-display text-lg font-semibold">Протоколи по избори</h2>
-            {history.map((h) => {
-              const detail = details.get(h.election_id);
-              if (!detail) return null;
-              return <ElectionCard key={h.election_id} detail={detail} history={h} />;
-            })}
-          </div>
+function StatTile({
+  label,
+  value,
+  valueNode,
+  valueClass,
+  accent,
+}: {
+  label: string;
+  value?: number | string;
+  valueNode?: React.ReactNode;
+  valueClass?: string;
+  accent?: string;
+}) {
+  return (
+    <div
+      className="rounded border border-border bg-card p-3"
+      style={
+        accent
+          ? { borderTopColor: accent, borderTopWidth: 2 }
+          : undefined
+      }
+    >
+      <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-1">
+        {valueNode ?? (
+          <span
+            className={`font-display text-2xl font-semibold tabular-nums ${valueClass ?? ""}`}
+          >
+            {value}
+          </span>
         )}
       </div>
     </div>
