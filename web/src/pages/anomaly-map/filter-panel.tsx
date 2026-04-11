@@ -1,6 +1,13 @@
 import { useState } from "react";
 import type { AnomalyMethodology, GeoEntity } from "@/lib/api/types.js";
 import { SECTION_TYPE_LABELS } from "./map/constants.js";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 /**
  * Floating filter box (top-left). Owns its own "expanded on mobile" toggle
@@ -82,36 +89,56 @@ export function FilterPanel(props: FilterPanelProps) {
         </div>
 
         <div className="flex gap-2">
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <div className="mb-0.5 text-[11px] text-muted-foreground">Област</div>
-            <select
-              value={props.district}
-              onChange={(e) => props.setDistrict(e.target.value)}
-              className="w-full rounded-md border border-border bg-background px-1.5 py-1 text-xs"
+            <Select
+              value={props.district || "all"}
+              onValueChange={(v: string | null) =>
+                props.setDistrict(v == null || v === "all" ? "" : v)
+              }
             >
-              <option value="">Всички</option>
-              {props.districts.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger size="sm" className="w-full text-xs">
+                <SelectValue placeholder="Всички">
+                  {props.district
+                    ? props.districts.find((d) => String(d.id) === props.district)?.name ?? "—"
+                    : "Всички"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Всички</SelectItem>
+                {props.districts.map((d) => (
+                  <SelectItem key={d.id} value={String(d.id)}>
+                    {d.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <div className="mb-0.5 text-[11px] text-muted-foreground">Община</div>
-            <select
-              value={props.municipality}
-              onChange={(e) => props.setMunicipality(e.target.value)}
+            <Select
+              value={props.municipality || "all"}
+              onValueChange={(v: string | null) =>
+                props.setMunicipality(v == null || v === "all" ? "" : v)
+              }
               disabled={!props.district}
-              className="w-full rounded-md border border-border bg-background px-1.5 py-1 text-xs disabled:opacity-50"
             >
-              <option value="">Всички</option>
-              {props.municipalities.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger size="sm" className="w-full text-xs">
+                <SelectValue placeholder="Всички">
+                  {props.municipality
+                    ? props.municipalities.find((m) => String(m.id) === props.municipality)?.name ?? "—"
+                    : "Всички"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Всички</SelectItem>
+                {props.municipalities.map((m) => (
+                  <SelectItem key={m.id} value={String(m.id)}>
+                    {m.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

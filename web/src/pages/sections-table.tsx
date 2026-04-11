@@ -1,13 +1,22 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router";
 import Sidebar from "@/components/sidebar.js";
 import { SectionView } from "@/components/section/index.js";
 import MethodologyExplainer from "@/components/methodology-explainer.js";
+import SectionSearchInput from "@/components/section-search-input.js";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { AnomalyMethodology, AnomalySection } from "@/lib/api/types.js";
-import { useAnomalies } from "@/lib/hooks/use-anomalies.js";
+import { useAnomaliesInfinite } from "@/lib/hooks/use-anomalies.js";
 import { useDistricts, useMunicipalities } from "@/lib/hooks/use-geography.js";
 import { useSectionViolations } from "@/lib/hooks/use-sections.js";
 import { ScoreBadge } from "@/components/score/index.js";
+import { SlidersHorizontal, ChevronDown, ChevronUp } from "lucide-react";
 
 // Truncate to 2 decimal places without rounding (3.999 → "3.99")
 function pct2(value: number): string {
@@ -99,7 +108,6 @@ export default function SectionsTable() {
   const district = searchParams.get("district") ?? "";
   const municipality = searchParams.get("municipality") ?? "";
   const sectionFilter = searchParams.get("q") ?? "";
-  const page = parseInt(searchParams.get("page") ?? "0", 10);
   const selectedCode = searchParams.get("section") ?? "";
   const expandedCode = searchParams.get("expand") ?? "";
 
@@ -129,26 +137,56 @@ export default function SectionsTable() {
   const { data: districts = [] } = useDistricts();
   const { data: municipalities = [] } = useMunicipalities(district || undefined);
 
-  const { data: anomaliesData, isLoading: loading } = useAnomalies({
-    electionId: electionId!,
-    minRisk: 0,
-    methodology,
-    sort,
-    order,
-    limit: PAGE_SIZE,
-    offset: page * PAGE_SIZE,
-    minViolations: violationFilter === "with_violations" ? 1 : undefined,
-    excludeSpecial: violationFilter === "with_violations" && !includeSpecial,
-    district: district || undefined,
-    municipality: municipality || undefined,
-    section: sectionFilter || undefined,
-  });
-  const sections: RiskSection[] = anomaliesData?.sections ?? [];
-  const total = anomaliesData?.total ?? 0;
-  const election = anomaliesData?.election;
+  const {
+    data: anomaliesData,
+    isLoading: loading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useAnomaliesInfinite(
+    {
+      electionId: electionId!,
+      minRisk: 0,
+      methodology,
+      sort,
+      order,
+      minViolations: violationFilter === "with_violations" ? 1 : undefined,
+      excludeSpecial: violationFilter === "with_violations" && !includeSpecial,
+      district: district || undefined,
+      municipality: municipality || undefined,
+      section: sectionFilter || undefined,
+    },
+    PAGE_SIZE,
+  );
 
-  const selectedSection = selectedCode ? sections.find((s) => s.section_code === selectedCode) ?? null : null;
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  // Flatten paged results into a single section list. Memoised so changing
+  // row hover doesn't rebuild the array.
+  const sections: RiskSection[] = useMemo(
+    () => anomaliesData?.pages.flatMap((p) => p.sections) ?? [],
+    [anomaliesData],
+  );
+  const total = anomaliesData?.pages[0]?.total ?? 0;
+  const election = anomaliesData?.pages[0]?.election;
+
+  const selectedSection = selectedCode
+    ? sections.find((s) => s.section_code === selectedCode) ?? null
+    : null;
+
+  // IntersectionObserver sentinel: fire fetchNextPage when the last row
+  // enters the viewport.
+  const sentinelRef = useRef<HTMLTableRowElement>(null);
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || !hasNextPage || isFetchingNextPage) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) fetchNextPage();
+      },
+      { rootMargin: "400px" },
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Dynamic document title so users with multiple tabs open can tell them apart.
   useEffect(() => {
@@ -227,131 +265,22 @@ export default function SectionsTable() {
         <MethodologyExplainer variant="inline" className="mt-2" />
       </div>
 
-      {/* Filters bar */}
-      <div className="flex flex-wrap items-end gap-2 border-b border-border bg-background px-2 py-2 md:gap-3 md:px-4 md:py-2.5">
-        {/* Signal type / methodology */}
-        <div title="Кой сигнал искате да претеглите като основен. Комбиниран използва всички четири.">
-          <div className="mb-0.5 text-[11px] text-muted-foreground">Вид сигнал</div>
-          <div className="flex gap-0.5">
-            {methodologies.map((m) => (
-              <button
-                key={m.key}
-                onClick={() => setParam("m", m.key === "combined" ? "" : m.key)}
-                className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
-                  methodology === m.key
-                    ? "bg-foreground text-background"
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Protocol violations filter */}
-        <div title="Филтрира таблицата до секции с формални нарушения в протокола (аритметични грешки, несъответствия на полета).">
-          <div className="mb-0.5 text-[11px] text-muted-foreground">Протокол</div>
-          <div className="flex items-center gap-0.5">
-            {violationFilters.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => {
-                  setSearchParams((prev) => {
-                    const next = new URLSearchParams(prev);
-                    if (f.key === "all") next.delete("v");
-                    else next.set("v", f.key);
-                    next.delete("page");
-                    return next;
-                  }, { replace: true });
-                }}
-                className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
-                  violationFilter === f.key
-                    ? f.key === "with_violations"
-                      ? "bg-red-600 text-white"
-                      : "bg-foreground text-background"
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-            {violationFilter === "with_violations" && (
-              <label className="ml-1.5 flex cursor-pointer items-center gap-1 text-[11px] text-muted-foreground">
-                <input
-                  type="checkbox"
-                  checked={includeSpecial}
-                  onChange={(e) => setParam("special", e.target.checked ? "1" : "")}
-                  className="size-3 accent-red-500"
-                />
-                +болници/затвори
-              </label>
-            )}
-          </div>
-        </div>
-
-        {/* District */}
-        <div className="w-full sm:w-auto">
-          <div className="mb-0.5 text-[11px] text-muted-foreground">Област</div>
-          <select
-            value={district}
-            onChange={(e) => {
-              setSearchParams((prev) => {
-                const next = new URLSearchParams(prev);
-                if (e.target.value) next.set("district", e.target.value); else next.delete("district");
-                next.delete("municipality");
-                next.delete("page");
-                return next;
-              }, { replace: true });
-            }}
-            className="h-7 rounded-md border border-border bg-background px-1.5 text-xs"
-          >
-            <option value="">Всички</option>
-            {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-          </select>
-        </div>
-
-        {/* Municipality */}
-        <div className="w-full sm:w-auto">
-          <div className="mb-0.5 text-[11px] text-muted-foreground">Община</div>
-          <select
-            value={municipality}
-            onChange={(e) => {
-              setSearchParams((prev) => {
-                const next = new URLSearchParams(prev);
-                if (e.target.value) next.set("municipality", e.target.value); else next.delete("municipality");
-                next.delete("page");
-                return next;
-              }, { replace: true });
-            }}
-            disabled={!district}
-            className="h-7 rounded-md border border-border bg-background px-1.5 text-xs disabled:opacity-50"
-          >
-            <option value="">Всички</option>
-            {municipalities.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-          </select>
-        </div>
-
-        {/* Section search */}
-        <div>
-          <div className="mb-0.5 text-[11px] text-muted-foreground">Секция №</div>
-          <input
-            type="text"
-            value={sectionFilter}
-            onChange={(e) => {
-              setSearchParams((prev) => {
-                const next = new URLSearchParams(prev);
-                if (e.target.value) next.set("q", e.target.value); else next.delete("q");
-                next.delete("page");
-                return next;
-              }, { replace: true });
-            }}
-            placeholder="напр. 234600001"
-            className="h-7 w-36 rounded-md border border-border bg-background px-2 text-xs placeholder:text-muted-foreground/50"
-          />
-        </div>
-
-      </div>
+      {/* Filters bar — collapsible on mobile, always-open on desktop */}
+      <FiltersBar
+        methodology={methodology}
+        violationFilter={violationFilter}
+        includeSpecial={includeSpecial}
+        district={district}
+        municipality={municipality}
+        sectionFilter={sectionFilter}
+        districts={districts}
+        municipalities={municipalities}
+        methodologies={methodologies}
+        violationFilters={violationFilters}
+        setParam={setParam}
+        setSearchParams={setSearchParams}
+        activeFilterCount={activeFilters.length}
+      />
 
       {/* Active filters summary — makes shared links self-describing */}
       <div className="shrink-0 border-b border-border bg-secondary/30 px-3 py-1.5 text-[11px] text-muted-foreground md:px-4">
@@ -542,32 +471,34 @@ export default function SectionsTable() {
                 </td>
               </tr>
             )}
+            {/* Infinite-scroll sentinel. The IntersectionObserver set up
+                above fires fetchNextPage when this row becomes visible. */}
+            {hasNextPage && (
+              <tr ref={sentinelRef}>
+                <td
+                  colSpan={12}
+                  className="px-4 py-6 text-center text-[11px] text-muted-foreground"
+                >
+                  {isFetchingNextPage
+                    ? "Зареждане..."
+                    : `Зареждам следващи секции (${sections.length} / ${total.toLocaleString("bg-BG")})`}
+                </td>
+              </tr>
+            )}
+            {!hasNextPage && sections.length > 0 && sections.length < total && (
+              <tr>
+                <td
+                  colSpan={12}
+                  className="px-4 py-6 text-center text-[11px] text-muted-foreground"
+                >
+                  {sections.length.toLocaleString("bg-BG")} /{" "}
+                  {total.toLocaleString("bg-BG")} секции
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-border bg-background px-4 py-2">
-          <button
-            disabled={page === 0}
-            onClick={() => setParam("page", page > 1 ? String(page - 1) : "")}
-            className="rounded-md border border-border px-3 py-1 text-xs disabled:opacity-30"
-          >
-            ← Предишна
-          </button>
-          <span className="text-xs text-muted-foreground">
-            Страница {page + 1} от {totalPages}
-          </span>
-          <button
-            disabled={page >= totalPages - 1}
-            onClick={() => setParam("page", String(page + 1))}
-            className="rounded-md border border-border px-3 py-1 text-xs disabled:opacity-30"
-          >
-            Следваща →
-          </button>
-        </div>
-      )}
 
       {/* Sidebar */}
       <Sidebar
@@ -583,6 +514,224 @@ export default function SectionsTable() {
           />
         )}
       </Sidebar>
+    </div>
+  );
+}
+
+/**
+ * Filters bar — one place for every filter control. Full-width horizontal
+ * on desktop; on mobile collapses behind a single "Филтри · N" toggle so
+ * the table gets the full viewport.
+ *
+ * Kept as a sibling component (not inline) so the main page body is easier
+ * to scan and the collapse state lives in its own hook.
+ */
+function FiltersBar(props: {
+  methodology: Methodology;
+  violationFilter: ViolationFilter;
+  includeSpecial: boolean;
+  district: string;
+  municipality: string;
+  sectionFilter: string;
+  districts: { id: number | string; name: string }[];
+  municipalities: { id: number | string; name: string }[];
+  methodologies: { key: Methodology; label: string }[];
+  violationFilters: { key: ViolationFilter; label: string }[];
+  setParam: (key: string, value: string) => void;
+  setSearchParams: ReturnType<typeof useSearchParams>[1];
+  activeFilterCount: number;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const {
+    methodology,
+    violationFilter,
+    includeSpecial,
+    district,
+    municipality,
+    sectionFilter,
+    districts,
+    municipalities,
+    methodologies,
+    violationFilters,
+    setParam,
+    setSearchParams,
+    activeFilterCount,
+  } = props;
+
+  return (
+    <div className="shrink-0 border-b border-border bg-background">
+      {/* Mobile toggle — hidden on desktop */}
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left md:hidden"
+      >
+        <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <SlidersHorizontal size={13} />
+          Филтри
+          {activeFilterCount > 0 && (
+            <span className="rounded-full bg-[#ce463c] px-1.5 py-0.5 text-[10px] font-bold text-white">
+              {activeFilterCount}
+            </span>
+          )}
+        </span>
+        {expanded ? (
+          <ChevronUp size={14} className="text-muted-foreground" />
+        ) : (
+          <ChevronDown size={14} className="text-muted-foreground" />
+        )}
+      </button>
+
+      <div
+        className={`flex-wrap items-end gap-2 px-2 py-2 md:flex md:gap-3 md:px-4 md:py-2.5 ${
+          expanded ? "flex" : "hidden md:flex"
+        }`}
+      >
+        {/* Signal type / methodology */}
+        <div title="Кой сигнал искате да претеглите като основен. Комбиниран използва всички четири.">
+          <div className="mb-0.5 text-[11px] text-muted-foreground">Вид сигнал</div>
+          <div className="flex flex-wrap gap-0.5">
+            {methodologies.map((m) => (
+              <button
+                key={m.key}
+                onClick={() => setParam("m", m.key === "combined" ? "" : m.key)}
+                className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
+                  methodology === m.key
+                    ? "bg-foreground text-background"
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Protocol violations filter */}
+        <div title="Филтрира таблицата до секции с формални нарушения в протокола (аритметични грешки, несъответствия на полета).">
+          <div className="mb-0.5 text-[11px] text-muted-foreground">Протокол</div>
+          <div className="flex flex-wrap items-center gap-0.5">
+            {violationFilters.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => {
+                  setSearchParams((prev) => {
+                    const next = new URLSearchParams(prev);
+                    if (f.key === "all") next.delete("v");
+                    else next.set("v", f.key);
+                    next.delete("page");
+                    return next;
+                  }, { replace: true });
+                }}
+                className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
+                  violationFilter === f.key
+                    ? f.key === "with_violations"
+                      ? "bg-red-600 text-white"
+                      : "bg-foreground text-background"
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+            {violationFilter === "with_violations" && (
+              <label className="ml-1.5 flex cursor-pointer items-center gap-1 text-[11px] text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={includeSpecial}
+                  onChange={(e) => setParam("special", e.target.checked ? "1" : "")}
+                  className="size-3 accent-red-500"
+                />
+                +болници/затвори
+              </label>
+            )}
+          </div>
+        </div>
+
+        {/* District */}
+        <div className="min-w-0 sm:w-44">
+          <div className="mb-0.5 text-[11px] text-muted-foreground">Област</div>
+          <Select
+            value={district || "all"}
+            onValueChange={(v: string | null) => {
+              setSearchParams((prev) => {
+                const next = new URLSearchParams(prev);
+                if (v && v !== "all") next.set("district", v);
+                else next.delete("district");
+                next.delete("municipality");
+                next.delete("page");
+                return next;
+              }, { replace: true });
+            }}
+          >
+            <SelectTrigger size="sm" className="w-full text-xs">
+              <SelectValue>
+                {district
+                  ? districts.find((d) => String(d.id) === district)?.name ?? "—"
+                  : "Всички"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Всички</SelectItem>
+              {districts.map((d) => (
+                <SelectItem key={d.id} value={String(d.id)}>
+                  {d.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Municipality */}
+        <div className="min-w-0 sm:w-44">
+          <div className="mb-0.5 text-[11px] text-muted-foreground">Община</div>
+          <Select
+            value={municipality || "all"}
+            onValueChange={(v: string | null) => {
+              setSearchParams((prev) => {
+                const next = new URLSearchParams(prev);
+                if (v && v !== "all") next.set("municipality", v);
+                else next.delete("municipality");
+                next.delete("page");
+                return next;
+              }, { replace: true });
+            }}
+            disabled={!district}
+          >
+            <SelectTrigger size="sm" className="w-full text-xs">
+              <SelectValue>
+                {municipality
+                  ? municipalities.find((m) => String(m.id) === municipality)?.name ?? "—"
+                  : "Всички"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Всички</SelectItem>
+              {municipalities.map((m) => (
+                <SelectItem key={m.id} value={String(m.id)}>
+                  {m.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Section search — fuzzy by address OR exact number */}
+        <div className="min-w-0 flex-1 sm:flex-none sm:w-64">
+          <div className="mb-0.5 text-[11px] text-muted-foreground">Секция / адрес</div>
+          <SectionSearchInput
+            value={sectionFilter}
+            onPick={(code) => {
+              setSearchParams((prev) => {
+                const next = new URLSearchParams(prev);
+                if (code) next.set("q", code);
+                else next.delete("q");
+                next.delete("page");
+                return next;
+              }, { replace: true });
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }

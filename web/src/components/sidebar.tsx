@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 interface SidebarProps {
   open: boolean;
@@ -7,22 +7,30 @@ interface SidebarProps {
   children: React.ReactNode;
 }
 
+/**
+ * Section/detail panel. On desktop it renders as a 480px right-side rail
+ * that sits on top of the page content. On mobile it takes over the full
+ * viewport so the preview has all the room it needs and the underlying
+ * map/table is hidden — no competing scroll regions.
+ */
 export default function Sidebar({ open, onClose, title, children }: SidebarProps) {
   if (!open) return null;
 
   return (
-    <div className="absolute inset-x-0 bottom-0 z-20 flex max-h-[60vh] flex-col rounded-t-xl border-t border-border bg-background shadow-lg md:inset-x-auto md:inset-y-0 md:right-0 md:max-h-none md:w-[480px] md:rounded-none md:border-l md:border-t-0">
+    <div className="fixed inset-0 z-30 flex flex-col bg-background md:absolute md:inset-y-0 md:left-auto md:right-0 md:w-[480px] md:border-l md:border-border md:shadow-lg">
       {/* Header */}
-      <div className="flex h-10 shrink-0 items-center justify-between border-b border-border px-3">
+      <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-2 md:h-10 md:px-3">
+        <button
+          onClick={onClose}
+          className="rounded-md p-2 text-muted-foreground hover:bg-secondary hover:text-foreground md:p-1"
+          aria-label="Назад"
+        >
+          <ArrowLeft size={18} className="md:hidden" />
+          <span className="hidden md:inline">✕</span>
+        </button>
         {title && (
           <span className="truncate text-sm font-semibold">{title}</span>
         )}
-        <button
-          onClick={onClose}
-          className="ml-auto rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
-        >
-          <X size={16} />
-        </button>
       </div>
 
       {/* Content */}

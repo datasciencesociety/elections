@@ -117,45 +117,60 @@ geography.get("/local-regions", (c) => {
 /**
  * GET /api/geography/search-index
  *
- * Returns every unique location that has ever had a polling section, with the
- * fields needed for client-side full-text search. One row per location — not
- * per section. A representative section_code is included so search results
- * can navigate directly to /section/{code} (section_code is stable across
- * elections for the same building).
+ * Returns every unique polling section with the fields needed for client-side
+ * full-text search. One row per section_code — the client groups by address
+ * for display so users can pick their exact section inside a school / block.
  *
- * Payload: ~12k rows, keep field names short and nullable fields as null to
- * minimize gzip size. Expected ~400KB gzipped. Cached aggressively — the
- * frontend fetches this once per session, lazy-loaded on search focus.
+ * section_code is stable across elections for the same building, so each
+ * section appears once regardless of how many elections we have data for.
+ *
+ * Field names are one-letter to minimize gzip size. Cached aggressively —
+ * the frontend fetches this once per session, lazy-loaded on search focus.
  */
 geography.get("/search-index", (c) => {
   const db = getDb();
+  // For each section_code we pick the row from the MOST RECENT election the
+  // section appears in, and coalesce per-election overrides on address/lat/lng
+  // on top of the shared locations row. That way a section that was moved for
+  // a temporary election — renovation, moved polling station — shows up in
+  // search at the latest known address, not an old one.
   const rows = db
     .prepare(
       `
+      WITH latest AS (
+        SELECT sec.section_code, sec.election_id, sec.location_id,
+               sec.address AS sec_address,
+               sec.lat     AS sec_lat,
+               sec.lng     AS sec_lng,
+               ROW_NUMBER() OVER (
+                 PARTITION BY sec.section_code
+                 ORDER BY sec.election_id DESC
+               ) AS rn
+          FROM sections sec
+      )
       SELECT
-        l.id,
-        l.settlement_name AS s,
-        l.address         AS a,
-        d.name            AS dn,
-        m.name            AS mn,
-        r.name            AS rn,
-        l.lat             AS la,
-        l.lng             AS lg,
-        COUNT(DISTINCT sec.section_code) AS n,
-        MIN(sec.section_code)            AS c
-      FROM locations l
-      JOIN sections sec ON sec.location_id = l.id
+        l.id                           AS lid,
+        latest.section_code            AS c,
+        l.settlement_name              AS s,
+        COALESCE(latest.sec_address, l.address) AS a,
+        d.name                         AS dn,
+        m.name                         AS mn,
+        r.name                         AS rn,
+        COALESCE(latest.sec_lat, l.lat) AS la,
+        COALESCE(latest.sec_lng, l.lng) AS lg
+      FROM latest
+      JOIN locations l ON l.id = latest.location_id
       LEFT JOIN districts      d ON d.id = l.district_id
       LEFT JOIN municipalities m ON m.id = l.municipality_id
       LEFT JOIN riks           r ON r.id = l.rik_id
-      GROUP BY l.id
-      ORDER BY l.id
+      WHERE latest.rn = 1
+      ORDER BY l.id, latest.section_code
       `
     )
     .all();
 
   c.header("Cache-Control", "public, max-age=3600, s-maxage=3600");
-  return c.json({ locations: rows });
+  return c.json({ sections: rows });
 });
 
 /**

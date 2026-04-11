@@ -1,14 +1,23 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import SectionPreview from "@/components/section-preview.js";
 import MethodologyExplainer from "@/components/methodology-explainer.js";
+import SectionSearchInput from "@/components/section-search-input.js";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { PersistenceSection as PersistentSection } from "@/lib/api/types.js";
-import { usePersistence } from "@/lib/hooks/use-persistence.js";
+import { usePersistenceInfinite } from "@/lib/hooks/use-persistence.js";
 import {
   ScoreBadge,
   SCORE_SOLID_CLASS,
   scoreLevel,
 } from "@/components/score/index.js";
+import { SlidersHorizontal, ChevronDown, ChevronUp } from "lucide-react";
 
 type SortColumn =
   | "persistence_score"
@@ -105,7 +114,6 @@ export default function Persistence() {
   // Read state from URL
   const sort = (searchParams.get("sort") ?? "persistence_score") as SortColumn;
   const order = (searchParams.get("order") ?? "desc") as "asc" | "desc";
-  const offset = parseInt(searchParams.get("offset") ?? "0", 10);
   const minElections = parseInt(searchParams.get("min") ?? "5", 10);
   const excludeSpecial = searchParams.get("special") !== "1";
   const expandedSection = searchParams.get("preview") ?? null;
@@ -122,27 +130,59 @@ export default function Persistence() {
     }, { replace: true });
   }, [setSearchParams]);
 
-  const { data, isLoading: loading, isError } = usePersistence({
-    sort,
-    order,
-    limit: LIMIT,
-    offset,
-    minElections,
-    excludeSpecial,
-    section: sectionSearch || undefined,
-  });
+  const {
+    data: pages,
+    isLoading: loading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = usePersistenceInfinite(
+    {
+      sort,
+      order,
+      minElections,
+      excludeSpecial,
+      section: sectionSearch || undefined,
+    },
+    LIMIT,
+  );
   const error = isError ? "Грешка при зареждане" : null;
+
+  // Flatten paged persistence results. The first page carries the total
+  // count and the election_count — everything else is concatenated rows.
+  const sections = useMemo(
+    () => pages?.pages.flatMap((p) => p.sections) ?? [],
+    [pages],
+  );
+  const total = pages?.pages[0]?.total ?? 0;
+  const electionsCount = pages?.pages[0]?.elections_count ?? 0;
+  const data = pages?.pages[0]
+    ? { ...pages.pages[0], sections, total }
+    : null;
 
   const handleSort = (col: SortColumn) => {
     if (sort === col) {
-      setParam({ order: order === "desc" ? "asc" : "desc", offset: null });
+      setParam({ order: order === "desc" ? "asc" : "desc" });
     } else {
-      setParam({ sort: col, order: "desc", offset: null });
+      setParam({ sort: col, order: "desc" });
     }
   };
 
-  const totalPages = data ? Math.ceil(data.total / LIMIT) : 0;
-  const currentPage = Math.floor(offset / LIMIT) + 1;
+  // Infinite-scroll sentinel.
+  const sentinelRef = useRef<HTMLTableRowElement>(null);
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || !hasNextPage || isFetchingNextPage) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) fetchNextPage();
+      },
+      { rootMargin: "400px" },
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Dynamic document title
   useEffect(() => {
@@ -178,9 +218,9 @@ export default function Persistence() {
           <h1 className="font-display text-base font-semibold tracking-tight md:text-lg">
             Системни сигнали във времето
           </h1>
-          {data && (
+          {electionsCount > 0 && (
             <span className="text-xs text-muted-foreground">
-              {data.elections_count} избори от 2021 г. насам
+              {electionsCount} избори от 2021 г. насам
             </span>
           )}
           <span className="ml-auto text-[11px] tabular-nums text-muted-foreground">
@@ -196,47 +236,14 @@ export default function Persistence() {
         <MethodologyExplainer variant="inline" className="mt-2" />
       </div>
 
-      {/* Controls */}
-      <div className="flex flex-wrap items-end gap-2 border-b border-border bg-background px-2 py-2 md:gap-3 md:px-4 md:py-2.5">
-        <div title="Минимален брой избори, в които секцията трябва да присъства. По-висок праг изключва секции с малко данни и прави сигнала по-стабилен.">
-          <div className="mb-0.5 text-[11px] text-muted-foreground">Мин. избори</div>
-          <select
-            className="h-7 rounded-md border border-border bg-background px-1.5 text-xs"
-            value={minElections}
-            onChange={(e) => setParam({ min: e.target.value === "5" ? null : e.target.value, offset: null })}
-          >
-            {[3, 5, 8, 10, 12].map((n) => (
-              <option key={n} value={n}>{n}+</option>
-            ))}
-          </select>
-        </div>
-
-        <div
-          className="flex items-end pb-1"
-          title="Изключва подвижни секции, болници, кораби и затвори, където условията на гласуване се различават от нормалните и статистическите методи не важат."
-        >
-          <label className="flex cursor-pointer items-center gap-1 text-[11px] text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={excludeSpecial}
-              onChange={(e) => setParam({ special: e.target.checked ? null : "1", offset: null })}
-              className="size-3 accent-red-500"
-            />
-            Без специални
-          </label>
-        </div>
-
-        <div title="Търси секция по номер или част от номера.">
-          <div className="mb-0.5 text-[11px] text-muted-foreground">Секция</div>
-          <input
-            type="text"
-            placeholder="напр. 224617077"
-            value={sectionSearch}
-            onChange={(e) => setParam({ q: e.target.value || null, offset: null })}
-            className="h-7 w-40 rounded-md border border-border bg-background px-2 text-xs placeholder:text-muted-foreground"
-          />
-        </div>
-      </div>
+      {/* Controls — collapsible on mobile */}
+      <PersistenceFiltersBar
+        minElections={minElections}
+        excludeSpecial={excludeSpecial}
+        sectionSearch={sectionSearch}
+        setParam={setParam}
+        activeFilterCount={activeFilters.length}
+      />
 
       {/* Active filters summary */}
       <div className="shrink-0 border-b border-border bg-secondary/30 px-3 py-1.5 text-[11px] text-muted-foreground md:px-4">
@@ -358,7 +365,7 @@ export default function Persistence() {
               </tr>
             </thead>
             <tbody>
-              {data.sections.map((s) => (
+              {sections.map((s) => (
                 <tr
                   key={s.section_code}
                   className={`cursor-pointer border-t border-border/50 transition-colors hover:bg-muted/50 ${expandedSection === s.section_code ? "bg-muted/50" : ""}`}
@@ -412,23 +419,51 @@ export default function Persistence() {
                   </td>
                 </tr>
               ))}
+              {/* Infinite-scroll sentinel. */}
+              {hasNextPage && (
+                <tr ref={sentinelRef}>
+                  <td
+                    colSpan={11}
+                    className="px-4 py-6 text-center text-[11px] text-muted-foreground"
+                  >
+                    {isFetchingNextPage
+                      ? "Зареждане..."
+                      : `Зареждам следващи секции (${sections.length} / ${total.toLocaleString("bg-BG")})`}
+                  </td>
+                </tr>
+              )}
+              {!hasNextPage &&
+                sections.length > 0 &&
+                sections.length < total && (
+                  <tr>
+                    <td
+                      colSpan={11}
+                      className="px-4 py-6 text-center text-[11px] text-muted-foreground"
+                    >
+                      {sections.length.toLocaleString("bg-BG")} /{" "}
+                      {total.toLocaleString("bg-BG")} секции
+                    </td>
+                  </tr>
+                )}
             </tbody>
           </table>
         )}
 
       </div>
 
-        {/* Section preview sidebar */}
+        {/* Section preview — full-screen on mobile, 540px right rail on desktop */}
         {expandedSection && (
-          <div className="absolute inset-y-0 right-0 z-20 flex w-full flex-col border-l border-border bg-background shadow-lg md:w-[540px]">
-            <div className="flex h-10 shrink-0 items-center justify-between border-b border-border px-3">
-              <span className="font-mono text-sm font-semibold">{expandedSection}</span>
+          <div className="fixed inset-0 z-30 flex flex-col bg-background md:absolute md:inset-y-0 md:right-0 md:w-[540px] md:border-l md:border-border md:shadow-lg">
+            <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-2 md:h-10 md:px-3">
               <button
                 onClick={() => setParam({ preview: null })}
-                className="ml-auto rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                className="rounded-md p-2 text-muted-foreground hover:bg-secondary hover:text-foreground md:p-1"
+                aria-label="Назад"
               >
-                ✕
+                <span className="md:hidden">←</span>
+                <span className="hidden md:inline">✕</span>
               </button>
+              <span className="font-mono text-sm font-semibold">{expandedSection}</span>
             </div>
             <div className="flex-1 overflow-y-auto p-3">
               <SectionPreview sectionCode={expandedSection} />
@@ -437,28 +472,103 @@ export default function Persistence() {
         )}
       </div>
 
-      {/* Pagination */}
-      {data && totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-border bg-background px-3 py-1.5">
-          <button
-            className="rounded px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted disabled:opacity-50"
-            disabled={offset === 0}
-            onClick={() => setParam({ offset: offset - LIMIT <= 0 ? null : String(offset - LIMIT) })}
+    </div>
+  );
+}
+
+/** Filters bar — mobile-collapsible, reuses the same pattern as sections-table. */
+function PersistenceFiltersBar(props: {
+  minElections: number;
+  excludeSpecial: boolean;
+  sectionSearch: string;
+  setParam: (updates: Record<string, string | null>) => void;
+  activeFilterCount: number;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const { minElections, excludeSpecial, sectionSearch, setParam, activeFilterCount } =
+    props;
+
+  return (
+    <div className="shrink-0 border-b border-border bg-background">
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left md:hidden"
+      >
+        <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <SlidersHorizontal size={13} />
+          Филтри
+          {activeFilterCount > 0 && (
+            <span className="rounded-full bg-[#ce463c] px-1.5 py-0.5 text-[10px] font-bold text-white">
+              {activeFilterCount}
+            </span>
+          )}
+        </span>
+        {expanded ? (
+          <ChevronUp size={14} className="text-muted-foreground" />
+        ) : (
+          <ChevronDown size={14} className="text-muted-foreground" />
+        )}
+      </button>
+
+      <div
+        className={`flex-wrap items-end gap-2 px-2 py-2 md:flex md:gap-3 md:px-4 md:py-2.5 ${
+          expanded ? "flex" : "hidden md:flex"
+        }`}
+      >
+        <div
+          title="Минимален брой избори, в които секцията трябва да присъства. По-висок праг изключва секции с малко данни и прави сигнала по-стабилен."
+        >
+          <div className="mb-0.5 text-[11px] text-muted-foreground">Мин. избори</div>
+          <Select
+            value={String(minElections)}
+            onValueChange={(v: string | null) =>
+              setParam({
+                min: v && v !== "5" ? v : null,
+                offset: null,
+              })
+            }
           >
-            ← Назад
-          </button>
-          <span className="text-[11px] text-muted-foreground">
-            Стр. {currentPage} от {totalPages}
-          </span>
-          <button
-            className="rounded px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted disabled:opacity-50"
-            disabled={offset + LIMIT >= data.total}
-            onClick={() => setParam({ offset: String(offset + LIMIT) })}
-          >
-            Напред →
-          </button>
+            <SelectTrigger size="sm" className="w-24 text-xs">
+              <SelectValue>{minElections}+</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {[3, 5, 8, 10, 12].map((n) => (
+                <SelectItem key={n} value={String(n)}>
+                  {n}+
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      )}
+
+        <div
+          className="flex items-end pb-1"
+          title="Изключва подвижни секции, болници, кораби и затвори, където условията на гласуване се различават от нормалните и статистическите методи не важат."
+        >
+          <label className="flex cursor-pointer items-center gap-1 text-[11px] text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={excludeSpecial}
+              onChange={(e) =>
+                setParam({
+                  special: e.target.checked ? null : "1",
+                  offset: null,
+                })
+              }
+              className="size-3 accent-red-500"
+            />
+            Без специални
+          </label>
+        </div>
+
+        <div className="min-w-0 flex-1 sm:flex-none sm:w-64">
+          <div className="mb-0.5 text-[11px] text-muted-foreground">Секция / адрес</div>
+          <SectionSearchInput
+            value={sectionSearch}
+            onPick={(code) => setParam({ q: code || null, offset: null })}
+          />
+        </div>
+      </div>
     </div>
   );
 }

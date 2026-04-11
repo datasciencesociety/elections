@@ -22,19 +22,29 @@ import {
 export function SectionMap({
   lat,
   lng,
-  className,
+  className = "h-48 rounded-lg border border-border",
+  showControls = true,
+  showAttribution = true,
 }: {
   lat: number;
   lng: number;
+  /** Tailwind classes for the outer container. Defaults to a 192px tall
+   * card with a border — the full-width sidebar/detail layout. Callers
+   * that need a different size pass their own classes. */
   className?: string;
+  /** Hide the zoom control on mini-maps where it just adds clutter. */
+  showControls?: boolean;
+  /** Hide the CARTO/OSM attribution line. Only disable on tiny preview
+   * maps where the full attribution is rendered elsewhere on the same
+   * page. */
+  showAttribution?: boolean;
 }) {
   return (
-    <div
-      className={`h-48 overflow-hidden rounded-lg border border-border ${className ?? ""}`}
-    >
+    <div className={`overflow-hidden ${className}`}>
       <MapGL
         key={`${lat},${lng}`}
         viewport={{ center: [lng, lat], zoom: 15, bearing: 0, pitch: 0 }}
+        attributionControl={showAttribution ? { compact: true } : false}
       >
         <MapMarker latitude={lat} longitude={lng}>
           <MarkerContent>
@@ -43,7 +53,9 @@ export function SectionMap({
             </div>
           </MarkerContent>
         </MapMarker>
-        <MapControls position="bottom-right" showZoom showCompass={false} />
+        {showControls && (
+          <MapControls position="bottom-right" showZoom showCompass={false} />
+        )}
       </MapGL>
     </div>
   );

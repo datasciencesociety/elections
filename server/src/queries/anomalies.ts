@@ -159,8 +159,18 @@ export function getAnomalies(
   if (opts.geoFilter) baseParams.push(opts.geoFilter.value);
   if (opts.sectionCode) baseParams.push(`%${opts.sectionCode}%`);
 
+  // Location columns: sections can have per-election overrides in
+  // s.address/s.lat/s.lng (e.g. a polling station was temporarily moved
+  // while its usual building was under renovation). Prefer those over the
+  // shared locations row — same rule getSectionsGeo already follows, so
+  // the map pin and the sidebar header agree on where the section lives.
   const sql = `
-    SELECT ss.section_code, l.settlement_name, l.address, l.lat, l.lng, s.protocol_url,
+    SELECT ss.section_code,
+           l.settlement_name,
+           COALESCE(s.address, l.address) AS address,
+           COALESCE(s.lat, l.lat) AS lat,
+           COALESCE(s.lng, l.lng) AS lng,
+           s.protocol_url,
            ss.risk_score, ss.turnout_rate, ss.turnout_zscore,
            ss.benford_chi2, ss.benford_p, ss.benford_score,
            ss.ekatte_turnout_zscore, ss.ekatte_turnout_zscore_norm,
