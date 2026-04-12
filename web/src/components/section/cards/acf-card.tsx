@@ -26,11 +26,19 @@ export function AcfCard({
   const turnoutPct = pct2(s.turnout_rate * 100);
 
   return (
-    <MethodologyCard title="АКФ модел (контролиран вот)" score={s.acf_risk}>
+    <MethodologyCard title="АКФ (Антикорупционен фонд)" score={s.acf_risk}>
       <div className="mb-2 text-xs text-muted-foreground">
-        Методология на Антикорупционния фонд. Три подмодела — два сравняват с
-        предишни избори, един анализира текущите резултати спрямо общ.{" "}
-        {ctx?.municipality_name ?? "общината"}.
+        <a
+          href="https://acf.bg/wp-content/uploads/2021/05/rezultati_izbori_BGweb.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#ce463c] hover:underline"
+        >
+          Методология на Антикорупционен фонд
+        </a>{" "}
+        за идентифициране на контролиран и купен вот. Три подмодела — два
+        сравняват с предишни избори, един анализира текущите резултати спрямо
+        общ. {ctx?.municipality_name ?? "общината"}.
       </div>
 
       <AcfMulticomponent section={s} ctx={ctx} turnoutPct={turnoutPct} />

@@ -129,7 +129,7 @@ export default function SectionsTable() {
   const { electionId } = useParams<{ electionId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const sort = (searchParams.get("sort") ?? "risk_score") as SortColumn;
+  const sort = (searchParams.get("sort") ?? "protocol_violation_count") as SortColumn;
   const order = (searchParams.get("order") ?? "desc") as "asc" | "desc";
   const district = searchParams.get("district") ?? "";
   const municipality = searchParams.get("municipality") ?? "";
@@ -232,9 +232,9 @@ export default function SectionsTable() {
   }
   if (sectionFilter) activeFilters.push(`секция ${sectionFilter}`);
   const sortLabelMap: Record<SortColumn, string> = {
-    risk_score: "комбиниран риск",
+    risk_score: "обобщена оценка",
     benford_risk: "Бенфорд",
-    peer_risk: "сравнение",
+    peer_risk: "сравнение със съседи",
     acf_risk: "АКФ",
     turnout_rate: "активност",
     section_code: "№ секция",
@@ -263,8 +263,8 @@ export default function SectionsTable() {
           </span>
         </div>
         <p className="mt-1 max-w-3xl text-[12px] leading-relaxed text-muted-foreground">
-          Всяка секция в тези избори, сортирана по статистически сигнал.
-          Кликнете върху ред за детайлите на протокола.
+          Всяка секция в тези избори. Кликнете върху заглавие на колона за
+          сортиране, върху ред — за детайли.
         </p>
         <MethodologyExplainer variant="inline" className="mt-2" />
       </div>
@@ -331,12 +331,12 @@ export default function SectionsTable() {
                 Активност ⟶
               </th>
               <SortHeader
-                label="Комб. риск"
+                label="Оценка"
                 column="risk_score"
                 currentSort={sort}
                 currentOrder={order}
                 onSort={setSort}
-                tooltip="Обобщен статистически сигнал, съчетаващ Бенфорд, сравнение със съседи и АКФ. 0 = в нормата, 1 = силно отклонение."
+                tooltip="Обобщена оценка: среднопретеглена от Бенфорд, сравнение със съседи и пространствени модели. 0 = в нормата, 1 = силно отклонение."
               />
               <SortHeader
                 label="Benford"
@@ -348,30 +348,30 @@ export default function SectionsTable() {
                 tooltip="Разпределение на първите цифри на броя гласове. Закон на Бенфорд. Високи стойности = числата не следват естествен модел на броене."
               />
               <SortHeader
-                label="Peer"
+                label="Съседи"
                 column="peer_risk"
                 currentSort={sort}
                 currentOrder={order}
                 onSort={setSort}
                 className="hidden md:table-cell"
-                tooltip="Сравнение с резултатите в съседните секции от същото населено място. Високи стойности = рязко отклонение от съседите."
+                tooltip="Сравнение със съседните секции от същото населено място. Високи стойности = рязко отклонение от съседите."
               />
               <SortHeader
-                label="ACF"
+                label="АКФ"
                 column="acf_risk"
                 currentSort={sort}
                 currentOrder={order}
                 onSort={setSort}
                 className="hidden md:table-cell"
-                tooltip="Авто-корелационен анализ между съседни секции. Високи стойности = необичайни пространствени модели или повторения. Маркерът ×3 означава, че секцията е отбелязана едновременно от три ACF подпроверки."
+                tooltip="Методология на Антикорупционен фонд: (1) нетипична активност или резултат спрямо общината, (2) рязка промяна в активността между два избора, (3) рязка промяна в политическите пристрастия. ×3 = и трите проверки са задействани."
               />
               <SortHeader
-                label="Нарушения"
+                label="Протокол"
                 column="protocol_violation_count"
                 currentSort={sort}
                 currentOrder={order}
                 onSort={setSort}
-                tooltip="Брой формални нарушения в протокола. АГ = аритметична грешка, НС = несъвпадение на сумите. Задръжте курсор върху маркерите за детайли."
+                tooltip="Брой грешки в протокола — числата не се събират правилно. АГ = аритметична грешка (гласували ≠ валидни + невалидни), НС = несъвпадение на сумите (гласове по партии ≠ общо валидни)."
               />
             </tr>
           </thead>

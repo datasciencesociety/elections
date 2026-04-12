@@ -51,11 +51,11 @@ interface FilterPanelProps {
 }
 
 const METHODOLOGIES: { key: AnomalyMethodology; label: string }[] = [
-  { key: "combined", label: "Комбиниран" },
-  { key: "benford", label: "Benford" },
-  { key: "peer", label: "Peer" },
-  { key: "acf", label: "ACF" },
   { key: "protocol", label: "Протокол" },
+  { key: "combined", label: "Обобщена" },
+  { key: "benford", label: "Бенфорд" },
+  { key: "peer", label: "Съседи" },
+  { key: "acf", label: "АКФ" },
 ];
 
 const SECTION_TYPES: { key: SectionTypeKey; label: string }[] = [

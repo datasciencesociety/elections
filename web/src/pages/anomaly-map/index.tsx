@@ -52,7 +52,7 @@ export default function AnomalyMap() {
 
   // ----- URL state -----
 
-  const methodology = (searchParams.get("m") ?? "combined") as AnomalyMethodology;
+  const methodology = (searchParams.get("m") ?? "protocol") as AnomalyMethodology;
   const district = searchParams.get("district") ?? "";
   const municipality = searchParams.get("municipality") ?? "";
   const sectionFilter = searchParams.get("q") ?? "";
@@ -75,7 +75,7 @@ export default function AnomalyMap() {
       methodology: m,
       election_id: electionId,
     });
-    setParam("m", m === "combined" ? "" : m);
+    setParam("m", m === "protocol" ? "" : m);
   };
   const setDistrict = (v: string) => {
     if (v) trackEvent("filter_district", { district: v, election_id: electionId });
