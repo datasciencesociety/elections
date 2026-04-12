@@ -16,11 +16,13 @@ Per-election knobs:
   • proto_type  — "p" for most protocols, "pk" for the 2024 const-court ballot.
   • data_el     — CIK ballot id. 64 = parliament/president, 256 = president
                   round, 1/2/4/8 = council/mayor/kmetstvo/neighbourhood.
-  • suffix_rule — how to pick the trailing `.0` / `.1` / `""`:
-                  "none" → no suffix
-                  "0"    → always ".0"
-                  "1"    → always ".1"
-                  "auto" → ".0" if the section has a machine, else ".1"
+  • suffix_rule — how to pick the trailing `.0` / `.1` / `.2` / `""`:
+                  "none"  → no suffix (pi2021 array-format HAS_PROTO)
+                  "0"     → always ".0" (ns2022, pvrns2021, pi2021_07 — suffix 0 always present)
+                  "1"     → always ".1" (mi2023/tur1 — all paper, no machine voting)
+                  "auto"  → ".0" if section has machines (ХМ combined), else ".1" (Х paper-only)
+                  "auto2" → ".2" if section has machines (ХМ combined), else ".1" (Х paper-only)
+                            Used for ns2023 where suffix 0 does not exist in HAS_PROTO.
 
 Safe to re-run: overwrites existing protocol_url values.
 
@@ -43,30 +45,45 @@ class CikConfig:
     prefix: str
     proto_type: str          # "p" or "pk"
     data_el: int
-    suffix_rule: str         # "none" | "0" | "1" | "auto"
+    suffix_rule: str         # "none" | "0" | "1" | "auto" | "auto2"
     area_len: int            # leading digits of section_code used in `/rezultati/{area}.html`
 
 
 ELECTION_CONFIG: dict[str, CikConfig] = {
-    "pe202410":                 CikConfig("pe202410",            "p",  64,  "auto", 2),
-    "pe202410_ks":              CikConfig("pe202410_ks",         "pk", 64,  "auto", 2),
-    "europe2024_ns":            CikConfig("europe2024/ns",       "p",  64,  "auto", 2),
-    "europe2024_ep":            CikConfig("europe2024/ep",       "p",  64,  "auto", 2),
-    # mi2023 — single hash router per round, per-municipality page.
-    "mi2023_council":           CikConfig("mi2023/tur1",         "p",  1,   "1",    4),
-    "mi2023_mayor_r1":          CikConfig("mi2023/tur1",         "p",  2,   "1",    4),
-    "mi2023_kmetstvo_r1":       CikConfig("mi2023/tur1",         "p",  4,   "1",    4),
-    "mi2023_neighbourhood_r1":  CikConfig("mi2023/tur1",         "p",  8,   "1",    4),
-    "mi2023_mayor_r2":          CikConfig("mi2023/tur2",         "p",  2,   "1",    4),
-    "mi2023_kmetstvo_r2":       CikConfig("mi2023/tur2",         "p",  4,   "1",    4),
-    "mi2023_neighbourhood_r2":  CikConfig("mi2023/tur2",         "p",  8,   "1",    4),
-    "ns2023":                   CikConfig("ns2023",              "p",  64,  "1",    2),
-    "ns2022":                   CikConfig("ns2022",              "p",  64,  "0",    2),
-    "pvrns2021_ns":             CikConfig("pvrns2021/tur1",      "p",  64,  "0",    2),
-    "pvrns2021_pvr_r1":         CikConfig("pvrns2021/tur1",      "p",  256, "0",    2),
-    "pvrns2021_pvr_r2":         CikConfig("pvrns2021/tur2",      "p",  256, "0",    2),
-    "pi2021_jul":               CikConfig("pi2021_07",           "p",  64,  "0",    2),
-    "pi2021_apr":               CikConfig("pi2021",              "p",  64,  "none", 2),
+    # pe202410: HAS_PROTO dataEl=64, suffix 0=ХМ (machine+paper), 1=Х (paper-only).
+    "pe202410":                 CikConfig("pe202410",            "p",  64,  "auto",  2),
+    # pe202410_ks: same suffix scheme; type pk for special court ballot.
+    "pe202410_ks":              CikConfig("pe202410_ks",         "pk", 64,  "auto",  2),
+    # europe2024: single site for both elections. dataEl 64 = NS parliament, 128 = EP.
+    # Verified: /europe2024/protokoli/data.js — no separate /ns/ or /ep/ subfolders exist.
+    "europe2024_ns":            CikConfig("europe2024",          "p",  64,  "auto",  2),
+    "europe2024_ep":            CikConfig("europe2024",          "p",  128, "auto",  2),
+    # mi2023/tur1: HAS_PROTO dataEls 1,2,4,8. All sections have only suffix 1
+    # (paper-only — machine voting did not occur in round 1).
+    "mi2023_council":           CikConfig("mi2023/tur1",         "p",  1,   "1",     4),
+    "mi2023_mayor_r1":          CikConfig("mi2023/tur1",         "p",  2,   "1",     4),
+    "mi2023_kmetstvo_r1":       CikConfig("mi2023/tur1",         "p",  4,   "1",     4),
+    "mi2023_neighbourhood_r1":  CikConfig("mi2023/tur1",         "p",  8,   "1",     4),
+    # mi2023/tur2: HAS_PROTO dataEls 2,4,8. Suffix 0=machine-only, 1=paper-only,
+    # 0+2=machine+paper combined. Use "auto" (.0 for machine sections).
+    "mi2023_mayor_r2":          CikConfig("mi2023/tur2",         "p",  2,   "auto",  4),
+    "mi2023_kmetstvo_r2":       CikConfig("mi2023/tur2",         "p",  4,   "auto",  4),
+    "mi2023_neighbourhood_r2":  CikConfig("mi2023/tur2",         "p",  8,   "auto",  4),
+    # ns2023: HAS_PROTO dataEl=64. Suffix 1=Х (paper-only), 2=ХМ (machine+paper).
+    # Suffix 0 does NOT exist — use "auto2" (machine→.2, paper→.1).
+    "ns2023":                   CikConfig("ns2023",              "p",  64,  "auto2", 2),
+    # ns2022: HAS_PROTO dataEl=64. Multiple suffixes per section (0+1, 0+1+2, 0+1+2+3).
+    # Suffix 0 is always present → always ".0" picks the combined protocol.
+    "ns2022":                   CikConfig("ns2022",              "p",  64,  "0",     2),
+    # pvrns2021/tur1: dataEls 64 (parliament) + 256 (president). Same multi-suffix, 0 always present.
+    "pvrns2021_ns":             CikConfig("pvrns2021/tur1",      "p",  64,  "0",     2),
+    "pvrns2021_pvr_r1":         CikConfig("pvrns2021/tur1",      "p",  256, "0",     2),
+    # pvrns2021/tur2: dataEl=256 only.
+    "pvrns2021_pvr_r2":         CikConfig("pvrns2021/tur2",      "p",  256, "0",     2),
+    # pi2021_07: dataEl=64. Multiple suffixes, 0 always present.
+    "pi2021_jul":               CikConfig("pi2021_07",           "p",  64,  "0",     2),
+    # pi2021: dataEl=64 uses old array format (no suffix objects). No suffix in link.
+    "pi2021_apr":               CikConfig("pi2021",              "p",  64,  "none",  2),
 }
 
 BASE_URL = "https://results.cik.bg"
@@ -79,8 +96,15 @@ def get_suffix(rule: str, machine_count: int) -> str:
         return ".0"
     if rule == "1":
         return ".1"
-    # auto: .0 if machine, .1 if no machine
-    return ".0" if machine_count and machine_count > 0 else ".1"
+    has_machine = bool(machine_count and machine_count > 0)
+    if rule == "auto":
+        # suffix 0 = machine+paper combined (ХМ), suffix 1 = paper-only (Х)
+        return ".0" if has_machine else ".1"
+    if rule == "auto2":
+        # suffix 2 = machine+paper combined (ХМ), suffix 1 = paper-only (Х)
+        # used for ns2023 where suffix 0 does not exist in HAS_PROTO
+        return ".2" if has_machine else ".1"
+    raise ValueError(f"Unknown suffix rule: {rule!r}")
 
 
 def build_url(cfg: CikConfig, section_code: str, machine_count: int) -> str:

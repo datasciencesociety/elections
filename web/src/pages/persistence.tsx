@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import SectionPreview from "@/components/section-preview.js";
+import Sidebar from "@/components/sidebar.js";
 import MethodologyExplainer from "@/components/methodology-explainer.js";
 import SectionSearchInput from "@/components/section-search-input.js";
 import {
@@ -260,15 +261,14 @@ export default function Persistence() {
         )}
       </div>
 
-      {/* Table + Sidebar */}
-      <div className="relative flex-1 overflow-hidden">
-      <div className="h-full overflow-auto overflow-x-auto">
+      {/* Table */}
+      <div className="flex-1 overflow-auto">
         {error && <div className="p-4 text-sm text-red-600">{error}</div>}
         {loading && !data && <div className="p-4 text-sm text-muted-foreground">Зареждане...</div>}
 
         {data && (
           <table className="min-w-[900px] text-xs">
-            <thead className="sticky top-0 z-10 bg-background shadow-[0_1px_0_0] shadow-border">
+            <thead className="sticky top-0 z-10 border-b border-border bg-background">
               <tr>
                 <SortHeader
                   label="Секция"
@@ -448,29 +448,18 @@ export default function Persistence() {
             </tbody>
           </table>
         )}
-
       </div>
 
-        {/* Section preview — full-screen on mobile, 540px right rail on desktop */}
+      {/* Sidebar */}
+      <Sidebar
+        open={!!expandedSection}
+        onClose={() => setParam({ preview: null })}
+        title={expandedSection ?? undefined}
+      >
         {expandedSection && (
-          <div className="fixed inset-0 z-30 flex flex-col bg-background md:absolute md:inset-y-0 md:right-0 md:w-[540px] md:border-l md:border-border md:shadow-lg">
-            <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-2 md:h-10 md:px-3">
-              <button
-                onClick={() => setParam({ preview: null })}
-                className="rounded-md p-2 text-muted-foreground hover:bg-secondary hover:text-foreground md:p-1"
-                aria-label="Назад"
-              >
-                <span className="md:hidden">←</span>
-                <span className="hidden md:inline">✕</span>
-              </button>
-              <span className="font-mono text-sm font-semibold">{expandedSection}</span>
-            </div>
-            <div className="flex-1 overflow-y-auto p-3">
-              <SectionPreview sectionCode={expandedSection} />
-            </div>
-          </div>
+          <SectionPreview sectionCode={expandedSection} />
         )}
-      </div>
+      </Sidebar>
 
     </div>
   );

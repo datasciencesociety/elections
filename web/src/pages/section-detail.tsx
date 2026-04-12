@@ -7,7 +7,7 @@ import type {
   SiblingSection,
 } from "@/lib/api/types.js";
 import { usePersistenceSectionHistory } from "@/lib/hooks/use-persistence.js";
-import { useSectionSiblings } from "@/lib/hooks/use-geography.js";
+import { useSectionSiblings, useSettlementPeers } from "@/lib/hooks/use-geography.js";
 import { getAnomalies } from "@/lib/api/anomalies.js";
 import {
   ScoreBadge,
@@ -52,6 +52,7 @@ export default function SectionDetail() {
   const { data: historyData, isLoading: loading } = usePersistenceSectionHistory(sectionCode);
   const history: ElectionHistory[] | null = historyData?.elections ?? null;
   const { data: siblingsData } = useSectionSiblings(sectionCode);
+  const { data: peersData } = useSettlementPeers(sectionCode);
 
   // Server returns history sorted oldest → newest (chronological). The
   // sparkline reads that order (old on the left, new on the right) so we
@@ -189,6 +190,15 @@ export default function SectionDetail() {
               latestElectionName={siblingsData.latest_election.name}
             />
           )}
+
+        {/* Peer turnout distribution — strip plot */}
+        {peersData && peersData.peers.length >= 3 && (
+          <PeerStripPlot
+            peers={peersData.peers}
+            currentCode={sectionCode}
+            settlementName={peersData.settlement_name}
+          />
+        )}
 
         {/* Stats strip */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -427,6 +437,74 @@ function SiblingsStrip({
             );
           })}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function PeerStripPlot({
+  peers,
+  currentCode,
+  settlementName,
+}: {
+  peers: { section_code: string; turnout_rate: number; risk_score: number }[];
+  currentCode: string;
+  settlementName: string;
+}) {
+  const turnouts = peers.map((p) => p.turnout_rate);
+  const min = Math.min(...turnouts);
+  const max = Math.max(...turnouts);
+  const range = max - min || 0.01;
+  const avg = turnouts.reduce((s, t) => s + t, 0) / turnouts.length;
+
+  const W = 100;
+  const xPct = (v: number) => ((v - min) / range) * W;
+
+  const current = peers.find((p) => p.section_code === currentCode);
+
+  return (
+    <div className="mb-6 rounded border border-border bg-card p-4">
+      <h2 className="mb-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+        Активност спрямо населеното място
+      </h2>
+      <p className="mb-3 text-[11px] text-muted-foreground">
+        {peers.length} секции в {settlementName}. Тази секция е маркирана.
+      </p>
+      <div className="relative h-8">
+        {/* Track */}
+        <div className="absolute top-1/2 h-px w-full -translate-y-1/2 bg-border" />
+        {/* Average marker */}
+        <div
+          className="absolute top-1/2 h-3 w-px -translate-y-1/2 bg-muted-foreground/40"
+          style={{ left: `${xPct(avg)}%` }}
+          title={`Средна: ${(avg * 100).toFixed(1)}%`}
+        />
+        {/* Peer dots */}
+        {peers.map((p) => {
+          const isCurrent = p.section_code === currentCode;
+          return (
+            <div
+              key={p.section_code}
+              className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-transform ${
+                isCurrent
+                  ? "z-10 size-3.5 border-2 border-[#ce463c] bg-[#ce463c]"
+                  : "size-2 bg-muted-foreground/30 hover:bg-muted-foreground/60"
+              }`}
+              style={{ left: `${xPct(p.turnout_rate)}%` }}
+              title={`${p.section_code}: ${(p.turnout_rate * 100).toFixed(1)}%`}
+            />
+          );
+        })}
+      </div>
+      {/* Axis labels */}
+      <div className="mt-1 flex justify-between text-[9px] font-mono tabular-nums text-muted-foreground">
+        <span>{(min * 100).toFixed(0)}%</span>
+        {current && (
+          <span className="text-[#ce463c] font-semibold">
+            {(current.turnout_rate * 100).toFixed(1)}%
+          </span>
+        )}
+        <span>{(max * 100).toFixed(0)}%</span>
       </div>
     </div>
   );

@@ -127,6 +127,7 @@ export interface AnomalySection {
   acf_party_shift_norm: number;
   registered_voters: number | null;
   actual_voters: number | null;
+  turnout_history: string | null;
 }
 
 export interface AnomalyResult {
@@ -183,7 +184,14 @@ export function getAnomalies(
            ss.acf_multicomponent,
            ss.acf_turnout_shift, ss.acf_turnout_shift_norm,
            ss.acf_party_shift, ss.acf_party_shift_norm,
-           p.registered_voters, p.actual_voters
+           p.registered_voters, p.actual_voters,
+           (SELECT json_group_array(t) FROM (
+             SELECT ss2.turnout_rate AS t
+             FROM section_scores ss2
+             JOIN elections e2 ON e2.id = ss2.election_id
+             WHERE ss2.section_code = ss.section_code
+             ORDER BY e2.date
+           )) AS turnout_history
       FROM section_scores ss
       JOIN sections s ON s.election_id = ss.election_id AND s.section_code = ss.section_code
       JOIN locations l ON l.id = s.location_id

@@ -7,6 +7,7 @@ import type {
   GeoEntity,
   MissingCoordinatesResponse,
   SectionSiblingsResponse,
+  SettlementPeersResponse,
 } from "./types.js";
 
 /**
@@ -77,5 +78,13 @@ export function getSectionSiblings(
 ): Promise<SectionSiblingsResponse> {
   return apiGet<SectionSiblingsResponse>(
     `/geography/section-siblings/${encodeURIComponent(sectionCode)}`,
+  );
+}
+
+export function getSettlementPeers(
+  sectionCode: string,
+): Promise<SettlementPeersResponse> {
+  return apiGet<SettlementPeersResponse>(
+    `/geography/settlement-peers/${encodeURIComponent(sectionCode)}`,
   );
 }

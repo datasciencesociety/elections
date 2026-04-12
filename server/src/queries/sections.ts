@@ -336,3 +336,62 @@ export function getSectionsGeo(
       };
     });
 }
+
+// ---------- settlement peers (EKATTE) ----------
+
+export interface SettlementPeer {
+  section_code: string;
+  turnout_rate: number;
+  risk_score: number;
+}
+
+export interface SettlementPeersResult {
+  settlement_name: string;
+  peer_count: number;
+  avg_turnout: number;
+  peers: SettlementPeer[];
+}
+
+export function getSettlementPeers(
+  db: DatabaseType,
+  sectionCode: string,
+): SettlementPeersResult | null {
+  const locRow = db
+    .prepare(
+      `SELECT l.ekatte, l.settlement_name, e.id AS election_id
+       FROM sections s
+       JOIN locations l ON l.id = s.location_id
+       JOIN elections e ON e.id = s.election_id
+       WHERE s.section_code = ?
+       ORDER BY e.date DESC
+       LIMIT 1`,
+    )
+    .get(sectionCode) as
+    | { ekatte: string; settlement_name: string; election_id: number }
+    | undefined;
+
+  if (!locRow || !locRow.ekatte) return null;
+
+  const peers = db
+    .prepare(
+      `SELECT ss.section_code, ss.turnout_rate, ss.risk_score
+       FROM section_scores ss
+       JOIN sections s ON s.election_id = ss.election_id AND s.section_code = ss.section_code
+       JOIN locations l ON l.id = s.location_id
+       WHERE ss.election_id = ? AND l.ekatte = ? AND ss.section_type = 'normal'
+       ORDER BY ss.turnout_rate`,
+    )
+    .all(locRow.election_id, locRow.ekatte) as SettlementPeer[];
+
+  const avgTurnout =
+    peers.length > 0
+      ? peers.reduce((s, p) => s + p.turnout_rate, 0) / peers.length
+      : 0;
+
+  return {
+    settlement_name: locRow.settlement_name,
+    peer_count: peers.length,
+    avg_turnout: avgTurnout,
+    peers,
+  };
+}

@@ -11,16 +11,45 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { AnomalyMethodology, AnomalySection } from "@/lib/api/types.js";
+import type { AnomalySection } from "@/lib/api/types.js";
 import { useAnomaliesInfinite } from "@/lib/hooks/use-anomalies.js";
 import { useDistricts, useMunicipalities } from "@/lib/hooks/use-geography.js";
 import { useSectionViolations } from "@/lib/hooks/use-sections.js";
 import { ScoreBadge } from "@/components/score/index.js";
 import { SlidersHorizontal, ChevronDown, ChevronUp } from "lucide-react";
 
-// Truncate to 2 decimal places without rounding (3.999 → "3.99")
 function pct2(value: number): string {
   return (Math.floor(value * 100) / 100).toFixed(2);
+}
+
+function TurnoutSparkline({ values, current }: { values: number[]; current: number }) {
+  if (values.length < 2) return null;
+  const W = 48;
+  const H = 20;
+  const pad = 1;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 0.01;
+  const x = (i: number) => pad + ((W - 2 * pad) * i) / (values.length - 1);
+  const y = (v: number) => H - pad - ((H - 2 * pad) * (v - min)) / range;
+  const points = values.map((v, i) => `${x(i)},${y(v)}`).join(" ");
+  const currentIdx = values.length - 1;
+  const currentY = y(current);
+  const pcts = values.map((v) => `${(v * 100).toFixed(0)}%`);
+  const title = `Активност през ${values.length} избора: ${pcts.join(" → ")}`;
+  return (
+    <svg width={W} height={H} className="inline-block align-middle" aria-label={title}>
+      <title>{title}</title>
+      <polyline
+        points={points}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.2}
+        className="text-muted-foreground/50"
+      />
+      <circle cx={x(currentIdx)} cy={currentY} r={2} className="fill-foreground" />
+    </svg>
+  );
 }
 
 const SECTION_TYPE_LABELS: Record<string, string> = {
@@ -31,10 +60,6 @@ const SECTION_TYPE_LABELS: Record<string, string> = {
 };
 
 type RiskSection = AnomalySection;
-// This page uses the four "score" methodologies — protocol filter lives in
-// the violation filter below, not in the methodology toggle.
-type Methodology = Exclude<AnomalyMethodology, "protocol">;
-type ViolationFilter = "all" | "with_violations";
 type SortColumn = "risk_score" | "benford_risk" | "peer_risk" | "acf_risk" | "turnout_rate" | "section_code" | "settlement_name" | "protocol_violation_count" | "registered_voters" | "actual_voters";
 
 function SortHeader({
@@ -57,12 +82,16 @@ function SortHeader({
   const active = currentSort === column;
   return (
     <th
-      className={`cursor-pointer select-none whitespace-nowrap px-2 py-2 text-left text-[11px] font-medium text-muted-foreground hover:text-foreground ${className ?? ""}`}
+      className={`cursor-pointer select-none whitespace-nowrap px-2 py-2 text-left text-[11px] font-medium transition-colors ${
+        active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+      } ${className ?? ""}`}
       onClick={() => onSort(column)}
       title={tooltip}
     >
       {label}
-      {active && <span className="ml-0.5">{currentOrder === "desc" ? "↓" : "↑"}</span>}
+      <span className={active ? "ml-0.5" : "ml-0.5 opacity-30"}>
+        {active ? (currentOrder === "desc" ? " ↓" : " ↑") : " ↕"}
+      </span>
     </th>
   );
 }
@@ -102,9 +131,6 @@ export default function SectionsTable() {
 
   const sort = (searchParams.get("sort") ?? "risk_score") as SortColumn;
   const order = (searchParams.get("order") ?? "desc") as "asc" | "desc";
-  const methodology = (searchParams.get("m") ?? "combined") as Methodology;
-  const violationFilter = (searchParams.get("v") ?? "all") as ViolationFilter;
-  const includeSpecial = searchParams.get("special") === "1";
   const district = searchParams.get("district") ?? "";
   const municipality = searchParams.get("municipality") ?? "";
   const sectionFilter = searchParams.get("q") ?? "";
@@ -147,11 +173,8 @@ export default function SectionsTable() {
     {
       electionId: electionId!,
       minRisk: 0,
-      methodology,
       sort,
       order,
-      minViolations: violationFilter === "with_violations" ? 1 : undefined,
-      excludeSpecial: violationFilter === "with_violations" && !includeSpecial,
       district: district || undefined,
       municipality: municipality || undefined,
       section: sectionFilter || undefined,
@@ -199,13 +222,6 @@ export default function SectionsTable() {
   // small strip above the table so a shared link can be understood at a
   // glance without reverse-engineering URL params.
   const activeFilters: string[] = [];
-  if (methodology !== "combined") {
-    const label = { benford: "Бенфорд", peer: "Сравнение", acf: "АКФ" }[methodology];
-    if (label) activeFilters.push(`само ${label}`);
-  }
-  if (violationFilter === "with_violations") {
-    activeFilters.push(includeSpecial ? "с нарушения (вкл. специални)" : "с нарушения");
-  }
   if (district) {
     const d = districts.find((x) => String(x.id) === district);
     if (d) activeFilters.push(`област ${d.name}`);
@@ -228,18 +244,6 @@ export default function SectionsTable() {
     actual_voters: "гласували",
   };
   const sortLabel = sortLabelMap[sort] ?? sort;
-
-  const methodologies: { key: Methodology; label: string }[] = [
-    { key: "combined", label: "Комбиниран" },
-    { key: "benford", label: "Benford" },
-    { key: "peer", label: "Peer" },
-    { key: "acf", label: "ACF" },
-  ];
-
-  const violationFilters: { key: ViolationFilter; label: string }[] = [
-    { key: "all", label: "Всички" },
-    { key: "with_violations", label: "С нарушения" },
-  ];
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -267,16 +271,11 @@ export default function SectionsTable() {
 
       {/* Filters bar — collapsible on mobile, always-open on desktop */}
       <FiltersBar
-        methodology={methodology}
-        violationFilter={violationFilter}
-        includeSpecial={includeSpecial}
         district={district}
         municipality={municipality}
         sectionFilter={sectionFilter}
         districts={districts}
         municipalities={municipalities}
-        methodologies={methodologies}
-        violationFilters={violationFilters}
         setParam={setParam}
         setSearchParams={setSearchParams}
         activeFilterCount={activeFilters.length}
@@ -328,6 +327,9 @@ export default function SectionsTable() {
                 onSort={setSort}
                 tooltip="Активност (гласували / списък). Стойност над 100% е физически невъзможна и означава грешка в протокола."
               />
+              <th className="hidden px-2 py-2 text-left text-[11px] font-medium text-muted-foreground lg:table-cell" title="Как се е променяла активността на тази секция през всички избори. Линията показва % гласували, точката е текущият избор.">
+                Активност ⟶
+              </th>
               <SortHeader
                 label="Комб. риск"
                 column="risk_score"
@@ -402,6 +404,11 @@ export default function SectionsTable() {
                     <span className={`font-mono font-semibold tabular-nums ${s.turnout_rate > 1 ? "text-red-600" : ""}`}>
                       {pct2(s.turnout_rate * 100)}%
                     </span>
+                  </td>
+                  <td className="hidden whitespace-nowrap px-2 py-1.5 lg:table-cell">
+                    {s.turnout_history && s.turnout_history.length >= 2 && (
+                      <TurnoutSparkline values={s.turnout_history} current={s.turnout_rate} />
+                    )}
                   </td>
                   <td className="whitespace-nowrap px-2 py-1.5"><ScoreBadge value={s.risk_score} /></td>
                   <td className="hidden whitespace-nowrap px-2 py-1.5 md:table-cell"><ScoreBadge value={s.benford_risk} /></td>
@@ -527,32 +534,22 @@ export default function SectionsTable() {
  * to scan and the collapse state lives in its own hook.
  */
 function FiltersBar(props: {
-  methodology: Methodology;
-  violationFilter: ViolationFilter;
-  includeSpecial: boolean;
   district: string;
   municipality: string;
   sectionFilter: string;
   districts: { id: number | string; name: string }[];
   municipalities: { id: number | string; name: string }[];
-  methodologies: { key: Methodology; label: string }[];
-  violationFilters: { key: ViolationFilter; label: string }[];
   setParam: (key: string, value: string) => void;
   setSearchParams: ReturnType<typeof useSearchParams>[1];
   activeFilterCount: number;
 }) {
   const [expanded, setExpanded] = useState(false);
   const {
-    methodology,
-    violationFilter,
-    includeSpecial,
     district,
     municipality,
     sectionFilter,
     districts,
     municipalities,
-    methodologies,
-    violationFilters,
     setParam,
     setSearchParams,
     activeFilterCount,
@@ -586,67 +583,6 @@ function FiltersBar(props: {
           expanded ? "flex" : "hidden md:flex"
         }`}
       >
-        {/* Signal type / methodology */}
-        <div title="Кой сигнал искате да претеглите като основен. Комбиниран използва всички четири.">
-          <div className="mb-0.5 text-[11px] text-muted-foreground">Вид сигнал</div>
-          <div className="flex flex-wrap gap-0.5">
-            {methodologies.map((m) => (
-              <button
-                key={m.key}
-                onClick={() => setParam("m", m.key === "combined" ? "" : m.key)}
-                className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
-                  methodology === m.key
-                    ? "bg-foreground text-background"
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Protocol violations filter */}
-        <div title="Филтрира таблицата до секции с формални нарушения в протокола (аритметични грешки, несъответствия на полета).">
-          <div className="mb-0.5 text-[11px] text-muted-foreground">Протокол</div>
-          <div className="flex flex-wrap items-center gap-0.5">
-            {violationFilters.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => {
-                  setSearchParams((prev) => {
-                    const next = new URLSearchParams(prev);
-                    if (f.key === "all") next.delete("v");
-                    else next.set("v", f.key);
-                    next.delete("page");
-                    return next;
-                  }, { replace: true });
-                }}
-                className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
-                  violationFilter === f.key
-                    ? f.key === "with_violations"
-                      ? "bg-red-600 text-white"
-                      : "bg-foreground text-background"
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-            {violationFilter === "with_violations" && (
-              <label className="ml-1.5 flex cursor-pointer items-center gap-1 text-[11px] text-muted-foreground">
-                <input
-                  type="checkbox"
-                  checked={includeSpecial}
-                  onChange={(e) => setParam("special", e.target.checked ? "1" : "")}
-                  className="size-3 accent-red-500"
-                />
-                +болници/затвори
-              </label>
-            )}
-          </div>
-        </div>
-
         {/* District */}
         <div className="min-w-0 sm:w-44">
           <div className="mb-0.5 text-[11px] text-muted-foreground">Област</div>

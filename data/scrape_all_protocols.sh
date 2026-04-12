@@ -18,8 +18,8 @@ declare -A SLUG_MAP=(
   # 2024
   ["pe202410"]="pe202410"
   ["pe202410_ks"]="pe202410_ks"
-  ["europe2024_ns"]="europe2024/ns"
-  ["europe2024_ep"]="europe2024/ep"
+  ["europe2024_ns"]="europe2024"
+  ["europe2024_ep"]="europe2024"
   # 2023
   ["mi2023_council"]="mi2023/os"
   ["mi2023_mayor_r1"]="mi2023/kmet"

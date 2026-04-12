@@ -8,6 +8,7 @@ import {
   getMunicipalities,
   getRiks,
   getSectionSiblings,
+  getSettlementPeers,
 } from "../api/geography.js";
 
 /**
@@ -85,6 +86,15 @@ export function useSectionSiblings(sectionCode: string | undefined) {
   return useQuery({
     queryKey: ["section-siblings", sectionCode],
     queryFn: () => getSectionSiblings(sectionCode!),
+    enabled: !!sectionCode,
+    staleTime: Infinity,
+  });
+}
+
+export function useSettlementPeers(sectionCode: string | undefined) {
+  return useQuery({
+    queryKey: ["settlement-peers", sectionCode],
+    queryFn: () => getSettlementPeers(sectionCode!),
     enabled: !!sectionCode,
     staleTime: Infinity,
   });

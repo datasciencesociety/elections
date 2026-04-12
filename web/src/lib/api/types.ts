@@ -51,6 +51,7 @@ export interface AnomalySection {
   section_type: string;
   registered_voters: number | null;
   actual_voters: number | null;
+  turnout_history: number[] | null;
 }
 
 export interface AnomaliesResponse {
@@ -377,4 +378,19 @@ export interface SectionSiblingsResponse {
     type: string;
   } | null;
   siblings: SiblingSection[];
+}
+
+// ---------- settlement peers (EKATTE) ----------
+
+export interface SettlementPeer {
+  section_code: string;
+  turnout_rate: number;
+  risk_score: number;
+}
+
+export interface SettlementPeersResponse {
+  settlement_name: string;
+  peer_count: number;
+  avg_turnout: number;
+  peers: SettlementPeer[];
 }

@@ -64,6 +64,7 @@ export function SectionElection({
       <SectionLinks
         electionId={electionId}
         sectionCode={sectionCode}
+        machineCount={detail?.protocol.machine_count}
       />
 
       <SectionProtocolSummary

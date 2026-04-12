@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import getDb from "../db.js";
 import { BALLOT_JOIN_SQL, BALLOT_NAME_SQL } from "../db/ballot.js";
+import { getSettlementPeers } from "../queries/sections.js";
 
 const geography = new Hono();
 
@@ -393,6 +394,15 @@ geography.get("/section-siblings/:code", (c) => {
     latest_election: latest,
     siblings,
   });
+});
+
+geography.get("/settlement-peers/:code", (c) => {
+  const db = getDb();
+  const { code } = c.req.param();
+  const result = getSettlementPeers(db, code);
+  if (!result) return c.json({ error: "Section not found" }, 404);
+  c.header("Cache-Control", "public, max-age=3600");
+  return c.json(result);
 });
 
 geography.get("/missing-coordinates", (c) => {

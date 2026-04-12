@@ -239,7 +239,14 @@ elections.get("/:id/anomalies", (c) => {
     excludeSpecial,
   });
 
-  return c.json({ election, sections, total, limit, offset });
+  const parsed = sections.map((s) => ({
+    ...s,
+    turnout_history: s.turnout_history
+      ? JSON.parse(s.turnout_history)
+      : null,
+  }));
+
+  return c.json({ election, sections: parsed, total, limit, offset });
 });
 
 elections.get("/:id/violations/:sectionCode", (c) => {

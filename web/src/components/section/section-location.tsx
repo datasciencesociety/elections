@@ -180,6 +180,12 @@ export function SectionLocation({
   // Desktop map — full width, shorter than mobile so the info block doesn't
   // dominate the sidebar. Attribution hidden (main map on the page shows it
   // already).
+  const geocodeWarning = hasCoords ? (
+    <p className="text-[10px] leading-snug text-muted-foreground/70">
+      Местоположението е определено автоматично по адрес и може да е неточно.
+    </p>
+  ) : null;
+
   const mapBlockDesktop = hasCoords ? (
     <SectionMap
       lat={lat}
@@ -213,6 +219,7 @@ export function SectionLocation({
         </div>
         {mobileExpanded && (
           <div className="mt-3 space-y-2">
+            {geocodeWarning}
             {mapBlockMobile}
             {confirmRow}
           </div>
@@ -224,7 +231,8 @@ export function SectionLocation({
           useful in 112×80 so we took the vertical hit instead. */}
       <div className="hidden md:block">
         {textBlock}
-        <div className="mt-2.5">{mapBlockDesktop}</div>
+        {geocodeWarning && <div className="mt-2">{geocodeWarning}</div>}
+        <div className="mt-1.5">{mapBlockDesktop}</div>
         <div className="mt-2">{confirmRow}</div>
       </div>
 

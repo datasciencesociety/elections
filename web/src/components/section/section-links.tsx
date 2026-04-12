@@ -13,11 +13,13 @@ import { buildProtocolLinks } from "@/lib/cik-links.js";
 export function SectionLinks({
   electionId,
   sectionCode,
+  machineCount,
 }: {
   electionId: string | number;
   sectionCode: string;
+  machineCount?: number;
 }) {
-  const links = buildProtocolLinks(sectionCode, Number(electionId));
+  const links = buildProtocolLinks(sectionCode, Number(electionId), machineCount);
   if (!links) return null;
 
   return (
