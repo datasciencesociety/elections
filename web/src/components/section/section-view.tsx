@@ -2,6 +2,7 @@ import type { AnomalySection } from "@/lib/api/types.js";
 import { useSectionFull } from "./use-section-full.js";
 import { SectionLocation } from "./section-location.js";
 import { SectionElection } from "./section-election.js";
+import { ShareButton } from "@/components/ui/share-button.js";
 
 /**
  * Canonical "show one election + section" composition: location at the top
@@ -45,6 +46,23 @@ export function SectionView({
         lat={anomaly?.lat ?? null}
         lng={anomaly?.lng ?? null}
       />
+
+      <div className="flex gap-2">
+        <a
+          href={`/section/${sectionCode}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 rounded-md border border-border bg-secondary/50 px-3 py-1.5 text-center text-[11px] font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
+        >
+          Отвори ↗
+        </a>
+        <ShareButton
+          url={`${window.location.origin}/section/${sectionCode}`}
+          title={`Секция ${sectionCode}`}
+          variant="button"
+          className="flex-1"
+        />
+      </div>
 
       <SectionElection
         electionId={electionId}

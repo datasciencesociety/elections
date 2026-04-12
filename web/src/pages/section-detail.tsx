@@ -20,6 +20,7 @@ import {
   SectionElection,
 } from "@/components/section/index.js";
 import MethodologyExplainer from "@/components/methodology-explainer.js";
+import { ShareButton } from "@/components/ui/share-button.js";
 
 const REPORT_FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSdLB0n9twfFQyiD4mIpAX_fYc_-N5bUhfkKpVJa6_-Oxv5CAQ/viewform";
@@ -140,14 +141,20 @@ export default function SectionDetail() {
           >
             &larr; Системни
           </Link>
-          <a
-            href={`${REPORT_FORM_URL}?entry.1736983913=${encodeURIComponent(window.location.href)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded border border-border px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-[#ce463c] hover:text-[#ce463c]"
-          >
-            Докладвай разминаване
-          </a>
+          <div className="flex items-center gap-2">
+            <ShareButton
+              url={`${window.location.origin}/section/${sectionCode}`}
+              title={`Секция ${sectionCode}`}
+            />
+            <a
+              href={`${REPORT_FORM_URL}?entry.1736983913=${encodeURIComponent(window.location.href)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded border border-border px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-[#ce463c] hover:text-[#ce463c]"
+            >
+              Докладвай разминаване
+            </a>
+          </div>
         </div>
 
         {/* Editorial header */}
@@ -374,8 +381,8 @@ function SiblingsStrip({
       <h2 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
         Други секции на този адрес ({siblings.length}) · {latestElectionName}
       </h2>
-      <div className="-mx-4 overflow-x-auto px-4 pb-1">
-        <div className="flex gap-2 md:flex-wrap">
+      <div className="-mx-4 overflow-x-auto px-4 pb-1 md:mx-0 md:overflow-visible md:px-0">
+        <div className="flex gap-2 md:grid md:grid-cols-[repeat(auto-fill,minmax(9rem,1fr))]">
           {siblings.map((s) => {
             const isCurrent = s.section_code === currentCode;
             const turnoutPct =
@@ -384,7 +391,7 @@ function SiblingsStrip({
               s.winner_pct != null ? s.winner_pct.toFixed(1) : "—";
             const chip = (
               <div
-                className={`flex min-w-[9rem] shrink-0 flex-col gap-1 rounded-lg border px-3 py-2 transition-all ${
+                className={`flex min-w-[9rem] shrink-0 flex-col gap-1 rounded-lg border px-3 py-2 transition-all md:shrink ${
                   isCurrent
                     ? "border-[#ce463c] bg-[#ce463c08]"
                     : "border-border bg-background hover:border-foreground/30"

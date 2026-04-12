@@ -15,6 +15,7 @@ import {
   SectionLocation,
   SectionElection,
 } from "@/components/section/index.js";
+import { ShareButton } from "@/components/ui/share-button.js";
 
 /**
  * Compact "section across elections" popover used by the persistence page.
@@ -164,19 +165,12 @@ export default function SectionPreview({
         >
           Отвори ↗
         </a>
-        <button
-          onClick={() => {
-            const url = `${window.location.origin}/section/${sectionCode}`;
-            if (navigator.share) {
-              navigator.share({ title: `Секция ${sectionCode}`, url });
-            } else {
-              navigator.clipboard.writeText(url);
-            }
-          }}
-          className="flex-1 rounded-md border border-border bg-secondary/50 px-3 py-1.5 text-center text-[11px] font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
-        >
-          {"share" in navigator ? "Сподели" : "Копирай линк"}
-        </button>
+        <ShareButton
+          url={`${window.location.origin}/section/${sectionCode}`}
+          title={`Секция ${sectionCode}`}
+          variant="button"
+          className="flex-1"
+        />
       </div>
 
       {/* Per-election cards — newest first */}
