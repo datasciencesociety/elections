@@ -13,6 +13,7 @@ import SectionDetail from "./pages/section-detail.js";
 import MissingCoordinates from "./pages/missing-coordinates.js";
 import Landing from "./pages/landing.js";
 import { BrowseAbroad, BrowseDistrict } from "./pages/browse.js";
+import ExplorerHelp from "./pages/explorer-help.js";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,6 +72,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/persistence" element={<Persistence />} />
             <Route path="/section/:sectionCode" element={<SectionDetail />} />
             <Route path="/help/coordinates" element={<MissingCoordinates />} />
+            <Route path="/help/explorer" element={<ExplorerHelp />} />
             {/* Redirect old risk URL to combined sections page */}
             <Route path="/:electionId/risk" element={<RedirectToSections />} />
           </Route>

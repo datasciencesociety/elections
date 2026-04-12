@@ -1,4 +1,4 @@
-import { useLocation } from "react-router";
+import { Link, useLocation } from "react-router";
 
 /**
  * Compact footer strip that sits at the bottom of every page (via Layout).
@@ -19,7 +19,7 @@ const REPORT_FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSdLB0n9twfFQyiD4mIpAX_fYc_-N5bUhfkKpVJa6_-Oxv5CAQ/viewform";
 const GRAO_URL =
   "https://www.grao.bg/elections/Secure/Public/EgnSearch.cshtml";
-const GITHUB_URL = "https://github.com/georgialexandrov/bg-elections-data";
+const GITHUB_URL = "https://github.com/datasciencesociety/elections/tree/feature/web-visualize";
 
 export default function AppFooter() {
   const location = useLocation();
@@ -49,6 +49,13 @@ export default function AppFooter() {
         >
           Проверете секцията си (ГРАО)
         </a>
+        <span className="text-muted-foreground/40">·</span>
+        <Link
+          to="/help/explorer"
+          className="transition-colors hover:text-foreground"
+        >
+          Изследвай с изкуствен интелект
+        </Link>
         <span className="text-muted-foreground/40">·</span>
         <a
           href={GITHUB_URL}
