@@ -1,0 +1,6 @@
+elections.db
+elections.db-shm
+elections.db-wal
+*.html
+.DS_Store
+.fuse_hidden*
