@@ -56,7 +56,7 @@ async function servePng(
   return new Response(new Uint8Array(png), {
     headers: {
       "Content-Type": "image/png",
-      "Cache-Control": "public, max-age=86400, s-maxage=604800",
+      "Cache-Control": "public, max-age=3600, s-maxage=86400",
     },
   });
 }
