@@ -100,9 +100,9 @@ og.get("/election/:id/results.png", async (c) => {
   // Contextual image: municipality selected — zoomed map of just that municipality
   if (regionId) {
     const municipality = getOgMunicipality(db, regionId, id);
+    const mapResult = renderMapSvg(db, id, regionId, highlightColor);
+    const mapDataUri = svgToPngDataUri(mapResult.svg, 920);
     const parties = getOgMunicipalityParties(db, id, regionId, showNonVoters);
-    const mapSvg = renderMapSvg(db, id, regionId, highlightColor);
-    const mapDataUri = svgToPngDataUri(mapSvg, 920);
     const cacheKey = `election-${id}-results-r${regionId}${nvKey}${partyParam ? `-p${partyParam}` : ""}`;
     return servePng(cacheKey, () =>
       renderOgImage(
@@ -118,9 +118,9 @@ og.get("/election/:id/results.png", async (c) => {
   }
 
   // Default: national results — full Bulgaria map
-  const mapSvg = renderMapSvg(db, id, null, highlightColor);
-  const mapDataUri = svgToPngDataUri(mapSvg, 920);
-  const parties = getOgTopParties(db, id, showNonVoters);
+  const mapResult = renderMapSvg(db, id, null, highlightColor);
+  const mapDataUri = svgToPngDataUri(mapResult.svg, 920);
+  const parties = getOgTopParties(db, id, showNonVoters, mapResult.usedPartyColors);
   const cacheKey = `election-${id}-results${nvKey}${partyParam ? `-p${partyParam}` : ""}`;
   return servePng(cacheKey, () =>
     renderOgImage(

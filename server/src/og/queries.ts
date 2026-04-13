@@ -31,7 +31,10 @@ export interface OgTopParty {
   name: string;
   color: string;
   votes: number;
+  /** Percentage of registered voters (or votes cast when showNonVoters=false). */
   pct: number;
+  /** Percentage of votes cast (only for parties, not non-voters/null). */
+  votePct?: number;
 }
 
 const PARTY_THRESHOLD_PCT = 3.5;
@@ -44,6 +47,8 @@ export function getOgTopParties(
   db: DatabaseType,
   electionId: number,
   showNonVoters = true,
+  /** Colors visible on the map — parties with these colors are included even if below threshold. */
+  includeColors?: Set<string>,
 ): OgTopParty[] {
   const totals = db
     .prepare(
@@ -56,6 +61,7 @@ export function getOgTopParties(
 
   // Denominator: registered voters (with non-voters) or total votes cast (without)
   const denom = showNonVoters ? (totals.registered || 1) : (totals.actual || 1);
+  const voteDenom = totals.actual || 1;
 
   const allParties = db
     .prepare(
@@ -72,7 +78,17 @@ export function getOgTopParties(
     )
     .all(denom, electionId) as OgTopParty[];
 
-  const parties = allParties.filter((p) => p.pct >= PARTY_THRESHOLD_PCT);
+  // Add votePct (% of votes cast) to each party
+  for (const p of allParties) {
+    p.votePct = Math.round((1000 * p.votes) / voteDenom) / 10;
+  }
+
+  const parties = allParties.filter((p) => {
+    if (p.pct >= PARTY_THRESHOLD_PCT) return true;
+    // Include if this party's color is visible on the map
+    if (includeColors && includeColors.has(p.color.toLowerCase())) return true;
+    return false;
+  });
 
   // Null votes
   if (totals.null_votes > 0) {
@@ -150,6 +166,7 @@ export function getOgMunicipalityParties(
     .get(electionId, municipalityId) as { registered: number; actual: number; null_votes: number };
 
   const denom = showNonVoters ? (totals.registered || 1) : (totals.actual || 1);
+  const voteDenom = totals.actual || 1;
 
   const allParties = db
     .prepare(
@@ -167,6 +184,10 @@ export function getOgMunicipalityParties(
         ORDER BY votes DESC`,
     )
     .all(denom, electionId, municipalityId) as OgTopParty[];
+
+  for (const p of allParties) {
+    p.votePct = Math.round((1000 * p.votes) / voteDenom) / 10;
+  }
 
   const parties = allParties.filter((p) => p.pct >= PARTY_THRESHOLD_PCT);
 

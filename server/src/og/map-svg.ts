@@ -63,12 +63,18 @@ function makeProjectors(vp: Viewport) {
   };
 }
 
+export interface MapSvgResult {
+  svg: string;
+  /** Party colors actually rendered on the map (excludes non-voter gray and "other" bucket). */
+  usedPartyColors: Set<string>;
+}
+
 export function renderMapSvg(
   db: DatabaseType,
   electionId: number,
   zoomMuniId?: number | null,
   highlightPartyColor?: string | null,
-): string {
+): MapSvgResult {
   // Determine which municipalities to render
   const whereClause = zoomMuniId ? "AND m.id = ?" : "";
   const params: unknown[] = [electionId];
@@ -158,6 +164,7 @@ export function renderMapSvg(
   const tileSize = Math.max(1, pxStep - 0.3);
 
   const rects: string[] = [];
+  const usedPartyColors = new Set<string>();
 
   for (const muni of muniRows) {
     const geo = JSON.parse(muni.geo) as
@@ -204,6 +211,7 @@ export function renderMapSvg(
       const share = p.votes / total;
       if (share >= MIN_SHARE) {
         slices.push({ color: p.color, share });
+        usedPartyColors.add(p.color.toLowerCase());
       } else {
         otherShare += share;
       }
@@ -245,7 +253,10 @@ export function renderMapSvg(
     }
   }
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SVG_W} ${SVG_H}" width="${SVG_W}" height="${SVG_H}"><rect width="${SVG_W}" height="${SVG_H}" fill="#fbfbfb"/>${rects.join("")}</svg>`;
+  return {
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SVG_W} ${SVG_H}" width="${SVG_W}" height="${SVG_H}"><rect width="${SVG_W}" height="${SVG_H}" fill="#fbfbfb"/>${rects.join("")}</svg>`,
+    usedPartyColors,
+  };
 }
 
 function blendToGray(hex: string, t: number): string {

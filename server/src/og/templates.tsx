@@ -582,7 +582,7 @@ export function ResultsContextTemplate({
                     {p.name}
                   </span>
                   <span style={{ fontFamily: "Geist", fontSize: "13px", color: MUTED }}>
-                    {p.pct}%
+                    {p.pct}%{p.votePct != null ? ` (${p.votePct}% от гласувалите)` : ""}
                   </span>
                 </div>
               );

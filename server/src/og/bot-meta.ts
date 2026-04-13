@@ -20,7 +20,7 @@ function getIndexHtml(): string {
 const BASE_URL = process.env.BASE_URL || "https://karta.izborenmonitor.com";
 
 // Bump this to bust Cloudflare's cache after OG image renderer changes
-const OG_VERSION = "v2";
+const OG_VERSION = "v3";
 
 interface OgMeta {
   title: string;
