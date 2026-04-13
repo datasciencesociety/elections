@@ -14,6 +14,8 @@ COPY server/ server/
 COPY web/ web/
 COPY tsconfig.json* ./
 
+ARG SENTRY_AUTH_TOKEN
+ENV SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN
 RUN npm run build -w web
 RUN npx -w server tsc
 
