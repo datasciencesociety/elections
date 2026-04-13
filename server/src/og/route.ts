@@ -10,7 +10,7 @@ import {
   getOgMunicipality,
   getOgMunicipalityParties,
   getOgSectionDetail,
-  getOgSectionRiskHistory,
+  getOgSectionHistory,
   getOgSectionElection,
   getOgDistrict,
   getOgPersistenceSummary,
@@ -177,7 +177,7 @@ og.get("/section/:code", async (c) => {
   const sectionCode = c.req.param("code").replace(/\.png$/, "");
   const section = getOgSectionDetail(db, sectionCode);
   if (!section) return c.text("Not found", 404);
-  const history = getOgSectionRiskHistory(db, sectionCode);
+  const history = getOgSectionHistory(db, sectionCode);
   return servePng(`section-${sectionCode}`, () =>
     renderOgImage(SectionDetailTemplate({ section, history })),
   );

@@ -224,24 +224,64 @@ export function getOgSectionDetail(
   );
 }
 
-export interface OgSectionRiskHistory {
+export interface OgSectionHistoryElection {
+  election_id: number;
   election_name: string;
+  election_date: string;
   risk_score: number;
+  turnout_rate: number;
+  registered_voters: number;
+  actual_voters: number;
+  added_voters: number;
+  protocol_violation_count: number;
+  parties: { name: string; color: string; pct: number }[];
 }
 
-export function getOgSectionRiskHistory(
+export function getOgSectionHistory(
   db: DatabaseType,
   sectionCode: string,
-): OgSectionRiskHistory[] {
-  return db
+): OgSectionHistoryElection[] {
+  const rows = db
     .prepare(
-      `SELECT e.name AS election_name, ss.risk_score
+      `SELECT ss.election_id,
+              e.name AS election_name,
+              e.date AS election_date,
+              ss.risk_score,
+              ss.turnout_rate,
+              COALESCE(p.registered_voters, 0) AS registered_voters,
+              COALESCE(p.actual_voters, 0) AS actual_voters,
+              COALESCE(p.added_voters, 0) AS added_voters,
+              ss.protocol_violation_count
          FROM section_scores ss
          JOIN elections e ON e.id = ss.election_id
+         LEFT JOIN protocols p ON p.election_id = ss.election_id AND p.section_code = ss.section_code
         WHERE ss.section_code = ?
-        ORDER BY e.date`,
+        ORDER BY e.date DESC`,
     )
-    .all(sectionCode) as OgSectionRiskHistory[];
+    .all(sectionCode) as Omit<OgSectionHistoryElection, "parties">[];
+
+  return rows.map((r) => {
+    const totalVotes = db
+      .prepare(`SELECT SUM(total) AS t FROM votes WHERE election_id = ? AND section_code = ?`)
+      .get(r.election_id, sectionCode) as { t: number };
+    const denom = totalVotes.t || 1;
+
+    const parties = db
+      .prepare(
+        `SELECT COALESCE(ep.name_on_ballot, pa.short_name, pa.canonical_name) AS name,
+                COALESCE(pa.color, '#888888') AS color,
+                ROUND(100.0 * v.total / ?, 0) AS pct
+           FROM votes v
+           JOIN election_parties ep ON ep.election_id = v.election_id AND ep.ballot_number = v.party_number
+           JOIN parties pa ON pa.id = ep.party_id
+          WHERE v.election_id = ? AND v.section_code = ? AND v.total > 0
+          ORDER BY v.total DESC
+          LIMIT 6`,
+      )
+      .all(denom, r.election_id, sectionCode) as { name: string; color: string; pct: number }[];
+
+    return { ...r, parties };
+  });
 }
 
 // ---------- Per-election section detail (for /:electionId/sections or /table shares) ----------
