@@ -222,8 +222,9 @@ function esc(s: string): string {
  * into the HTML response. For all other requests, pass through.
  */
 export async function botMetaMiddleware(c: Context, next: Next) {
-  const ua = c.req.header("User-Agent") || "";
-  if (!BOT_UA.test(ua)) return next();
+  // Inject OG tags for ALL HTML requests, not just bots.
+  // Browsers ignore OG tags; crawlers (including iMessage/Applebot with
+  // unpredictable UAs) need them. No reason to gate on User-Agent.
 
   // Only intercept HTML page requests, not API/assets
   const url = new URL(c.req.url);
