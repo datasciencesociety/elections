@@ -194,8 +194,12 @@ function injectMeta(html: string, meta: OgMeta): string {
     <meta name="twitter:image" content="${esc(meta.image)}" />
     <title>${esc(meta.title)}</title>`;
 
-  // Replace existing <title> and inject before </head>
-  let result = html.replace(/<title>[^<]*<\/title>/, "");
+  // Strip existing OG/twitter/description meta tags and <title>, then inject new ones
+  let result = html
+    .replace(/<title>[^<]*<\/title>/, "")
+    .replace(/<meta\s+property="og:[^"]*"\s+content="[^"]*"\s*\/?>/g, "")
+    .replace(/<meta\s+name="twitter:[^"]*"\s+content="[^"]*"\s*\/?>/g, "")
+    .replace(/<meta\s+name="description"\s+content="[^"]*"\s*\/?>/g, "");
   result = result.replace("</head>", `${tags}\n</head>`);
   return result;
 }
