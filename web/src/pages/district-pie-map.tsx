@@ -766,7 +766,7 @@ export default function DistrictPieMap() {
   const tab: "bg" | "abroad" =
     searchParams.get("tab") === "abroad" ? "abroad" : "bg";
 
-  // Read initial state from URL params for shareable links
+  // Read initial state from URL params so shared links preserve context
   const initialRegionId = searchParams.get("region");
   const initialNonVoters = searchParams.get("nonVoters");
 

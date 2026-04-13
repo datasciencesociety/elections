@@ -17,7 +17,7 @@ app.use("/*", async (c, next) => {
   if (c.req.path.startsWith("/assets/")) {
     c.header("Cache-Control", "public, max-age=31536000, immutable");
   } else if (c.res.headers.get("Content-Type")?.includes("text/html")) {
-    c.header("Cache-Control", "public, max-age=300, s-maxage=3600");
+    c.header("Cache-Control", "no-cache, no-store, must-revalidate");
   }
 });
 
