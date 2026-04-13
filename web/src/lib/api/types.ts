@@ -192,6 +192,8 @@ export interface PersistenceHistoryEntry {
   vote_sum_mismatch: number;
   protocol_violation_count: number;
   protocol_url: string | null;
+  settlement_name: string | null;
+  address: string | null;
 }
 
 export interface PersistenceHistoryResponse {

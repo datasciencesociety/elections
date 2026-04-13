@@ -101,8 +101,8 @@ export function getSectionDetail(
 
   const locInfo = db
     .prepare(
-      `SELECT l.ekatte, l.settlement_name, l.municipality_id, s.rik_code,
-              m.name as municipality_name
+      `SELECT l.ekatte, COALESCE(s.settlement_name, l.settlement_name) AS settlement_name,
+              l.municipality_id, s.rik_code, m.name as municipality_name
          FROM sections s
          JOIN locations l ON l.id = s.location_id
          LEFT JOIN municipalities m ON m.id = l.municipality_id
@@ -250,7 +250,7 @@ export function getSectionsGeo(
 
   const sectionRows = db
     .prepare(
-      `SELECT s.section_code, l.settlement_name,
+      `SELECT s.section_code, COALESCE(s.settlement_name, l.settlement_name) AS settlement_name,
               COALESCE(s.lat, l.lat) AS lat,
               COALESCE(s.lng, l.lng) AS lng,
               p.registered_voters, p.actual_voters,
@@ -358,7 +358,8 @@ export function getSettlementPeers(
 ): SettlementPeersResult | null {
   const locRow = db
     .prepare(
-      `SELECT l.ekatte, l.settlement_name, e.id AS election_id
+      `SELECT l.ekatte, COALESCE(s.settlement_name, l.settlement_name) AS settlement_name,
+              e.id AS election_id
        FROM sections s
        JOIN locations l ON l.id = s.location_id
        JOIN elections e ON e.id = s.election_id

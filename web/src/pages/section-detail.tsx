@@ -188,6 +188,9 @@ export default function SectionDetail() {
           </div>
         )}
 
+        {/* Per-election address history — shows when section moved */}
+        {history && <AddressHistory history={history} />}
+
         {/* Sibling sections at the same address — peer check */}
         {siblingsData &&
           siblingsData.siblings.length >= 2 &&
@@ -514,6 +517,79 @@ function PeerStripPlot({
           </span>
         )}
         <span>{(max * 100).toFixed(0)}%</span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Shows per-election address/settlement when it changed across elections.
+ * Hidden when all elections have the same address. For abroad sections this
+ * reveals country reassignments (e.g. Turkey → Russia).
+ */
+function AddressHistory({ history }: { history: ElectionHistory[] }) {
+  // Deduplicate: only show if settlement_name or address actually changed
+  const uniqueSettlements = new Set(
+    history.map((h) => h.settlement_name).filter(Boolean),
+  );
+  const uniqueAddresses = new Set(
+    history.map((h) => h.address).filter(Boolean),
+  );
+  if (uniqueSettlements.size <= 1 && uniqueAddresses.size <= 1) return null;
+
+  // Show newest first
+  const desc = [...history].reverse();
+  // Track previous values to highlight changes
+  let prevSettlement: string | null = null;
+  let prevAddress: string | null = null;
+
+  return (
+    <div className="mb-6 rounded border border-border bg-card p-4">
+      <h2 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+        Адреси по избори
+      </h2>
+      <div className="space-y-1.5">
+        {desc.map((h, i) => {
+          const settlementChanged =
+            prevSettlement !== null &&
+            h.settlement_name !== null &&
+            h.settlement_name !== prevSettlement;
+          const addressChanged =
+            prevAddress !== null &&
+            h.address !== null &&
+            h.address !== prevAddress;
+          const changed = settlementChanged || addressChanged;
+          prevSettlement = h.settlement_name;
+          prevAddress = h.address;
+
+          return (
+            <div
+              key={h.election_id}
+              className={`flex items-start gap-3 rounded px-2.5 py-1.5 text-xs ${
+                changed ? "bg-[#ce463c]/8 border border-[#ce463c]/20" : ""
+              }`}
+            >
+              <span className="shrink-0 font-mono tabular-nums text-muted-foreground w-20">
+                {h.election_date.slice(0, 10)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <span className={changed ? "font-semibold text-[#ce463c]" : ""}>
+                  {h.settlement_name ?? "—"}
+                </span>
+                {h.address && (
+                  <span className="ml-2 text-muted-foreground truncate">
+                    {h.address}
+                  </span>
+                )}
+                {changed && i < desc.length - 1 && (
+                  <span className="ml-2 text-[10px] text-[#ce463c]">
+                    различен адрес
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

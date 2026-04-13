@@ -23,14 +23,15 @@ import { SelectedSectionRing } from "./map/selected-section-ring.js";
 
 import { FilterPanel, type SectionTypeKey } from "./filter-panel.js";
 
-const ALL_SECTION_TYPES: SectionTypeKey[] = [
+// Abroad sections are excluded by default — statistical anomaly methods
+// (Benford, peer, ACF) don't apply to abroad. They only appear when
+// methodology = "protocol" (protocol violation checks are universal).
+const DEFAULT_SECTION_TYPES = new Set<SectionTypeKey>([
   "normal",
   "hospital",
   "prison",
   "mobile",
-  "abroad",
-];
-const DEFAULT_SECTION_TYPES = new Set<SectionTypeKey>(ALL_SECTION_TYPES);
+]);
 
 /**
  * The anomaly map page — section-level results overlaid with statistical

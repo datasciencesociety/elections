@@ -113,6 +113,20 @@ export default function SectionPreview({
         />
       )}
 
+      {/* Address changes indicator */}
+      {history && (() => {
+        const uniqueSettlements = new Set(history.map(h => h.settlement_name).filter(Boolean));
+        if (uniqueSettlements.size <= 1) return null;
+        return (
+          <div className="rounded border border-[#ce463c]/20 bg-[#ce463c]/5 px-3 py-2 text-[11px]">
+            <span className="font-medium text-[#ce463c]">Различни адреси:</span>{" "}
+            <span className="text-muted-foreground">
+              {[...uniqueSettlements].join(" / ")}
+            </span>
+          </div>
+        );
+      })()}
+
       {/* Summary stats */}
       <div className="grid grid-cols-4 gap-2">
         <Stat label="Избори" value={history.length} />

@@ -125,7 +125,8 @@ export function getPersistence(
       COALESCE(va.avg_voted, 0) AS avg_voted
     FROM scored s
     LEFT JOIN (
-      SELECT sec.section_code, loc.settlement_name, loc.lat, loc.lng,
+      SELECT sec.section_code, COALESCE(sec.settlement_name, loc.settlement_name) AS settlement_name,
+        loc.lat, loc.lng,
         ROW_NUMBER() OVER (PARTITION BY sec.section_code ORDER BY sec.election_id DESC) AS rn
       FROM sections sec
       JOIN locations loc ON loc.id = sec.location_id
@@ -186,6 +187,8 @@ export interface PersistenceSectionHistoryRow {
   vote_sum_mismatch: number;
   protocol_violation_count: number;
   protocol_url: string | null;
+  settlement_name: string | null;
+  address: string | null;
 }
 
 export function getPersistenceSectionHistory(
@@ -197,10 +200,13 @@ export function getPersistenceSectionHistory(
       `SELECT ss.election_id, e.name AS election_name, e.date AS election_date, e.type AS election_type,
               ss.risk_score, ss.benford_risk, ss.peer_risk, ss.acf_risk,
               ss.turnout_rate, ss.arithmetic_error, ss.vote_sum_mismatch,
-              ss.protocol_violation_count, s.protocol_url
+              ss.protocol_violation_count, s.protocol_url,
+              COALESCE(s.settlement_name, l.settlement_name) AS settlement_name,
+              COALESCE(s.address, l.address) AS address
          FROM section_scores ss
          JOIN elections e ON e.id = ss.election_id
          LEFT JOIN sections s ON s.election_id = ss.election_id AND s.section_code = ss.section_code
+         LEFT JOIN locations l ON l.id = s.location_id
         WHERE ss.section_code = ?
         ORDER BY e.date`,
     )

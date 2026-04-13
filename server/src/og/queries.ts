@@ -207,7 +207,7 @@ export function getOgSectionDetail(
     (db
       .prepare(
         `SELECT ss.section_code,
-              l.settlement_name,
+              COALESCE(s.settlement_name, l.settlement_name) AS settlement_name,
               COALESCE(s.address, l.address) AS address,
               COUNT(*) AS elections_present,
               SUM(CASE WHEN ss.risk_score >= 0.3 THEN 1 ELSE 0 END) AS elections_flagged,
@@ -308,7 +308,7 @@ export function getOgSectionElection(
   const row = db
     .prepare(
       `SELECT ss.section_code,
-              l.settlement_name,
+              COALESCE(s.settlement_name, l.settlement_name) AS settlement_name,
               COALESCE(s.address, l.address) AS address,
               p.registered_voters,
               p.actual_voters,

@@ -259,30 +259,35 @@ def restore_from_location_cache(cur: sqlite3.Cursor, loc_rows: list[tuple]) -> d
 
 
 def rebuild_sections(cur: sqlite3.Cursor, section_to_loc: dict[str, int]) -> None:
-    """Recreate sections: drop address columns, add location_id FK."""
+    """Recreate sections: drop address columns (except settlement_name), add location_id FK.
+
+    settlement_name is preserved per-election because abroad sections can map to
+    different countries across elections — the server uses it for country grouping.
+    """
 
     cur.executescript("""
         ALTER TABLE sections RENAME TO sections_old;
 
         CREATE TABLE sections (
-            id            INTEGER PRIMARY KEY,
-            election_id   INTEGER NOT NULL,
-            section_code  TEXT    NOT NULL,
-            location_id   INTEGER,
-            rik_code      TEXT,
-            rik_name      TEXT,
-            is_mobile     INTEGER DEFAULT 0,
-            is_ship       INTEGER DEFAULT 0,
-            machine_count INTEGER DEFAULT 0,
+            id              INTEGER PRIMARY KEY,
+            election_id     INTEGER NOT NULL,
+            section_code    TEXT    NOT NULL,
+            location_id     INTEGER,
+            rik_code        TEXT,
+            rik_name        TEXT,
+            settlement_name TEXT,
+            is_mobile       INTEGER DEFAULT 0,
+            is_ship         INTEGER DEFAULT 0,
+            machine_count   INTEGER DEFAULT 0,
             FOREIGN KEY (election_id) REFERENCES elections(id),
             FOREIGN KEY (location_id) REFERENCES locations(id)
         );
 
         INSERT INTO sections
                (id, election_id, section_code, rik_code, rik_name,
-                is_mobile, is_ship, machine_count)
+                settlement_name, is_mobile, is_ship, machine_count)
         SELECT  id, election_id, section_code, rik_code, rik_name,
-                is_mobile, is_ship, machine_count
+                settlement_name, is_mobile, is_ship, machine_count
         FROM sections_old;
 
         DROP TABLE sections_old;

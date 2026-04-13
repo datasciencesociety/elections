@@ -228,9 +228,9 @@ export interface AbroadCountryResult {
 
 const COUNTRY_PREFIX_SQL = `
   CASE
-    WHEN INSTR(l.settlement_name, ',') > 0
-      THEN TRIM(SUBSTR(l.settlement_name, 1, INSTR(l.settlement_name, ',') - 1))
-    ELSE l.settlement_name
+    WHEN INSTR(COALESCE(s.settlement_name, l.settlement_name), ',') > 0
+      THEN TRIM(SUBSTR(COALESCE(s.settlement_name, l.settlement_name), 1, INSTR(COALESCE(s.settlement_name, l.settlement_name), ',') - 1))
+    ELSE COALESCE(s.settlement_name, l.settlement_name)
   END`;
 
 export function getAbroadByCountry(

@@ -167,7 +167,7 @@ export function getAnomalies(
   // the map pin and the sidebar header agree on where the section lives.
   const sql = `
     SELECT ss.section_code,
-           l.settlement_name,
+           COALESCE(s.settlement_name, l.settlement_name) AS settlement_name,
            COALESCE(s.address, l.address) AS address,
            COALESCE(s.lat, l.lat) AS lat,
            COALESCE(s.lng, l.lng) AS lng,

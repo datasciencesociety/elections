@@ -50,9 +50,9 @@ geography.get("/abroad-summary", (c) => {
         COUNT(DISTINCT s.section_code) AS section_count,
         COUNT(DISTINCT
           CASE
-            WHEN INSTR(l.settlement_name, ',') > 0
-              THEN SUBSTR(l.settlement_name, 1, INSTR(l.settlement_name, ',') - 1)
-            ELSE l.settlement_name
+            WHEN INSTR(COALESCE(s.settlement_name, l.settlement_name), ',') > 0
+              THEN SUBSTR(COALESCE(s.settlement_name, l.settlement_name), 1, INSTR(COALESCE(s.settlement_name, l.settlement_name), ',') - 1)
+            ELSE COALESCE(s.settlement_name, l.settlement_name)
           END
         ) AS country_count
       FROM sections s
@@ -139,6 +139,7 @@ geography.get("/search-index", (c) => {
       `
       WITH latest AS (
         SELECT sec.section_code, sec.election_id, sec.location_id,
+               sec.settlement_name AS sec_settlement_name,
                sec.address AS sec_address,
                sec.lat     AS sec_lat,
                sec.lng     AS sec_lng,
@@ -151,7 +152,7 @@ geography.get("/search-index", (c) => {
       SELECT
         l.id                           AS lid,
         latest.section_code            AS c,
-        l.settlement_name              AS s,
+        COALESCE(latest.sec_settlement_name, l.settlement_name) AS s,
         COALESCE(latest.sec_address, l.address) AS a,
         d.name                         AS dn,
         m.name                         AS mn,
@@ -247,18 +248,18 @@ geography.get("/abroad/browse", (c) => {
       `
       SELECT
         l.id              AS location_id,
-        l.settlement_name AS settlement_name,
+        COALESCE(s.settlement_name, l.settlement_name) AS settlement_name,
         l.address         AS address,
         l.lat             AS lat,
         l.lng             AS lng,
         CASE
-          WHEN INSTR(l.settlement_name, ',') > 0
-            THEN TRIM(SUBSTR(l.settlement_name, 1, INSTR(l.settlement_name, ',') - 1))
-          ELSE l.settlement_name
+          WHEN INSTR(COALESCE(s.settlement_name, l.settlement_name), ',') > 0
+            THEN TRIM(SUBSTR(COALESCE(s.settlement_name, l.settlement_name), 1, INSTR(COALESCE(s.settlement_name, l.settlement_name), ',') - 1))
+          ELSE COALESCE(s.settlement_name, l.settlement_name)
         END               AS country,
         CASE
-          WHEN INSTR(l.settlement_name, ',') > 0
-            THEN TRIM(SUBSTR(l.settlement_name, INSTR(l.settlement_name, ',') + 1))
+          WHEN INSTR(COALESCE(s.settlement_name, l.settlement_name), ',') > 0
+            THEN TRIM(SUBSTR(COALESCE(s.settlement_name, l.settlement_name), INSTR(COALESCE(s.settlement_name, l.settlement_name), ',') + 1))
           ELSE ''
         END               AS city,
         COUNT(DISTINCT s.section_code) AS section_count,
@@ -266,7 +267,7 @@ geography.get("/abroad/browse", (c) => {
       FROM locations l
       JOIN sections s ON s.location_id = l.id
       WHERE l.district_id IS NULL ${electionFilter}
-      GROUP BY l.id
+      GROUP BY l.id, COALESCE(s.settlement_name, l.settlement_name)
       ORDER BY country COLLATE NOCASE, city COLLATE NOCASE, l.address COLLATE NOCASE
       `
     )
@@ -301,7 +302,7 @@ geography.get("/section-siblings/:code", (c) => {
     .prepare(
       `SELECT
           l.id                          AS loc_id,
-          l.settlement_name             AS settlement_name,
+          COALESCE(s.settlement_name, l.settlement_name) AS settlement_name,
           COALESCE(s.address, l.address) AS address,
           COALESCE(s.lat,     l.lat)     AS lat,
           COALESCE(s.lng,     l.lng)     AS lng,
