@@ -4,7 +4,7 @@ import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { trackPageView } from "./lib/analytics.js";
+import { trackPageView, startEngagementHeartbeat } from "./lib/analytics.js";
 import Layout from "./components/layout.js";
 import DistrictPieMap from "./pages/district-pie-map.js";
 import AnomalyMap from "./pages/anomaly-map/index.js";
@@ -51,6 +51,8 @@ function RedirectAnomalies() {
   const { id } = useParams();
   return <Navigate to={`/${id}/sections`} replace />;
 }
+
+startEngagementHeartbeat();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
