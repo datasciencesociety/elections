@@ -501,15 +501,13 @@ function TileDensityLayer({
       fittedRef.current = true;
     };
 
+    let raf2: number | null = null;
     const raf1 = requestAnimationFrame(() => {
-      const raf2 = requestAnimationFrame(runFit);
-      // Re-use the same ref so cleanup cancels whichever is pending.
-      (raf1 as unknown as { inner?: number }).inner = raf2;
+      raf2 = requestAnimationFrame(runFit);
     });
     return () => {
       cancelAnimationFrame(raf1);
-      const inner = (raf1 as unknown as { inner?: number }).inner;
-      if (inner != null) cancelAnimationFrame(inner);
+      if (raf2 != null) cancelAnimationFrame(raf2);
     };
   }, [map, isLoaded, regions]);
 
