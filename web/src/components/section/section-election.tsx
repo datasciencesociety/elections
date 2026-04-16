@@ -48,7 +48,7 @@ export function SectionElection({
   const { anomaly, detail, violations, isLoading } = useSectionFull(
     electionId,
     sectionCode,
-    { initialAnomaly },
+    { initialAnomaly, skipAnomaly: compact },
   );
 
   // Whether to render the methodology cards: any section with a non-zero

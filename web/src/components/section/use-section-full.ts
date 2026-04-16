@@ -38,13 +38,18 @@ export interface SectionFullData {
 export function useSectionFull(
   electionId: string | number | undefined,
   sectionCode: string | undefined,
-  options: { initialAnomaly?: AnomalySection | null } = {},
+  options: {
+    initialAnomaly?: AnomalySection | null;
+    /** Skip the /anomalies fetch entirely. Pass `true` when the caller
+     *  doesn't render any methodology card (e.g. compact section cards
+     *  on /section/:code) — avoids an N+1 across the history list. */
+    skipAnomaly?: boolean;
+  } = {},
 ): SectionFullData {
   const detailQ = useSectionDetail(electionId, sectionCode);
   const violationsQ = useSectionViolations(electionId, sectionCode);
 
-  // Skip the anomaly fetch when the parent already supplied it.
-  const skipAnomaly = options.initialAnomaly != null;
+  const skipAnomaly = options.skipAnomaly || options.initialAnomaly != null;
   const anomalyQ = useAnomalies(
     {
       electionId: electionId as string | number,
