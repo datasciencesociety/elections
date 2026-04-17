@@ -21,11 +21,11 @@ export default function MethodologyExplainer({
   if (variant === "inline") {
     return (
       <details className={`group ${className ?? ""}`}>
-        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-[11px] font-medium uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
+        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs font-medium uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
           <span>Какво означават числата</span>
           <span className="transition-transform group-open:rotate-180">▼</span>
         </summary>
-        <div className="mt-3 max-w-3xl space-y-4 rounded border border-border bg-card p-4 text-[13px] leading-relaxed text-muted-foreground">
+        <div className="mt-3 max-w-3xl space-y-4 rounded border border-border bg-card p-4 text-muted-foreground">
           <MethodologyBody />
         </div>
       </details>
@@ -38,11 +38,11 @@ export default function MethodologyExplainer({
     >
       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary/40 [&::-webkit-details-marker]:hidden">
         <span>Какво означават тези числа?</span>
-        <span className="text-[11px] text-muted-foreground transition-transform group-open:rotate-180">
+        <span className="text-xs text-muted-foreground transition-transform group-open:rotate-180">
           ▼
         </span>
       </summary>
-      <div className="space-y-4 border-t border-border px-4 py-4 text-[13px] leading-relaxed text-muted-foreground">
+      <div className="space-y-4 border-t border-border px-4 py-4 text-muted-foreground">
         <MethodologyBody />
       </div>
     </details>
@@ -74,7 +74,7 @@ function MethodologyBody() {
           href="https://bg.wikipedia.org/wiki/%D0%97%D0%B0%D0%BA%D0%BE%D0%BD_%D0%BD%D0%B0_%D0%91%D0%B5%D0%BD%D1%84%D0%BE%D1%80%D0%B4"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[#ce463c] hover:underline"
+          className="text-score-high hover:underline"
         >
           законът на Бенфорд
         </a>
@@ -94,7 +94,7 @@ function MethodologyBody() {
           href="https://acf.bg/wp-content/uploads/2021/05/rezultati_izbori_BGweb.pdf"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[#ce463c] hover:underline"
+          className="text-score-high hover:underline"
         >
           Антикорупционен фонд
         </a>{" "}
@@ -110,7 +110,7 @@ function MethodologyBody() {
         <span className="font-mono">100%</span> е физически невъзможна и
         означава грешка в протокола или в обработката на данните.
       </Item>
-      <p className="text-[12px] italic text-muted-foreground/80">
+      <p className="text-sm italic text-muted-foreground/80">
         Всички числа отразяват статистически сигнали, не доказателство.
         Целта е да насочват вниманието към секции, които заслужават проверка,
         а не да поставят диагнози.
@@ -128,7 +128,7 @@ function Item({
 }) {
   return (
     <div>
-      <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-foreground">
+      <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-foreground">
         {term}
       </div>
       <div>{children}</div>

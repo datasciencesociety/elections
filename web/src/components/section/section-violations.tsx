@@ -19,19 +19,19 @@ export function SectionViolations({
       {violations.map((v, i) => (
         <div
           key={i}
-          className={`rounded-lg border p-2 text-[11px] ${
+          className={`rounded-lg border p-2 text-xs ${
             v.severity === "error"
-              ? "border-red-200 bg-red-50"
-              : "border-yellow-200 bg-yellow-50"
+              ? "border-score-high/20 bg-score-high/10"
+              : "border-score-medium/20 bg-score-medium/10"
           }`}
         >
           <div className="font-medium">
-            <span className="font-mono text-[10px] text-muted-foreground">
+            <span className="font-mono text-2xs text-muted-foreground">
               {v.rule_id}
             </span>{" "}
             {v.description}
           </div>
-          <div className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+          <div className="mt-0.5 font-mono text-2xs text-muted-foreground">
             очаквано: {v.expected_value} → получено: {v.actual_value}
           </div>
         </div>

@@ -35,7 +35,7 @@ export function SectionHeader({
       <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <span>{settlementName ?? "—"}</span>
         {typeLabel && (
-          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">
+          <span className="rounded bg-muted px-1.5 py-0.5 text-2xs font-medium">
             {typeLabel}
           </span>
         )}

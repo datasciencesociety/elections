@@ -32,7 +32,7 @@ export function AcfCard({
           href="https://acf.bg/wp-content/uploads/2021/05/rezultati_izbori_BGweb.pdf"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[#ce463c] hover:underline"
+          className="text-score-high hover:underline"
         >
           Методология на Антикорупционен фонд
         </a>{" "}
@@ -62,24 +62,24 @@ function AcfMulticomponent({
 }) {
   return (
     <div className="mb-3 rounded border border-border p-2">
-      <div className="mb-1 text-[11px] font-semibold">
+      <div className="mb-1 text-xs font-semibold">
         1. Мулти-компонентен анализ спрямо общ. {ctx?.municipality_name ?? "—"}
       </div>
-      <div className="mb-1 text-[11px] text-muted-foreground">
+      <div className="mb-1 text-xs text-muted-foreground">
         Секцията е извънредна стойност ако надвишава Q3 + 2.2×IQR на общинско
         ниво. Флагва се само ако е извънредна и по трите критерия едновременно.
       </div>
       <div className="space-y-1">
-        <div className="text-[11px]">
+        <div className="text-xs">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Активност</span>
             <span
-              className={`font-mono font-medium ${s.acf_turnout_outlier ? "text-red-600" : "text-green-600"}`}
+              className={`font-mono font-medium ${s.acf_turnout_outlier ? "text-score-high" : "text-score-low"}`}
             >
               {s.acf_turnout_outlier ? "извънредна" : "в норма"}
             </span>
           </div>
-          <div className="flex justify-between text-[10px] text-muted-foreground/70">
+          <div className="flex justify-between text-2xs text-muted-foreground/70">
             <span>Секция: {turnoutPct}%</span>
             <span>
               Средно за общината:{" "}
@@ -89,21 +89,21 @@ function AcfMulticomponent({
             </span>
           </div>
         </div>
-        <div className="text-[11px]">
+        <div className="text-xs">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">% на победител</span>
             <span
-              className={`font-mono font-medium ${s.acf_winner_outlier ? "text-red-600" : "text-green-600"}`}
+              className={`font-mono font-medium ${s.acf_winner_outlier ? "text-score-high" : "text-score-low"}`}
             >
               {s.acf_winner_outlier ? "извънредна" : "в норма"}
             </span>
           </div>
         </div>
-        <div className="text-[11px]">
+        <div className="text-xs">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Невалидни бюлетини</span>
             <span
-              className={`font-mono font-medium ${s.acf_invalid_outlier ? "text-red-600" : "text-green-600"}`}
+              className={`font-mono font-medium ${s.acf_invalid_outlier ? "text-score-high" : "text-score-low"}`}
             >
               {s.acf_invalid_outlier ? "извънредна" : "в норма"}
             </span>
@@ -111,7 +111,7 @@ function AcfMulticomponent({
         </div>
       </div>
       <div className="mt-1.5 rounded bg-muted/50 p-1.5">
-        <div className="text-[10px] font-mono text-muted-foreground">
+        <div className="text-2xs font-mono text-muted-foreground">
           acf_multicomponent = {s.acf_multicomponent.toFixed(2)}
           {s.acf_multicomponent >= 1
             ? " — извънредна и по трите критерия"
@@ -137,18 +137,18 @@ function AcfTurnoutShift({
 }) {
   return (
     <div className="mb-3 rounded border border-border p-2">
-      <div className="mb-1 text-[11px] font-semibold">
+      <div className="mb-1 text-xs font-semibold">
         2. Промяна в активността
       </div>
       {s.acf_turnout_shift != null && ctx?.prev_election ? (
         <>
-          <div className="mb-1 text-[11px] text-muted-foreground">
+          <div className="mb-1 text-xs text-muted-foreground">
             Спрямо{" "}
             <span className="font-medium text-foreground">
               {ctx.prev_election.name}
             </span>
           </div>
-          <div className="space-y-0.5 text-[11px]">
+          <div className="space-y-0.5 text-xs">
             {ctx.prev_turnout != null && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Активност тогава</span>
@@ -171,7 +171,7 @@ function AcfTurnoutShift({
             </div>
           </div>
           <div className="mt-1.5 rounded bg-muted/50 p-1.5">
-            <div className="text-[10px] font-mono text-muted-foreground">
+            <div className="text-2xs font-mono text-muted-foreground">
               acf_turnout_shift_norm = {s.acf_turnout_shift_norm.toFixed(2)}
             </div>
           </div>
@@ -188,7 +188,7 @@ function AcfTurnoutShift({
           />
         </div>
       ) : (
-        <div className="text-[11px] text-muted-foreground/70">
+        <div className="text-xs text-muted-foreground/70">
           Няма предишни избори от същия тип — моделът не е приложим
         </div>
       )}
@@ -207,18 +207,18 @@ function AcfPartyShift({
 }) {
   return (
     <div className="mb-3 rounded border border-border p-2">
-      <div className="mb-1 text-[11px] font-semibold">
+      <div className="mb-1 text-xs font-semibold">
         3. Промяна в партийните резултати
       </div>
       {s.acf_party_shift != null && ctx?.prev_election ? (
         <>
-          <div className="mb-1 text-[11px] text-muted-foreground">
+          <div className="mb-1 text-xs text-muted-foreground">
             Спрямо{" "}
             <span className="font-medium text-foreground">
               {ctx.prev_election.name}
             </span>
           </div>
-          <div className="space-y-0.5 text-[11px]">
+          <div className="space-y-0.5 text-xs">
             <div className="flex justify-between">
               <span className="text-muted-foreground">
                 Макс. промяна в дял на партия
@@ -228,12 +228,12 @@ function AcfPartyShift({
               </span>
             </div>
           </div>
-          <div className="mt-1 text-[10px] text-muted-foreground">
+          <div className="mt-1 text-2xs text-muted-foreground">
             Промяната е спрямо предишните избори, минус средната промяна в общ.{" "}
             {ctx.municipality_name} (за да се изключи национален тренд).
           </div>
           <div className="mt-1.5 rounded bg-muted/50 p-1.5">
-            <div className="text-[10px] font-mono text-muted-foreground">
+            <div className="text-2xs font-mono text-muted-foreground">
               acf_party_shift_norm = {s.acf_party_shift_norm.toFixed(2)}
             </div>
           </div>
@@ -250,7 +250,7 @@ function AcfPartyShift({
           />
         </div>
       ) : (
-        <div className="text-[11px] text-muted-foreground/70">
+        <div className="text-xs text-muted-foreground/70">
           Няма предишни избори от същия тип — моделът не е приложим
         </div>
       )}
@@ -263,15 +263,15 @@ function AcfPartyShift({
 function AcfFormula({ section: s }: { section: AnomalySection }) {
   return (
     <div className="rounded bg-muted/50 p-2">
-      <div className="text-[10px] font-medium text-muted-foreground">
+      <div className="text-2xs font-medium text-muted-foreground">
         Формула
       </div>
       {s.acf_turnout_shift != null ? (
         <>
-          <div className="mt-0.5 text-[11px] font-mono">
+          <div className="mt-0.5 text-xs font-mono">
             acf_risk = (multicomponent + turnout_shift_norm + party_shift_norm) / 3
           </div>
-          <div className="mt-0.5 text-[11px] font-mono text-foreground">
+          <div className="mt-0.5 text-xs font-mono text-foreground">
             = ({s.acf_multicomponent.toFixed(2)} +{" "}
             {s.acf_turnout_shift_norm.toFixed(2)} +{" "}
             {s.acf_party_shift_norm.toFixed(2)}) / 3 ={" "}
@@ -280,10 +280,10 @@ function AcfFormula({ section: s }: { section: AnomalySection }) {
         </>
       ) : (
         <>
-          <div className="mt-0.5 text-[11px] font-mono">
+          <div className="mt-0.5 text-xs font-mono">
             acf_risk = acf_multicomponent (няма предишни избори)
           </div>
-          <div className="mt-0.5 text-[11px] font-mono text-foreground">
+          <div className="mt-0.5 text-xs font-mono text-foreground">
             = <span className="font-semibold">{s.acf_multicomponent.toFixed(2)}</span>
           </div>
         </>

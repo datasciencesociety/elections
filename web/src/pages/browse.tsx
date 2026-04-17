@@ -173,7 +173,7 @@ function BrowseShell({
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-3xl px-5 py-8 md:px-8 md:py-10">
         {/* Breadcrumb + heading */}
-        <div className="mb-4 flex items-center gap-2 text-[11px] uppercase tracking-widest text-muted-foreground">
+        <div className="mb-4 flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
           <Link to="/" className="transition-colors hover:text-foreground">
             Начало
           </Link>
@@ -186,7 +186,7 @@ function BrowseShell({
         {subtitle && (
           <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
         )}
-        <div className="mt-3 h-[3px] w-12 bg-[#ce463c]" />
+        <div className="mt-3 red-bar" />
 
         {/* Filter input */}
         <div className="mt-6 mb-6">
@@ -206,7 +206,7 @@ function BrowseShell({
           <p className="text-sm text-muted-foreground">Зареждане...</p>
         )}
         {isError && (
-          <p className="text-sm text-[#ce463c]">Грешка при зареждане.</p>
+          <p className="text-sm text-score-high">Грешка при зареждане.</p>
         )}
         {!isLoading && !isError && groupCount === 0 && (
           <p className="text-sm text-muted-foreground">{emptyLabel}</p>
@@ -241,12 +241,12 @@ function BrowseGroup({
           <h2 className="font-display text-base font-semibold tracking-tight md:text-lg">
             {title}
           </h2>
-          <span className="text-[10px] tabular-nums text-muted-foreground">
+          <span className="text-2xs tabular-nums text-muted-foreground">
             {count.toLocaleString("bg-BG")}{" "}
             {count === 1 ? "място" : "места"}
           </span>
         </div>
-        <span className="text-[11px] text-muted-foreground transition-transform group-open:rotate-180">
+        <span className="text-xs text-muted-foreground transition-transform group-open:rotate-180">
           ▼
         </span>
       </summary>
@@ -273,7 +273,7 @@ function BrowseRow({
         {primary}
       </div>
       {secondary && (
-        <div className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+        <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
           {secondary}
         </div>
       )}
@@ -282,7 +282,7 @@ function BrowseRow({
           <Link
             key={code}
             to={`/section/${code}`}
-            className="rounded border border-border px-1.5 py-0.5 font-mono text-[11px] tabular-nums transition-colors hover:border-[#ce463c] hover:text-[#ce463c]"
+            className="rounded border border-border px-1.5 py-0.5 font-mono text-xs tabular-nums transition-colors hover:border-brand hover:text-score-high"
           >
             {code}
           </Link>

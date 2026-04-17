@@ -118,8 +118,8 @@ export default function SectionPreview({
         const uniqueSettlements = new Set(history.map(h => h.settlement_name).filter(Boolean));
         if (uniqueSettlements.size <= 1) return null;
         return (
-          <div className="rounded border border-[#ce463c]/20 bg-[#ce463c]/5 px-3 py-2 text-[11px]">
-            <span className="font-medium text-[#ce463c]">Различни адреси:</span>{" "}
+          <div className="rounded border border-brand/20 bg-brand/5 px-3 py-2 text-xs">
+            <span className="font-medium text-score-high">Различни адреси:</span>{" "}
             <span className="text-muted-foreground">
               {[...uniqueSettlements].join(" / ")}
             </span>
@@ -175,7 +175,7 @@ export default function SectionPreview({
           href={`/section/${sectionCode}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-1 rounded-md border border-border bg-secondary/50 px-3 py-1.5 text-center text-[11px] font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
+          className="flex-1 rounded-md border border-border bg-secondary/50 px-3 py-1.5 text-center text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
         >
           Отвори ↗
         </a>
@@ -192,7 +192,7 @@ export default function SectionPreview({
         {historyDesc!.map((h) => (
           <div
             key={h.election_id}
-            className={`rounded-lg border border-border border-l-[3px] ${SCORE_BORDER_LEFT_CLASS[scoreLevel(h.risk_score)]} bg-background p-3`}
+            className={`rounded-lg border border-border border-l-spine ${SCORE_BORDER_LEFT_CLASS[scoreLevel(h.risk_score)]} bg-background p-3`}
           >
             <SectionElection
               electionId={h.election_id}

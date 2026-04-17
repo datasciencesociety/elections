@@ -52,7 +52,7 @@ export function SectionView({
           href={`/section/${sectionCode}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-1 rounded-md border border-border bg-secondary/50 px-3 py-1.5 text-center text-[11px] font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
+          className="flex-1 rounded-md border border-border bg-secondary/50 px-3 py-1.5 text-center text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
         >
           Отвори ↗
         </a>

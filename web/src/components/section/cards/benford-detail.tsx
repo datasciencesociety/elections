@@ -55,12 +55,12 @@ export function BenfordDetail({
       {/* Step 2 — actual party votes and their first digits */}
       {partyDigits.length > 0 && (
         <div className="mb-3">
-          <div className="mb-1.5 text-[10px] font-medium text-muted-foreground">
+          <div className="mb-1.5 text-2xs font-medium text-muted-foreground">
             Гласове по партии → първа цифра
           </div>
           <div className="space-y-0.5">
             {partyDigits.map((pd, i) => (
-              <div key={i} className="flex items-center gap-1.5 text-[10px]">
+              <div key={i} className="flex items-center gap-1.5 text-2xs">
                 <span
                   className="flex-1 truncate text-muted-foreground"
                   title={pd.name}
@@ -83,7 +83,7 @@ export function BenfordDetail({
       {/* Step 3 — observed vs expected bar comparison */}
       {observed && (
         <div className="mb-3">
-          <div className="mb-1.5 text-[10px] font-medium text-muted-foreground">
+          <div className="mb-1.5 text-2xs font-medium text-muted-foreground">
             Колко пъти се среща всяка първа цифра — реално vs по Бенфорд
           </div>
           <div className="space-y-1">
@@ -95,7 +95,7 @@ export function BenfordDetail({
                 diff > 0.15 ? "#ef4444" : diff > 0.08 ? "#f97316" : "#22c55e";
               return (
                 <div key={i}>
-                  <div className="flex items-center gap-1 text-[10px]">
+                  <div className="flex items-center gap-1 text-2xs">
                     <span className="w-3 font-mono font-medium text-right">
                       {i + 1}
                     </span>
@@ -134,7 +134,7 @@ export function BenfordDetail({
               По Бенфорд
             </span>
             <span className="flex items-center gap-1">
-              <span className="inline-block h-2 w-3 rounded-sm bg-green-500/70" />{" "}
+              <span className="inline-block h-2 w-3 rounded-sm bg-score-low/70" />{" "}
               Тази секция
             </span>
           </div>
@@ -148,26 +148,26 @@ export function BenfordDetail({
       </div>
 
       {(s.benford_p ?? 1) <= 0.05 ? (
-        <div className="mt-2 text-[11px] text-red-700">
+        <div className="mt-2 text-xs text-score-high">
           p = {(s.benford_p ?? 1).toFixed(3)} ≤ 0.05 — разпределението е
           статистически значимо различно от Бенфорд
         </div>
       ) : (s.benford_chi2 ?? 0) > 0 ? (
-        <div className="mt-2 text-[11px] text-green-700">
+        <div className="mt-2 text-xs text-score-low">
           p = {(s.benford_p ?? 1).toFixed(3)} {">"} 0.05 — отклонението не е
           статистически значимо
         </div>
       ) : null}
 
       {totalDigits < 10 && totalDigits > 0 && (
-        <div className="mt-1 text-[10px] text-orange-600">
+        <div className="mt-1 text-2xs text-score-medium">
           Само {totalDigits} партии с гласове — малка извадка, тестът е
           по-ненадежден
         </div>
       )}
 
       <div className="mt-2 rounded bg-muted/50 p-1.5">
-        <div className="text-[10px] font-mono text-muted-foreground">
+        <div className="text-2xs font-mono text-muted-foreground">
           benford_score = {s.benford_score.toFixed(2)} (нормализиран 0–1 чрез
           IQR)
         </div>

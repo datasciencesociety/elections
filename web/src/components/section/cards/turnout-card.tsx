@@ -36,15 +36,15 @@ export function TurnoutCard({
       </div>
       <div className="text-xl font-bold">{turnoutPct}%</div>
       {s.turnout_rate > 1 && (
-        <div className="mt-1 text-xs font-medium text-red-600">
+        <div className="mt-1 text-xs font-medium text-score-high">
           Повече гласували от регистрирани — възможна грешка в данните или
           допълнително вписани
         </div>
       )}
 
       {ctx && (
-        <div className="mt-2 space-y-0.5 text-[11px]">
-          <div className="mb-1 text-[10px] font-medium text-muted-foreground">
+        <div className="mt-2 space-y-0.5 text-xs">
+          <div className="mb-1 text-2xs font-medium text-muted-foreground">
             Сравнение
           </div>
           <div className="flex justify-between">
@@ -104,7 +104,7 @@ export function TurnoutCard({
           value={s.ekatte_turnout_zscore}
         />
       </div>
-      <div className="mt-1 text-[11px] text-muted-foreground">{verdict}</div>
+      <div className="mt-1 text-xs text-muted-foreground">{verdict}</div>
     </div>
   );
 }

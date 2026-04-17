@@ -34,18 +34,18 @@ export default function Landing() {
       <div className="mx-auto max-w-4xl px-5 py-8 md:px-8 md:py-12">
         {/* Tagline — small, the brand lives in the nav */}
         <section className="mb-8 md:mb-10">
-          <h1 className="font-display text-2xl font-semibold leading-tight tracking-tight md:text-4xl">
+          <h1 className="font-display text-2xl font-medium leading-tight tracking-tight md:text-3xl">
             Вижте как се гласува във{" "}
             <span className="brand-underline">Вашата</span> секция.
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
+          <p className="mt-4 max-w-2xl text-md text-muted-foreground">
             Официалните данни на ЦИК, лесни за справка. Изберете област
             или потърсете секция.{" "}
             <a
               href="https://www.grao.bg/elections/Secure/Public/EgnSearch.cshtml"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-foreground underline underline-offset-2 transition-colors hover:text-[#ce463c]"
+              className="text-foreground underline underline-offset-2 transition-colors hover:text-score-high"
             >
               Проверете коя е Вашата секция
             </a>
@@ -53,7 +53,7 @@ export default function Landing() {
           </p>
           <a
             href="#about"
-            className="mt-4 inline-block text-[11px] font-medium uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+            className="mt-4 inline-block text-xs font-medium uppercase tracking-eyebrow text-muted-foreground transition-colors hover:text-foreground"
           >
             Какво е Изборен монитор ↓
           </a>
@@ -61,7 +61,7 @@ export default function Landing() {
 
         {/* Primary: district grid */}
         <section className="mb-10">
-          <h2 className="mb-3 font-sans text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+          <h2 className="mb-3 eyebrow">
             Изберете област
           </h2>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -71,10 +71,10 @@ export default function Landing() {
                 to={latestId ? `/browse/district/${d.id}?election=${latestId}` : `/browse/district/${d.id}`}
                 className="group flex flex-col rounded-md border border-border bg-card px-3 py-2.5 transition-all hover:border-foreground/30 hover:shadow-sm"
               >
-                <span className="text-sm font-medium text-foreground group-hover:text-[#ce463c]">
+                <span className="text-sm font-medium text-foreground group-hover:text-score-high">
                   {d.name}
                 </span>
-                <span className="mt-0.5 text-[10px] tabular-nums text-muted-foreground">
+                <span className="mt-0.5 text-2xs tabular-nums text-muted-foreground">
                   {d.section_count.toLocaleString("bg-BG")} секции
                 </span>
               </Link>
@@ -83,11 +83,11 @@ export default function Landing() {
               to={latestId ? `/browse/abroad?election=${latestId}` : "/browse/abroad"}
               className="group flex flex-col rounded-md border border-border bg-secondary/40 px-3 py-2.5 transition-all hover:border-foreground/30 hover:shadow-sm"
             >
-              <span className="flex items-center gap-1.5 text-sm font-medium text-foreground group-hover:text-[#ce463c]">
+              <span className="flex items-center gap-1.5 text-sm font-medium text-foreground group-hover:text-score-high">
                 <Globe size={13} className="shrink-0" />
                 Чужбина
               </span>
-              <span className="mt-0.5 text-[10px] tabular-nums text-muted-foreground">
+              <span className="mt-0.5 text-2xs tabular-nums text-muted-foreground">
                 {abroad
                   ? `${abroad.section_count.toLocaleString("bg-BG")} секции в ${abroad.country_count} държави`
                   : "—"}
@@ -98,7 +98,7 @@ export default function Landing() {
 
         {/* Analyst doors */}
         <section className="mb-12">
-          <h3 className="mb-3 font-sans text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+          <h3 className="mb-3 eyebrow">
             За аналитици
           </h3>
           <div className="divide-y divide-border rounded-lg border border-border bg-card">
@@ -131,10 +131,10 @@ export default function Landing() {
         {/* Humble frame — doubles as the #about scroll target. The link
             strip used to live here but moved to the global AppFooter. */}
         <section id="about" className="scroll-mt-24 border-t border-border pt-8 pb-4">
-          <h2 className="mb-3 font-display text-lg font-semibold tracking-tight md:text-xl">
+          <h2 className="mb-4 font-display text-xl font-medium tracking-tight">
             Какво е Изборен монитор
           </h2>
-          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          <p className="max-w-prose text-md text-muted-foreground">
             Изборен монитор събира официалните резултати от всички национални
             избори в България от 2021 г. насам и ги свързва с оригиналните
             сканирани протоколи, публикувани от{" "}
@@ -164,12 +164,12 @@ function DoorRow({
   disabled?: boolean;
 }) {
   const inner = (
-    <div className="flex items-center gap-4 px-5 py-4 md:px-6 md:py-5">
+    <div className="flex items-center gap-4 px-4 py-4 md:px-6 md:py-5">
       <div className="flex-1">
-        <div className="text-sm font-medium text-foreground md:text-base">
+        <div className="text-md font-medium text-foreground">
           {title}
         </div>
-        <div className="mt-1 text-xs leading-relaxed text-muted-foreground md:text-sm">
+        <div className="mt-2 text-base text-muted-foreground">
           {description}
         </div>
       </div>

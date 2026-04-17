@@ -70,27 +70,27 @@ export function FilterPanel(props: FilterPanelProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="absolute top-2 left-2 z-10 flex max-w-[280px] flex-col gap-0 rounded-lg border border-border bg-background/96 shadow-lg backdrop-blur-sm md:left-3 md:top-3 md:min-w-[280px] md:max-w-[320px]">
+    <div className="absolute top-2 left-2 z-10 flex min-w-filter-min max-w-filter-max flex-col gap-0 rounded-md border border-border bg-card shadow-sm md:left-3 md:top-3">
       {/* Mobile expand/collapse header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center justify-between p-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground md:hidden"
+        className="flex items-center justify-between px-4 py-3 text-xs font-medium uppercase tracking-eyebrow text-muted-foreground md:hidden"
       >
         <span>Филтри</span>
-        <span className="text-[10px]">{expanded ? "▲" : "▼"}</span>
+        <span className="text-2xs">{expanded ? "▲" : "▼"}</span>
       </button>
 
       {/* Section 1: Location */}
       <div
-        className={`flex-col gap-2.5 p-3.5 pb-3 ${expanded ? "flex" : "hidden md:flex"}`}
+        className={`flex-col gap-3 p-4 ${expanded ? "flex" : "hidden md:flex"}`}
       >
-        <div className="hidden text-[11px] font-semibold uppercase tracking-wide text-muted-foreground md:block">
+        <div className="hidden text-xs font-medium uppercase tracking-eyebrow text-muted-foreground md:block">
           Местоположение
         </div>
 
         <div className="flex gap-2">
           <div className="min-w-0 flex-1">
-            <div className="mb-0.5 text-[11px] text-muted-foreground">Област</div>
+            <div className="mb-1 text-xs text-muted-foreground">Област</div>
             <Select
               value={props.district || "all"}
               onValueChange={(v: string | null) =>
@@ -115,7 +115,7 @@ export function FilterPanel(props: FilterPanelProps) {
             </Select>
           </div>
           <div className="min-w-0 flex-1">
-            <div className="mb-0.5 text-[11px] text-muted-foreground">Община</div>
+            <div className="mb-1 text-xs text-muted-foreground">Община</div>
             <Select
               value={props.municipality || "all"}
               onValueChange={(v: string | null) =>
@@ -143,7 +143,7 @@ export function FilterPanel(props: FilterPanelProps) {
         </div>
 
         <div>
-          <div className="mb-0.5 text-[11px] text-muted-foreground">Секция №</div>
+          <div className="mb-1 text-xs text-muted-foreground">Секция №</div>
           <input
             type="text"
             value={props.sectionFilter}
@@ -154,7 +154,7 @@ export function FilterPanel(props: FilterPanelProps) {
         </div>
 
         <div>
-          <div className="mb-1 text-[11px] text-muted-foreground">Тип секция</div>
+          <div className="mb-2 text-xs text-muted-foreground">Тип секция</div>
           <div className="flex flex-wrap gap-1">
             {SECTION_TYPES.map((t) => {
               const active = props.sectionTypes.has(t.key);
@@ -162,10 +162,10 @@ export function FilterPanel(props: FilterPanelProps) {
                 <button
                   key={t.key}
                   onClick={() => props.toggleSectionType(t.key)}
-                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
+                  className={`rounded px-2 py-1 text-2xs font-medium uppercase tracking-wide transition-colors ${
                     active
                       ? "bg-foreground text-background"
-                      : "bg-secondary text-muted-foreground hover:text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {t.label}
@@ -182,14 +182,14 @@ export function FilterPanel(props: FilterPanelProps) {
 
       {/* Section 2: Anomaly analysis */}
       <div
-        className={`flex-col gap-2.5 p-3.5 pt-3 ${expanded ? "flex" : "hidden md:flex"}`}
+        className={`flex-col gap-3 p-4 ${expanded ? "flex" : "hidden md:flex"}`}
       >
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <div className="text-xs font-medium uppercase tracking-eyebrow text-muted-foreground">
           Анализ на аномалии
         </div>
 
         <div>
-          <div className="mb-1 text-[11px] font-medium text-muted-foreground">
+          <div className="mb-2 text-xs text-muted-foreground">
             Методология
           </div>
           <div className="flex flex-wrap gap-1">
@@ -197,10 +197,10 @@ export function FilterPanel(props: FilterPanelProps) {
               <button
                 key={m.key}
                 onClick={() => props.setMethodology(m.key)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
                   props.methodology === m.key
                     ? "bg-foreground text-background"
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {m.label}
@@ -219,16 +219,17 @@ export function FilterPanel(props: FilterPanelProps) {
           Само аномалии
         </label>
 
-        {/* Status line */}
-        <div className="rounded-md bg-secondary px-2.5 py-1.5 text-center text-xs text-muted-foreground">
+        {/* Status line — top-border divider, mono counter */}
+        <div className="border-t border-border pt-2 font-mono text-xs tabular-nums text-muted-foreground">
           {props.baseLoading || props.riskLoading ? (
-            "Зареждане..."
+            "Зареждане…"
           ) : (
             <>
-              <b>{props.riskCountWithCoords}</b> отбелязани
+              <span className="text-foreground">{props.riskCountWithCoords.toLocaleString("bg-BG")}</span>
               {!props.onlyAnomalies && (
                 <>
-                  {" "}от <b>{props.filteredBaseCount.toLocaleString()}</b>
+                  {" / "}
+                  <span className="text-foreground">{props.filteredBaseCount.toLocaleString("bg-BG")}</span>
                 </>
               )}{" "}
               секции

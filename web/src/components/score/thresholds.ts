@@ -23,30 +23,32 @@ export function scoreLevel(value: number): ScoreLevel {
   return "low";
 }
 
-/** Hex colour — used for inline styles (sparkline bars, SVG fills, …). */
+/** Hex colour — used for inline styles (sparkline bars, SVG fills, …).
+ *  Sourced from the design system (warm palette — never green for low,
+ *  which would read as a verdict). */
 export const SCORE_HEX: Record<ScoreLevel, string> = {
-  high: "#ce463c", // brand red
-  medium: "#c4860b", // amber
-  low: "#2d8a4e", // green
+  high: "#ce463c",
+  medium: "#9a6a1f",
+  low: "#a8a096",
 };
 
 /** Tailwind background class — used for the badge body. */
 export const SCORE_BG_CLASS: Record<ScoreLevel, string> = {
-  high: "bg-red-100 text-red-800",
-  medium: "bg-orange-100 text-orange-800",
-  low: "bg-green-100 text-green-800",
+  high: "bg-score-high/10 text-score-high",
+  medium: "bg-score-medium/10 text-score-medium",
+  low: "bg-muted text-score-low",
 };
 
 /** Tailwind solid colour — used for bars and dots. */
 export const SCORE_SOLID_CLASS: Record<ScoreLevel, string> = {
-  high: "bg-red-500",
-  medium: "bg-orange-400",
-  low: "bg-green-500",
+  high: "bg-score-high",
+  medium: "bg-score-medium",
+  low: "bg-score-low",
 };
 
 /** Tailwind border-left class — used for card spines. */
 export const SCORE_BORDER_LEFT_CLASS: Record<ScoreLevel, string> = {
-  high: "border-l-red-500",
-  medium: "border-l-orange-400",
-  low: "border-l-green-500",
+  high: "border-l-score-high",
+  medium: "border-l-score-medium",
+  low: "border-l-score-low",
 };

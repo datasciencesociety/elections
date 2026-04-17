@@ -48,7 +48,7 @@ export function SectionMap({
       >
         <MapMarker latitude={lat} longitude={lng}>
           <MarkerContent>
-            <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-[#ce463c] shadow-lg">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-brand shadow-lg">
               <div className="h-2 w-2 rounded-full bg-white" />
             </div>
           </MarkerContent>

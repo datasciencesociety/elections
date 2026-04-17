@@ -38,7 +38,7 @@ export default function Layout() {
   }, [electionId, location.pathname]);
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `rounded px-2.5 py-1.5 text-xs font-medium uppercase tracking-wide transition-colors ${
+    `rounded px-3 py-1.5 text-sm font-medium uppercase tracking-eyebrow transition-colors ${
       isActive
         ? "bg-foreground text-background"
         : "text-muted-foreground hover:text-foreground"
@@ -48,10 +48,10 @@ export default function Layout() {
     <div className="flex h-screen w-full flex-col">
       {/* Navbar — top bar */}
       <nav className="flex shrink-0 items-center gap-2 border-b border-border bg-background px-3 py-2 md:h-11 md:px-4 md:py-0">
-        {/* App title — clickable back to landing */}
+        {/* Brand — clickable back to landing */}
         <Link
           to="/"
-          className="font-display text-lg font-semibold tracking-tight text-foreground transition-colors hover:text-[#ce463c]"
+          className="font-display text-xl font-medium tracking-tight text-foreground transition-colors hover:text-score-high"
         >
           Изборен монитор
         </Link>
@@ -71,7 +71,7 @@ export default function Layout() {
               navigate(`/${val}/${view}`);
             }}
           >
-            <SelectTrigger size="sm" className="min-w-0 flex-1 border-0 bg-transparent text-xs font-medium shadow-none md:flex-none md:max-w-[500px]">
+            <SelectTrigger size="sm" className="min-w-0 flex-1 border-0 bg-transparent text-sm font-medium shadow-none md:flex-none md:max-w-selector">
               <SelectValue placeholder="Избери избори">
                 {(() => {
                   const eid = electionId ?? String(elections[0]?.id);

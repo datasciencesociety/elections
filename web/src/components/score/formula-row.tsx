@@ -13,7 +13,7 @@ export function FormulaRow({
   unit?: string;
 }) {
   return (
-    <div className="flex items-baseline justify-between gap-2 text-[11px]">
+    <div className="flex items-baseline justify-between gap-2 text-xs">
       <span className="text-muted-foreground">{label}</span>
       <span className="font-mono font-medium tabular-nums">
         {typeof value === "number" ? value.toFixed(2) : value}

@@ -23,7 +23,7 @@ export function SectionLinks({
   if (!links) return null;
 
   return (
-    <div className="flex flex-wrap gap-2 text-[11px]">
+    <div className="flex flex-wrap gap-2 text-xs">
       <a
         href={links.protocol}
         target="_blank"

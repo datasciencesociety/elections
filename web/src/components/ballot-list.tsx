@@ -84,8 +84,8 @@ function StackedBar({
   const isCompact = density === "sm";
   const dotSize = isCompact ? "h-1.5 w-1.5" : "h-1.5 w-1.5";
   const dotShape = isCompact ? "rounded-sm" : "rounded-full";
-  const itemText = isCompact ? "text-[9px]" : "text-[10px]";
-  const valueText = isCompact ? "text-[9px]" : "text-[10px]";
+  const itemText = isCompact ? "text-[9px]" : "text-2xs";
+  const valueText = isCompact ? "text-[9px]" : "text-2xs";
   const legendGap = isCompact ? "gap-x-2 gap-y-0" : "gap-x-3 gap-y-0";
   const wrapperSpacing = isCompact ? "space-y-0.5" : "space-y-1";
   const trackBg = isCompact ? "" : "bg-muted";
@@ -153,15 +153,15 @@ function FullRows({
                 className="size-2.5 flex-shrink-0 rounded-sm"
                 style={{ background: entry.color || "#888" }}
               />
-              <span className="truncate text-[11px]" title={entry.name}>
+              <span className="truncate text-xs" title={entry.name}>
                 {entry.short_name}
               </span>
             </div>
             <div className="flex items-baseline gap-1.5 whitespace-nowrap">
-              <span className="text-[11px] font-mono font-semibold tabular-nums">
+              <span className="text-xs font-mono font-semibold tabular-nums">
                 {pct2(entry.pct)}%
               </span>
-              <span className="text-[10px] font-mono text-muted-foreground tabular-nums">
+              <span className="text-2xs font-mono text-muted-foreground tabular-nums">
                 {entry.votes.toLocaleString()}
               </span>
             </div>

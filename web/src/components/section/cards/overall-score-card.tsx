@@ -30,10 +30,10 @@ export function OverallScoreCard({ section }: { section: AnomalySection }) {
       <ScoreBar value={risk} className="mb-2" />
       <div className="text-xs font-medium">{verdict}</div>
       <div className="mt-2 rounded bg-muted/50 p-2">
-        <div className="mb-1 text-[10px] font-medium text-muted-foreground">
+        <div className="mb-1 text-2xs font-medium text-muted-foreground">
           Формула
         </div>
-        <div className="text-[11px] font-mono leading-relaxed">
+        <div className="text-xs font-mono leading-relaxed">
           резултат = (аритм. грешка + несъответствие + активност_норм + бенфорд +
           активност_населено_норм + партийно_отклонение_норм) / 6
         </div>

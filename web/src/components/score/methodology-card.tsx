@@ -39,7 +39,7 @@ export function MethodologyCard({
           </div>
           <ScoreBar value={score} className="mt-1.5" />
         </div>
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-2xs text-muted-foreground">
           {expanded ? "▲" : "▼"}
         </span>
       </button>

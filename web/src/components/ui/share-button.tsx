@@ -31,12 +31,12 @@ export function ShareButton({
     return (
       <button
         onClick={handleShare}
-        className={`flex items-center justify-center gap-1.5 rounded-md border border-border bg-secondary/50 px-3 py-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground ${className}`}
+        className={`flex items-center justify-center gap-1.5 rounded-md border border-border bg-secondary/50 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground ${className}`}
       >
         {copied ? (
           <>
-            <Check size={13} className="text-green-600" />
-            <span className="text-green-600">Копирано!</span>
+            <Check size={13} className="text-score-low" />
+            <span className="text-score-low">Копирано!</span>
           </>
         ) : (
           <>
@@ -54,7 +54,7 @@ export function ShareButton({
       className={`rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground ${className}`}
       title={copied ? "Копирано!" : "Сподели"}
     >
-      {copied ? <Check size={16} className="text-green-600" /> : <Share2 size={16} />}
+      {copied ? <Check size={16} className="text-score-low" /> : <Share2 size={16} />}
     </button>
   );
 }

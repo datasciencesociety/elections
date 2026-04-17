@@ -222,7 +222,7 @@ export default function LocationCorrection({
             ? `${markerPos[1].toFixed(6)}, ${markerPos[0].toFixed(6)}`
             : "Няма маркер"}
         </div>
-        {error && <div className="text-xs text-red-600">{error}</div>}
+        {error && <div className="text-xs text-score-high">{error}</div>}
         <button
           onClick={handleSubmit}
           disabled={!markerPos || submitting}

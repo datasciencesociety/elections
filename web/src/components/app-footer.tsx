@@ -31,7 +31,7 @@ export default function AppFooter() {
 
   return (
     <footer className="shrink-0 border-t border-border bg-background px-3 py-2 md:px-4">
-      <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[11px] text-muted-foreground">
+      <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
         <a
           href={SLACK_URL}
           target="_blank"
@@ -63,7 +63,7 @@ export default function AppFooter() {
           href={reportUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="font-medium text-[#ce463c] transition-colors hover:underline"
+          className="font-medium text-score-high transition-colors hover:underline"
         >
           Докладвай проблем →
         </a>

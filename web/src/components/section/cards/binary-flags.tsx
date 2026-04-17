@@ -13,21 +13,21 @@ export function BinaryFlags({ section: s }: { section: AnomalySection }) {
   return (
     <div className="space-y-1.5">
       {s.arithmetic_error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-          <div className="text-xs font-medium text-red-800">
+        <div className="rounded-lg border border-score-high/20 bg-score-high/10 p-3">
+          <div className="text-xs font-medium text-score-high">
             Аритметична грешка в протокола
           </div>
-          <div className="mt-1 text-[11px] text-red-600">
+          <div className="mt-1 text-xs text-score-high">
             Гласувалите са повече от получените бюлетини
           </div>
         </div>
       ) : null}
       {s.vote_sum_mismatch ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-          <div className="text-xs font-medium text-red-800">
+        <div className="rounded-lg border border-score-high/20 bg-score-high/10 p-3">
+          <div className="text-xs font-medium text-score-high">
             Несъответствие в сумата на гласовете
           </div>
-          <div className="mt-1 text-[11px] text-red-600">
+          <div className="mt-1 text-xs text-score-high">
             При поне една партия: хартиени + машинни ≠ общо
           </div>
         </div>

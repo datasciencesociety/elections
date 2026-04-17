@@ -45,6 +45,39 @@
     --color-background: var(--background);
     --color-brand: #ce463c;
     --color-brand-light: #ce463c20;
+    --color-brand-green: #3d6b4a;
+    --color-brand-green-light: #3d6b4a15;
+    --color-sand: #f0ead8;
+    --color-sand-deep: #e6dcc0;
+
+    /* Anomaly score — warm palette. Red is attention, ochre is middling,
+       warm grey is within-norm. Green is never used — would read as verdict. */
+    --color-score-high: #ce463c;
+    --color-score-medium: #9a6a1f;
+    --color-score-low: #a8a096;
+
+    /* Type scale — anchored at 16px base, matching industry standard.
+       Every line-height a multiple of the 4px baseline grid.
+       text-xs through text-4xl are Tailwind defaults — we only add text-2xs (micro)
+       and text-md (reading body, between base and lg). */
+    --text-2xs: 10px;
+    --text-2xs--line-height: 14px;
+    --text-md: 18px;
+    --text-md--line-height: 28px;
+
+    /* Tracking tokens */
+    --tracking-tight: -0.015em;
+    --tracking-eyebrow: 0.12em;
+
+    /* Named spacing constants — enable w-*, pr-*, ml-*, etc. and responsive variants
+       (e.g. md:pr-sidebar, lg:w-sidebar). Keep this list small and semantic. */
+    --spacing-sidebar: 420px;
+    --spacing-selector: 500px;
+    --spacing-filter-min: 280px;
+    --spacing-filter-max: 320px;
+    --spacing-cell-name: 200px;
+    --spacing-wide-table: 600px;
+
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -132,14 +165,48 @@
   }
   html {
     @apply font-sans;
+    font-size: 1.0625rem;
     font-feature-settings: "locl";
     font-language-override: "BGR";
   }
 
-  /* Editorial heading style */
-  h1, h2, h3 {
+  /* Semantic defaults — every tag picks up the right size without utility classes.
+     Pages that need dense UI (tables, drawer metadata) opt out via text-sm / text-xs. */
+
+  h1, h2, h3, h4 {
     font-family: var(--font-display);
-    letter-spacing: -0.01em;
+    font-weight: 500;
+    letter-spacing: var(--tracking-tight);
+    color: var(--foreground);
+  }
+  /* Mobile + tablet. */
+  h1 { font-size: 24px; line-height: 32px; }   /* text-2xl */
+  h2 { font-size: 20px; line-height: 28px; }   /* text-xl */
+  h3 { font-size: 18px; line-height: 28px; }   /* text-lg */
+  h4 { font-size: 18px; line-height: 28px; }   /* text-lg */
+
+  /* Desktop — one step bigger. */
+  @media (min-width: 1024px) {
+    h1 { font-size: 30px; line-height: 36px; }  /* text-3xl */
+    h2 { font-size: 24px; line-height: 32px; }  /* text-2xl */
+    h3 { font-size: 20px; line-height: 28px; }  /* text-xl */
+  }
+
+  /* Reading body — paragraphs, lists, quotes. 18px. Dense UI opts out with text-sm/text-xs. */
+  p, li, blockquote {
+    font-size: 18px;
+    line-height: 28px;
+  }
+
+  /* Small-caps metadata label — used widely across the app */
+  .eyebrow {
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    line-height: var(--text-xs--line-height);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
+    color: var(--muted-foreground);
   }
 
   /* Tabular figures everywhere for data */
@@ -163,10 +230,46 @@
   text-decoration-thickness: 2px;
 }
 
-/* Risk score colors — consistent across all views */
-.risk-high { color: #ce463c; }
-.risk-medium { color: #c4860b; }
-.risk-low { color: #2d8a4e; }
-.risk-bg-high { background-color: #ce463c15; color: #ce463c; }
-.risk-bg-medium { background-color: #c4860b15; color: #c4860b; }
-.risk-bg-low { background-color: #2d8a4e15; color: #2d8a4e; }
+/* Anomaly score classes. Use `.score-*` in new code; `.risk-*` are kept
+   as aliases until call sites are renamed. All use the warm palette —
+   never green for low (would read as verdict). */
+.score-high,    .risk-high    { color: var(--color-score-high); }
+.score-medium,  .risk-medium  { color: var(--color-score-medium); }
+.score-low,     .risk-low     { color: var(--color-score-low); }
+
+.score-bg-high,   .risk-bg-high   { background-color: color-mix(in srgb, var(--color-score-high) 8%, transparent);  color: var(--color-score-high); }
+.score-bg-medium, .risk-bg-medium { background-color: color-mix(in srgb, var(--color-score-medium) 9%, transparent); color: var(--color-score-medium); }
+.score-bg-low,    .risk-bg-low    { background-color: var(--muted); color: var(--color-score-low); }
+
+/* Structural design constants — named so call sites never hardcode. */
+@utility red-bar {
+  display: block;
+  height: 3px;
+  width: 48px;
+  background: var(--color-brand);
+}
+@utility dropdown-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 50;
+  max-height: min(60vh, 24rem);
+  min-width: 18rem;
+  overflow-y: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.08);
+}
+@utility border-l-spine {
+  border-left-width: 3px;
+}
+@utility code-block {
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs--line-height);
+  background: #1a1a1a;
+  color: #d4d4d4;
+}

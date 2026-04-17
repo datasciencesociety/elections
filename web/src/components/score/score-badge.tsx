@@ -19,7 +19,7 @@ export function ScoreBadge({
 }) {
   const bg = SCORE_BG_CLASS[scoreLevel(value)];
   const sizeClass =
-    size === "lg" ? "text-sm px-2 py-0.5" : "text-[11px] px-1.5 py-0.5";
+    size === "lg" ? "text-sm px-2 py-0.5" : "text-xs px-1.5 py-0.5";
   return (
     <span
       className={`inline-block rounded font-mono font-semibold tabular-nums ${bg} ${sizeClass}`}

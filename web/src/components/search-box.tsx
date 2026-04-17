@@ -149,7 +149,7 @@ export default function SearchBox({
         <div
           id="search-results"
           role="listbox"
-          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-[min(70vh,32rem)] overflow-y-auto rounded-xl border border-border bg-card shadow-lg"
+          className="dropdown-panel"
         >
           {status === "loading" && (
             <div className="px-5 py-4 text-sm text-muted-foreground">
@@ -157,7 +157,7 @@ export default function SearchBox({
             </div>
           )}
           {status === "error" && (
-            <div className="px-5 py-4 text-sm text-[#ce463c]">
+            <div className="px-5 py-4 text-sm text-score-high">
               Грешка при зареждане. Опитайте отново.
             </div>
           )}
@@ -262,7 +262,7 @@ function AddressHeader({
           {group.settlement || "—"}
         </div>
         {group.sections.length > 1 && (
-          <div className="shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">
+          <div className="shrink-0 text-2xs uppercase tracking-wide text-muted-foreground">
             {group.sections.length} секции
           </div>
         )}
@@ -273,7 +273,7 @@ function AddressHeader({
         </div>
       )}
       {meta && (
-        <div className="truncate text-[11px] text-muted-foreground/80">
+        <div className="truncate text-xs text-muted-foreground/80">
           {meta}
         </div>
       )}
@@ -303,13 +303,13 @@ function SectionRow({
         active ? "bg-secondary/70" : "hover:bg-secondary/40"
       }`}
     >
-      <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+      <span className="font-mono text-xs tabular-nums text-muted-foreground">
         Секция
       </span>
       <span className="font-mono text-xs font-semibold tabular-nums text-foreground">
         {section.sectionCode}
       </span>
-      <span className="ml-auto text-[10px] text-[#ce463c]">→</span>
+      <span className="ml-auto text-2xs text-score-high">→</span>
     </button>
   );
 }

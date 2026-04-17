@@ -32,15 +32,15 @@ export default function ExplorerHelp() {
         <h1 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">
           Изследвай изборните данни с изкуствен интелект
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-xl">
+        <p className="mt-2 text-muted-foreground max-w-xl">
           Базата данни с всички избори (2021–2024) е достъпна за свободен анализ.
           Питаш на български, получаваш интерактивни карти, графики и таблици
           директно от данните. Не е нужно да програмираш.
         </p>
-        <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-xl">
+        <p className="mt-2 text-muted-foreground max-w-xl">
           Данните работят с всеки AI асистент, който поддържа MCP или може да чете SQLite.
           По-долу показваме два начина: с локална база данни (най-лесно чрез{" "}
-          <a href="https://claude.ai/download" target="_blank" rel="noopener noreferrer" className="text-[#ce463c] hover:underline">
+          <a href="https://claude.ai/download" target="_blank" rel="noopener noreferrer" className="text-score-high hover:underline">
             Claude Desktop Cowork
             <ExternalLink size={10} className="mb-0.5 ml-0.5 inline" />
           </a>) или чрез MCP сървър, който работи с Claude Desktop, ChatGPT, pi-mono, OpenCode, Cursor
@@ -55,13 +55,13 @@ export default function ExplorerHelp() {
             className="w-full"
           />
         </div>
-        <p className="mt-1.5 text-[11px] text-muted-foreground">
+        <p className="mt-1.5 text-muted-foreground">
           Пример: карта по общини с резултатите от парламентарните избори на 27.10.2024
         </p>
 
         {/* Steps */}
         <h2 className="mt-10 font-display text-lg font-semibold">Най-лесният начин: Claude Desktop Cowork</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-muted-foreground">
           Три стъпки. Всичко става с кликване, не е нужен терминал или програмиране.
         </p>
 
@@ -71,7 +71,7 @@ export default function ExplorerHelp() {
             icon={<Download size={16} />}
             title="Свалете проекта"
           >
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground">
               Кликнете бутона по-долу. Ще се свали ZIP файл. Разархивирайте го на удобно място
               (например на десктопа).
             </p>
@@ -82,7 +82,7 @@ export default function ExplorerHelp() {
               <Download size={16} />
               Свали проекта (.zip)
             </a>
-            <p className="mt-2 text-xs text-muted-foreground">
+            <p className="mt-2 text-muted-foreground">
               След разархивиране ще имате папка <strong>elections-explorer</strong>.
             </p>
           </Step>
@@ -92,7 +92,7 @@ export default function ExplorerHelp() {
             icon={<Database size={16} />}
             title="Свалете базата данни"
           >
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground">
               Базата е голям файл (~1.3 GB) и се сваля отделно. Кликнете бутона и изчакайте
               изтеглянето. Може да отнеме няколко минути.
             </p>
@@ -103,7 +103,7 @@ export default function ExplorerHelp() {
               <Database size={16} />
               Свали elections.db (1.3 GB)
             </a>
-            <p className="mt-2 text-xs text-muted-foreground">
+            <p className="mt-2 text-muted-foreground">
               След сваляне преместете файла <strong>elections.db</strong> в папката{" "}
               <strong>elections-explorer</strong> от стъпка 1.
             </p>
@@ -114,31 +114,31 @@ export default function ExplorerHelp() {
             icon={<Sparkles size={16} />}
             title="Отворете в Claude Desktop"
           >
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground">
               Ако нямате Claude Desktop,{" "}
-              <a href={CLAUDE_DESKTOP_URL} target="_blank" rel="noopener noreferrer" className="text-[#ce463c] hover:underline">
+              <a href={CLAUDE_DESKTOP_URL} target="_blank" rel="noopener noreferrer" className="text-score-high hover:underline">
                 свалете го безплатно оттук
                 <ExternalLink size={10} className="mb-0.5 ml-0.5 inline" />
               </a>.
             </p>
-            <div className="mt-3 space-y-3 text-sm text-muted-foreground">
+            <div className="mt-3 space-y-3 text-muted-foreground">
               <div className="flex gap-2">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold">a</span>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-2xs font-semibold">a</span>
                 <span>Отворете Claude Desktop</span>
               </div>
               <div className="flex gap-2">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold">б</span>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-2xs font-semibold">б</span>
                 <span>Изберете <strong>Cowork</strong> от горните табове</span>
               </div>
               <div className="flex gap-2">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold">в</span>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-2xs font-semibold">в</span>
                 <span>
                   Кликнете <FolderOpen size={13} className="mx-0.5 inline" />{" "}
                   <strong>Open folder</strong> и изберете папката <strong>elections-explorer</strong>
                 </span>
               </div>
               <div className="flex gap-2">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold">г</span>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-2xs font-semibold">г</span>
                 <span>Питайте каквото искате на български. Готово!</span>
               </div>
             </div>
@@ -150,16 +150,16 @@ export default function ExplorerHelp() {
           <Plug size={16} className="mr-1.5 inline text-muted-foreground" />
           Алтернатива: MCP
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+        <p className="mt-1 text-muted-foreground">
           Ако не искате да сваляте файлове, можете да свържете AI асистента си директно
           към нашия сървър чрез{" "}
-          <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener noreferrer" className="text-[#ce463c] hover:underline">
+          <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener noreferrer" className="text-score-high hover:underline">
             Model Context Protocol (MCP)
             <ExternalLink size={10} className="mb-0.5 ml-0.5 inline" />
           </a>.
           Данните се четат от сървъра в реално време — нищо не се инсталира локално.
         </p>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-2 text-muted-foreground">
           MCP работи с Claude Desktop, ChatGPT, pi-mono, OpenCode, Cursor и други клиенти, които поддържат протокола.
         </p>
 
@@ -168,20 +168,20 @@ export default function ExplorerHelp() {
           <code className="mt-1.5 block rounded bg-muted px-3 py-2 text-xs font-mono select-all">
             {MCP_URL}
           </code>
-          <p className="mt-3 text-xs text-muted-foreground">
+          <p className="mt-3 text-muted-foreground">
             Транспорт: <strong>Streamable HTTP</strong>. Без аутентикация.
           </p>
         </div>
 
         <div className="mt-4 rounded-lg border border-border bg-muted/20 px-4 py-3 text-sm">
           <p className="font-medium text-foreground">Настройка в Claude Desktop</p>
-          <p className="mt-1.5 text-sm text-muted-foreground">
+          <p className="mt-1.5 text-muted-foreground">
             Settings → MCP Servers → Add → Streamable HTTP → поставете адреса отгоре.
           </p>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 text-muted-foreground">
             Или добавете в <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">claude_desktop_config.json</code>:
           </p>
-          <pre className="mt-2 overflow-x-auto rounded bg-[#1a1a1a] px-3 py-2 text-xs font-mono text-gray-300 select-all">{`{
+          <pre className="mt-2 overflow-x-auto rounded code-block select-all">{`{
   "mcpServers": {
     "bg-elections": {
       "type": "streamableHttp",
@@ -193,13 +193,13 @@ export default function ExplorerHelp() {
 
         <div className="mt-4 rounded-lg border border-border bg-muted/20 px-4 py-3 text-sm">
           <p className="font-medium text-foreground">Настройка в ChatGPT</p>
-          <p className="mt-1.5 text-sm text-muted-foreground">
+          <p className="mt-1.5 text-muted-foreground">
             Включете Developer Mode от Settings → Developer. След това: Settings → Connectors → Create.
             Въведете име (напр. „Български избори") и поставете адреса на MCP сървъра.
           </p>
-          <p className="mt-2 text-xs text-muted-foreground">
+          <p className="mt-2 text-muted-foreground">
             Подробни инструкции:{" "}
-            <a href="https://help.openai.com/en/articles/12584461-developer-mode-apps-and-full-mcp-connectors-in-chatgpt-beta" target="_blank" rel="noopener noreferrer" className="text-[#ce463c] hover:underline">
+            <a href="https://help.openai.com/en/articles/12584461-developer-mode-apps-and-full-mcp-connectors-in-chatgpt-beta" target="_blank" rel="noopener noreferrer" className="text-score-high hover:underline">
               OpenAI Help Center
               <ExternalLink size={10} className="mb-0.5 ml-0.5 inline" />
             </a>
@@ -208,10 +208,10 @@ export default function ExplorerHelp() {
 
         <div className="mt-4 rounded-lg border border-border bg-muted/20 px-4 py-3 text-sm">
           <p className="font-medium text-foreground">Препоръчителен system prompt</p>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-muted-foreground">
             Добавете тези редове в инструкциите на проекта, за да ориентирате модела:
           </p>
-          <pre className="mt-2 overflow-x-auto rounded bg-[#1a1a1a] px-3 py-2 text-xs font-mono text-gray-300 select-all whitespace-pre-wrap">{`Имаш достъп до MCP сървър с данни от 18 български избора (2021–2024): парламентарни, президентски, европейски, местни. Данните са от ЦИК и са валидирани.
+          <pre className="mt-2 overflow-x-auto rounded code-block select-all whitespace-pre-wrap">{`Имаш достъп до MCP сървър с данни от 18 български избора (2021–2024): парламентарни, президентски, европейски, местни. Данните са от ЦИК и са валидирани.
 
 Използвай list_elections за списък на изборите и техните ID-та. След това използвай get_anomalies, get_election_results, compare_elections, get_turnout и другите инструменти, за да анализираш данните.
 
@@ -223,7 +223,7 @@ export default function ExplorerHelp() {
           <MessageSquare size={16} className="mr-1.5 inline text-muted-foreground" />
           Примерни въпроси
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-muted-foreground">
           Копирайте директно или питайте със свои думи.
         </p>
         <ul className="mt-3 space-y-2">
@@ -236,13 +236,13 @@ export default function ExplorerHelp() {
 
         {/* Skills table */}
         <h2 className="mt-10 font-display text-lg font-semibold">Какво може да прави</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-muted-foreground">
           Claude автоматично разбира какво питате и генерира подходящата визуализация.
         </p>
         <div className="mt-3 overflow-hidden rounded-lg border border-border">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/40 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+              <tr className="border-b border-border bg-muted/40 text-left text-2xs uppercase tracking-wider text-muted-foreground">
                 <th className="px-3 py-2 font-medium">Тип</th>
                 <th className="px-3 py-2 font-medium">Описание</th>
               </tr>
@@ -260,15 +260,15 @@ export default function ExplorerHelp() {
 
         {/* Why SQLite */}
         <h2 className="mt-10 font-display text-lg font-semibold">Защо SQLite</h2>
-        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+        <p className="mt-2 text-muted-foreground">
           Официалните данни от ЦИК се публикуват като CSV файлове. Можете да проверите
           отделна секция, но за да търсите, сравнявате или агрегирате резултати, данните
           трябва да бъдат в база. Освен това всеки избор идва в малко по-различен формат.
           Написахме конвертори, които привеждат всичките 18 избора в единна структура.
         </p>
-        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+        <p className="mt-2 text-muted-foreground">
           Избрахме{" "}
-          <a href="https://sqlite.org" target="_blank" rel="noopener noreferrer" className="text-[#ce463c] hover:underline">
+          <a href="https://sqlite.org" target="_blank" rel="noopener noreferrer" className="text-score-high hover:underline">
             SQLite
             <ExternalLink size={10} className="mb-0.5 ml-0.5 inline" />
           </a>{" "}
@@ -277,7 +277,7 @@ export default function ExplorerHelp() {
         </p>
 
         {/* SQLite requirement */}
-        <div className="mt-4 rounded-lg border border-border bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+        <div className="mt-4 rounded-lg border border-border bg-muted/20 px-4 py-3 text-muted-foreground">
           <p className="font-medium text-foreground">Нужен е SQLite на компютъра ви</p>
           <p className="mt-1">
             Claude използва <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">sqlite3</code> за
@@ -289,7 +289,7 @@ export default function ExplorerHelp() {
             </li>
             <li>
               <strong>Windows:</strong> Свалете <strong>sqlite-tools</strong> от{" "}
-              <a href="https://sqlite.org/download.html" target="_blank" rel="noopener noreferrer" className="text-[#ce463c] hover:underline">
+              <a href="https://sqlite.org/download.html" target="_blank" rel="noopener noreferrer" className="text-score-high hover:underline">
                 sqlite.org/download.html
                 <ExternalLink size={10} className="mb-0.5 ml-0.5 inline" />
               </a>{" "}
@@ -305,7 +305,7 @@ export default function ExplorerHelp() {
 
         {/* What's in the DB */}
         <h2 className="mt-10 font-display text-lg font-semibold">Какво съдържа базата</h2>
-        <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
+        <ul className="mt-3 space-y-1 text-muted-foreground">
           <li>18 избора (2021–2024): парламентарни, президентски, европейски, местни</li>
           <li>Резултати на ниво секция: партии, гласове (хартия + машина), протоколи</li>
           <li>Географска привързаност: община, област, РИК, населено място, GPS координати</li>
@@ -314,15 +314,15 @@ export default function ExplorerHelp() {
         </ul>
 
         {/* Data source */}
-        <div className="mt-10 rounded-lg border border-border bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
+        <div className="mt-10 rounded-lg border border-border bg-muted/20 px-4 py-3 text-muted-foreground">
           Всички данни са от{" "}
-          <a href="https://www.cik.bg" target="_blank" rel="noopener noreferrer" className="text-[#ce463c] hover:underline">
+          <a href="https://www.cik.bg" target="_blank" rel="noopener noreferrer" className="text-score-high hover:underline">
             Централната избирателна комисия (ЦИК)
             <ExternalLink size={10} className="mb-0.5 ml-0.5 inline" />
           </a>.
           Сумите по партия за всички национални избори са валидирани да съвпадат с официалните резултати.
           Изходният код е{" "}
-          <a href={GITHUB_BRANCH_URL} target="_blank" rel="noopener noreferrer" className="text-[#ce463c] hover:underline">
+          <a href={GITHUB_BRANCH_URL} target="_blank" rel="noopener noreferrer" className="text-score-high hover:underline">
             отворен
             <ExternalLink size={10} className="mb-0.5 ml-0.5 inline" />
           </a>.

@@ -108,7 +108,7 @@ export default function SectionDetail() {
         </div>
         <Link
           to="/persistence"
-          className="text-xs text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground"
         >
           &larr; Назад
         </Link>
@@ -138,7 +138,7 @@ export default function SectionDetail() {
         <div className="mb-4 flex items-center justify-between">
           <Link
             to="/persistence"
-            className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+            className="text-muted-foreground transition-colors hover:text-foreground"
           >
             &larr; Системни
           </Link>
@@ -151,7 +151,7 @@ export default function SectionDetail() {
               href={`${REPORT_FORM_URL}?entry.1736983913=${encodeURIComponent(window.location.href)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded border border-border px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-[#ce463c] hover:text-[#ce463c]"
+              className="rounded border border-border px-2.5 py-1 text-muted-foreground transition-colors hover:border-brand hover:text-score-high"
             >
               Докладвай разминаване
             </a>
@@ -170,7 +170,7 @@ export default function SectionDetail() {
               {flaggedCount}/{history.length} отбелязани
             </span>
           </div>
-          <div className="mt-3 h-0.5 w-12 bg-[#ce463c]" />
+          <div className="mt-3 h-0.5 w-12 bg-brand" />
         </div>
 
         {/* Shared location block — header + map + suggest-location */}
@@ -234,7 +234,7 @@ export default function SectionDetail() {
 
         {/* Score-over-time sparkline */}
         <div className="mb-6 rounded border border-border bg-card p-4">
-          <h2 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+          <h2 className="mb-3 text-2xs font-medium uppercase tracking-widest text-muted-foreground">
             Риск през годините
           </h2>
           <div className="flex items-end gap-1">
@@ -270,9 +270,9 @@ export default function SectionDetail() {
 
         {/* Per-election score breakdown table */}
         <div className="mb-6 overflow-x-auto rounded border border-border bg-card">
-          <table className="w-full text-xs">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border text-[10px] uppercase tracking-wider text-muted-foreground">
+              <tr className="border-b border-border text-2xs uppercase tracking-wider text-muted-foreground">
                 <th className="px-3 py-2.5 text-left font-medium">Избори</th>
                 <th className="px-2 py-2.5 text-left font-medium">Риск</th>
                 <th className="hidden px-2 py-2.5 text-left font-medium sm:table-cell">
@@ -319,17 +319,17 @@ export default function SectionDetail() {
                   <td className="px-2 py-2">
                     <div className="flex gap-1">
                       {h.protocol_violation_count > 0 && (
-                        <span className="risk-bg-high rounded px-1 py-0.5 text-[10px]">
+                        <span className="risk-bg-high rounded px-1 py-0.5 text-2xs">
                           Пр:{h.protocol_violation_count}
                         </span>
                       )}
                       {h.arithmetic_error === 1 && (
-                        <span className="risk-bg-medium rounded px-1 py-0.5 text-[10px]">
+                        <span className="risk-bg-medium rounded px-1 py-0.5 text-2xs">
                           АГ
                         </span>
                       )}
                       {h.vote_sum_mismatch === 1 && (
-                        <span className="risk-bg-medium rounded px-1 py-0.5 text-[10px]">
+                        <span className="risk-bg-medium rounded px-1 py-0.5 text-2xs">
                           НС
                         </span>
                       )}
@@ -349,7 +349,7 @@ export default function SectionDetail() {
           {historyDesc!.map((h) => (
             <div
               key={h.election_id}
-              className={`rounded border border-border border-l-[3px] ${SCORE_BORDER_LEFT_CLASS[scoreLevel(h.risk_score)]} bg-card p-4`}
+              className={`rounded border border-border border-l-spine ${SCORE_BORDER_LEFT_CLASS[scoreLevel(h.risk_score)]} bg-card p-4`}
             >
               <SectionElection
                 electionId={h.election_id}
@@ -383,7 +383,7 @@ function SiblingsStrip({
 }) {
   return (
     <div className="mb-6 rounded border border-border bg-card p-4">
-      <h2 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+      <h2 className="mb-3 text-2xs font-medium uppercase tracking-widest text-muted-foreground">
         Други секции на този адрес ({siblings.length}) · {latestElectionName}
       </h2>
       <div className="-mx-4 overflow-x-auto px-4 pb-1 md:mx-0 md:overflow-visible md:px-0">
@@ -396,9 +396,9 @@ function SiblingsStrip({
               s.winner_pct != null ? s.winner_pct.toFixed(1) : "—";
             const chip = (
               <div
-                className={`flex min-w-[9rem] shrink-0 flex-col gap-1 rounded-lg border px-3 py-2 transition-all md:shrink ${
+                className={`flex min-w-36 shrink-0 flex-col gap-1 rounded-lg border px-3 py-2 transition-all md:shrink ${
                   isCurrent
-                    ? "border-[#ce463c] bg-[#ce463c08]"
+                    ? "border-brand bg-brand/5"
                     : "border-border bg-background hover:border-foreground/30"
                 }`}
               >
@@ -407,7 +407,7 @@ function SiblingsStrip({
                     {s.section_code}
                   </span>
                   {isCurrent && (
-                    <span className="text-[9px] font-medium uppercase tracking-wider text-[#ce463c]">
+                    <span className="text-[9px] font-medium uppercase tracking-wider text-score-high">
                       Избрана
                     </span>
                   )}
@@ -419,14 +419,14 @@ function SiblingsStrip({
                       backgroundColor: s.winner_color ?? "#999",
                     }}
                   />
-                  <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+                  <span className="min-w-0 flex-1 truncate text-muted-foreground">
                     {s.winner_party ?? "—"}
                   </span>
-                  <span className="font-mono text-[11px] tabular-nums text-foreground">
+                  <span className="font-mono text-xs tabular-nums text-foreground">
                     {winnerPct}%
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center justify-between text-2xs">
                   <span className="uppercase tracking-wider text-muted-foreground">
                     Активност
                   </span>
@@ -476,10 +476,10 @@ function PeerStripPlot({
 
   return (
     <div className="mb-6 rounded border border-border bg-card p-4">
-      <h2 className="mb-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+      <h2 className="mb-1 text-2xs font-medium uppercase tracking-widest text-muted-foreground">
         Активност спрямо населеното място
       </h2>
-      <p className="mb-3 text-[11px] text-muted-foreground">
+      <p className="mb-3 text-muted-foreground">
         {peers.length} секции в {settlementName}. Тази секция е маркирана.
       </p>
       <div className="relative h-8">
@@ -499,7 +499,7 @@ function PeerStripPlot({
               key={p.section_code}
               className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-transform ${
                 isCurrent
-                  ? "z-10 size-3.5 border-2 border-[#ce463c] bg-[#ce463c]"
+                  ? "z-10 size-3.5 border-2 border-brand bg-brand"
                   : "size-2 bg-muted-foreground/30 hover:bg-muted-foreground/60"
               }`}
               style={{ left: `${xPct(p.turnout_rate)}%` }}
@@ -512,7 +512,7 @@ function PeerStripPlot({
       <div className="mt-1 flex justify-between text-[9px] font-mono tabular-nums text-muted-foreground">
         <span>{(min * 100).toFixed(0)}%</span>
         {current && (
-          <span className="text-[#ce463c] font-semibold">
+          <span className="text-score-high font-semibold">
             {(current.turnout_rate * 100).toFixed(1)}%
           </span>
         )}
@@ -545,7 +545,7 @@ function AddressHistory({ history }: { history: ElectionHistory[] }) {
 
   return (
     <div className="mb-6 rounded border border-border bg-card p-4">
-      <h2 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+      <h2 className="mb-3 text-2xs font-medium uppercase tracking-widest text-muted-foreground">
         Адреси по избори
       </h2>
       <div className="space-y-1.5">
@@ -566,14 +566,14 @@ function AddressHistory({ history }: { history: ElectionHistory[] }) {
             <div
               key={h.election_id}
               className={`flex items-start gap-3 rounded px-2.5 py-1.5 text-xs ${
-                changed ? "bg-[#ce463c]/8 border border-[#ce463c]/20" : ""
+                changed ? "bg-brand/10 border border-brand/20" : ""
               }`}
             >
               <span className="shrink-0 font-mono tabular-nums text-muted-foreground w-20">
                 {h.election_date.slice(0, 10)}
               </span>
               <div className="min-w-0 flex-1">
-                <span className={changed ? "font-semibold text-[#ce463c]" : ""}>
+                <span className={changed ? "font-semibold text-score-high" : ""}>
                   {h.settlement_name ?? "—"}
                 </span>
                 {h.address && (
@@ -582,7 +582,7 @@ function AddressHistory({ history }: { history: ElectionHistory[] }) {
                   </span>
                 )}
                 {changed && i < desc.length - 1 && (
-                  <span className="ml-2 text-[10px] text-[#ce463c]">
+                  <span className="ml-2 text-2xs text-score-high">
                     различен адрес
                   </span>
                 )}
@@ -617,7 +617,7 @@ function StatTile({
           : undefined
       }
     >
-      <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+      <div className="text-2xs font-medium uppercase tracking-widest text-muted-foreground">
         {label}
       </div>
       <div className="mt-1">

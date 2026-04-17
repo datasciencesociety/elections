@@ -53,13 +53,13 @@ export function PeerCard({
         />
       </div>
       <div className="mt-2 rounded bg-muted/50 p-2">
-        <div className="text-[10px] font-medium text-muted-foreground">
+        <div className="text-2xs font-medium text-muted-foreground">
           Формула
         </div>
-        <div className="mt-0.5 text-[11px] font-mono">
+        <div className="mt-0.5 text-xs font-mono">
           peer_risk = (ekatte_zscore_norm + peer_vote_deviation_norm) / 2
         </div>
-        <div className="mt-0.5 text-[11px] font-mono text-foreground">
+        <div className="mt-0.5 text-xs font-mono text-foreground">
           = ({s.ekatte_turnout_zscore_norm.toFixed(2)} +{" "}
           {s.peer_vote_deviation_norm.toFixed(2)}) / 2 ={" "}
           <span className="font-semibold">{s.peer_risk.toFixed(2)}</span>

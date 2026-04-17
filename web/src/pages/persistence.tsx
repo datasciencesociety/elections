@@ -57,7 +57,7 @@ function FlagDots({ section, electionsCount }: { section: PersistentSection; ele
     {
       label: "Пр",
       count: section.protocol_flags,
-      color: "bg-red-500",
+      color: "bg-score-high/100",
       full: "Протоколни нарушения",
     },
   ];
@@ -67,7 +67,7 @@ function FlagDots({ section, electionsCount }: { section: PersistentSection; ele
         item.count > 0 ? (
           <span
             key={item.label}
-            className={`inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] font-medium text-white ${item.color}`}
+            className={`inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-2xs font-medium text-white ${item.color}`}
             title={`${item.full}: отбелязан в ${item.count} от ${electionsCount} избори`}
           >
             {item.label}:{item.count}
@@ -98,7 +98,7 @@ function SortHeader({
   const active = currentSort === column;
   return (
     <th
-      className={`cursor-pointer select-none whitespace-nowrap px-2 py-2 text-left text-[11px] font-medium text-muted-foreground hover:text-foreground ${className ?? ""}`}
+      className={`cursor-pointer select-none whitespace-nowrap px-2 py-2 text-left text-xs font-medium text-muted-foreground hover:text-foreground ${className ?? ""}`}
       onClick={() => onSort(column)}
       title={tooltip}
     >
@@ -219,7 +219,7 @@ export default function Persistence() {
   const sortLabel = sortLabelMap[sort] ?? sort;
 
   return (
-    <div className={`flex h-full flex-col overflow-hidden ${expandedSection ? "md:pr-[480px]" : ""}`}>
+    <div className={`flex h-full flex-col overflow-hidden ${expandedSection ? "md:pr-sidebar" : ""}`}>
       {/* Page header — intro + collapsible methodology */}
       <div className="shrink-0 border-b border-border bg-background px-3 py-2.5 md:px-4 md:py-3">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
@@ -231,11 +231,11 @@ export default function Persistence() {
               {electionsCount} избори от 2021 г. насам
             </span>
           )}
-          <span className="ml-auto text-[11px] tabular-nums text-muted-foreground">
+          <span className="ml-auto text-xs tabular-nums text-muted-foreground">
             {loading ? "..." : data ? <><b className="text-foreground">{data.total.toLocaleString("bg-BG")}</b> секции</> : null}
           </span>
         </div>
-        <p className="mt-1 max-w-3xl text-[12px] leading-relaxed text-muted-foreground">
+        <p className="mt-1 max-w-3xl text-muted-foreground">
           Секции, в които статистически сигнали се появяват повтарящо се
           в множество избори. Индексът комбинира средния риск с това колко
           често секцията показва отклонения. По-високата стойност значи
@@ -254,7 +254,7 @@ export default function Persistence() {
       />
 
       {/* Active filters summary */}
-      <div className="shrink-0 border-b border-border bg-secondary/30 px-3 py-1.5 text-[11px] text-muted-foreground md:px-4">
+      <div className="shrink-0 border-b border-border bg-secondary/30 px-3 py-1.5 text-xs text-muted-foreground md:px-4">
         <span className="font-medium text-foreground tabular-nums">
           {loading ? "..." : data ? data.total.toLocaleString("bg-BG") : "—"}
         </span>{" "}
@@ -270,7 +270,7 @@ export default function Persistence() {
 
       {/* Mobile sort bar */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border bg-background px-3 py-2 md:hidden">
-        <span className="text-[11px] text-muted-foreground">Сортирай:</span>
+        <span className="text-xs text-muted-foreground">Сортирай:</span>
         <Select
           value={sort}
           onValueChange={(v: string | null) => {
@@ -296,7 +296,7 @@ export default function Persistence() {
 
       {/* Mobile cards */}
       <div className="flex-1 overflow-auto md:hidden">
-        {error && <div className="p-4 text-sm text-red-600">{error}</div>}
+        {error && <div className="p-4 text-sm text-score-high">{error}</div>}
         {loading && !data && <div className="p-4 text-sm text-muted-foreground">Зареждане...</div>}
         {data && (
           <div className="divide-y divide-border">
@@ -318,16 +318,16 @@ export default function Persistence() {
                       href={`/section/${s.section_code}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-mono text-[11px] tabular-nums hover:underline"
+                      className="font-mono text-xs tabular-nums hover:underline"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {s.section_code}
                     </a>
-                    <span className="ml-1.5 text-[11px] text-muted-foreground">{s.settlement_name ?? "—"}</span>
+                    <span className="ml-1.5 text-xs text-muted-foreground">{s.settlement_name ?? "—"}</span>
                   </div>
                   <ScoreBadge value={s.persistence_score} size="lg" />
                 </div>
-                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                   <span className="text-muted-foreground">
                     Отбелязани <span className="font-mono font-semibold tabular-nums text-foreground">{s.elections_flagged}</span>
                     <span className="text-muted-foreground">/{s.elections_present}</span>
@@ -336,10 +336,10 @@ export default function Persistence() {
                   <span className="text-muted-foreground">Ср. риск <ScoreBadge value={s.avg_risk} /></span>
                   <span className="text-muted-foreground">Макс. <ScoreBadge value={s.max_risk} /></span>
                 </div>
-                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                   <span className="text-muted-foreground">Списък <span className="font-mono tabular-nums text-foreground">{s.avg_registered.toLocaleString("bg-BG")}</span></span>
                   <span className="text-muted-foreground">Гласували <span className="font-mono tabular-nums text-foreground">{s.avg_voted.toLocaleString("bg-BG")}</span></span>
-                  <span className="text-muted-foreground">Активност <span className={`font-mono font-semibold tabular-nums ${s.avg_turnout > 1 ? "text-red-600" : "text-foreground"}`}>{(s.avg_turnout * 100).toFixed(1)}%</span></span>
+                  <span className="text-muted-foreground">Активност <span className={`font-mono font-semibold tabular-nums ${s.avg_turnout > 1 ? "text-score-high" : "text-foreground"}`}>{(s.avg_turnout * 100).toFixed(1)}%</span></span>
                 </div>
                 <div className="mt-1.5">
                   <FlagDots section={s} electionsCount={s.elections_present} />
@@ -347,7 +347,7 @@ export default function Persistence() {
               </div>
             ))}
             {hasNextPage && (
-              <div ref={mobileSentinelRef} className="px-4 py-6 text-center text-[11px] text-muted-foreground">
+              <div ref={mobileSentinelRef} className="px-4 py-6 text-center text-xs text-muted-foreground">
                 {isFetchingNextPage ? "Зареждане..." : `Зареждам следващи секции (${sections.length} / ${total.toLocaleString("bg-BG")})`}
               </div>
             )}
@@ -358,11 +358,11 @@ export default function Persistence() {
 
       {/* Desktop table */}
       <div className="hidden flex-1 overflow-auto md:block">
-        {error && <div className="p-4 text-sm text-red-600">{error}</div>}
+        {error && <div className="p-4 text-sm text-score-high">{error}</div>}
         {loading && !data && <div className="p-4 text-sm text-muted-foreground">Зареждане...</div>}
 
         {data && (
-          <table className="w-full text-xs">
+          <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 border-b border-border bg-background">
               <tr>
                 <SortHeader
@@ -447,7 +447,7 @@ export default function Persistence() {
                   tooltip="Средна активност (гласували / списък). Стойност над 100% е физически невъзможна."
                 />
                 <th
-                  className="px-2 py-2 text-left text-[11px] font-medium text-muted-foreground"
+                  className="px-2 py-2 text-left text-xs font-medium text-muted-foreground"
                   title="Колко избори са отбелязани от всяка методология. B = Бенфорд, P = сравнение със съседни секции, A = АКФ, Пр = протоколни нарушения. Задръжте курсор върху всеки маркер."
                 >
                   Методологии
@@ -467,7 +467,7 @@ export default function Persistence() {
                   );
                 }}
                 >
-                  <td className="px-2 py-1.5 font-mono text-[11px] tabular-nums">
+                  <td className="px-2 py-1.5 font-mono text-xs tabular-nums">
                     <a
                       href={`/section/${s.section_code}`}
                       target="_blank"
@@ -488,7 +488,7 @@ export default function Persistence() {
                         {Array.from({ length: s.elections_present }, (_, i) => (
                           <div
                             key={i}
-                            className={`h-1.5 w-1.5 rounded-full ${i < s.elections_flagged ? SCORE_SOLID_CLASS[scoreLevel(s.avg_risk)] : "bg-gray-300"}`}
+                            className={`h-1.5 w-1.5 rounded-full ${i < s.elections_flagged ? SCORE_SOLID_CLASS[scoreLevel(s.avg_risk)] : "bg-border"}`}
                           />
                         ))}
                       </div>
@@ -506,7 +506,7 @@ export default function Persistence() {
                     {s.avg_voted.toLocaleString("bg-BG")}
                   </td>
                   <td className="px-2 py-1.5">
-                    <span className={`font-mono font-semibold tabular-nums ${s.avg_turnout > 1 ? "text-red-600" : ""}`}>
+                    <span className={`font-mono font-semibold tabular-nums ${s.avg_turnout > 1 ? "text-score-high" : ""}`}>
                       {(s.avg_turnout * 100).toFixed(1)}%
                     </span>
                   </td>
@@ -519,7 +519,7 @@ export default function Persistence() {
                 <tr ref={desktopSentinelRef}>
                   <td
                     colSpan={11}
-                    className="px-4 py-6 text-center text-[11px] text-muted-foreground"
+                    className="px-4 py-6 text-center text-xs text-muted-foreground"
                   >
                     {isFetchingNextPage
                       ? "Зареждане..."
@@ -533,7 +533,7 @@ export default function Persistence() {
                   <tr>
                     <td
                       colSpan={11}
-                      className="px-4 py-6 text-center text-[11px] text-muted-foreground"
+                      className="px-4 py-6 text-center text-xs text-muted-foreground"
                     >
                       {sections.length.toLocaleString("bg-BG")} /{" "}
                       {total.toLocaleString("bg-BG")} секции
@@ -579,11 +579,11 @@ function PersistenceFiltersBar(props: {
         onClick={() => setExpanded((v) => !v)}
         className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left md:hidden"
       >
-        <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <SlidersHorizontal size={13} />
           Филтри
           {activeFilterCount > 0 && (
-            <span className="rounded-full bg-[#ce463c] px-1.5 py-0.5 text-[10px] font-bold text-white">
+            <span className="rounded-full bg-brand px-1.5 py-0.5 text-2xs font-bold text-white">
               {activeFilterCount}
             </span>
           )}
@@ -603,7 +603,7 @@ function PersistenceFiltersBar(props: {
         <div
           title="Минимален брой избори, в които секцията трябва да присъства. По-висок праг изключва секции с малко данни и прави сигнала по-стабилен."
         >
-          <div className="mb-0.5 text-[11px] text-muted-foreground">Мин. избори</div>
+          <div className="mb-0.5 text-xs text-muted-foreground">Мин. избори</div>
           <Select
             value={String(minElections)}
             onValueChange={(v: string | null) =>
@@ -630,7 +630,7 @@ function PersistenceFiltersBar(props: {
           className="flex items-end pb-1"
           title="Изключва подвижни секции, болници, кораби и затвори, където условията на гласуване се различават от нормалните и статистическите методи не важат."
         >
-          <label className="flex cursor-pointer items-center gap-1 text-[11px] text-muted-foreground">
+          <label className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground">
             <input
               type="checkbox"
               checked={excludeSpecial}
@@ -647,7 +647,7 @@ function PersistenceFiltersBar(props: {
         </div>
 
         <div className="min-w-0 flex-1 sm:flex-none sm:w-64">
-          <div className="mb-0.5 text-[11px] text-muted-foreground">Секция / адрес</div>
+          <div className="mb-0.5 text-xs text-muted-foreground">Секция / адрес</div>
           <SectionSearchInput
             value={sectionSearch}
             onPick={(code) => setParam({ q: code || null, offset: null })}

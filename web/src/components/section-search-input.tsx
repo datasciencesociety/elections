@@ -151,7 +151,7 @@ export default function SectionSearchInput({
       {dropdownOpen && (
         <div
           role="listbox"
-          className="absolute left-0 right-0 top-[calc(100%+0.25rem)] z-50 max-h-[min(60vh,24rem)] min-w-[18rem] overflow-y-auto rounded-lg border border-border bg-card shadow-lg"
+          className="dropdown-panel"
         >
           {status === "loading" && (
             <div className="px-4 py-3 text-xs text-muted-foreground">
@@ -159,7 +159,7 @@ export default function SectionSearchInput({
             </div>
           )}
           {status === "error" && (
-            <div className="px-4 py-3 text-xs text-[#ce463c]">
+            <div className="px-4 py-3 text-xs text-score-high">
               Грешка при зареждане.
             </div>
           )}
@@ -255,7 +255,7 @@ function AddressHeader({
         )}
       </div>
       {group.address && (
-        <div className="line-clamp-2 text-[11px] leading-snug text-muted-foreground">
+        <div className="line-clamp-2 text-xs leading-snug text-muted-foreground">
           {group.address}
         </div>
       )}
@@ -285,13 +285,13 @@ function SectionRow({
         active ? "bg-secondary/70" : "hover:bg-secondary/40"
       }`}
     >
-      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+      <span className="text-2xs uppercase tracking-wide text-muted-foreground">
         Секция
       </span>
-      <span className="font-mono text-[11px] font-semibold tabular-nums text-foreground">
+      <span className="font-mono text-xs font-semibold tabular-nums text-foreground">
         {section.sectionCode}
       </span>
-      <span className="ml-auto text-[10px] text-[#ce463c]">избери →</span>
+      <span className="ml-auto text-2xs text-score-high">избери →</span>
     </button>
   );
 }

@@ -36,7 +36,7 @@ export function SectionProtocolSummary({
 
   if (compact) {
     return (
-      <div className="flex flex-wrap gap-x-3 gap-y-0 text-[10px]">
+      <div className="flex flex-wrap gap-x-3 gap-y-0 text-2xs">
         <Stat label="Зап." value={p.registered_voters} />
         <Stat label="Глас." value={p.actual_voters} />
         <Stat label="Акт." value={`${turnoutPct}%`} highlight={p.actual_voters > p.registered_voters} />
@@ -46,7 +46,7 @@ export function SectionProtocolSummary({
   }
 
   return (
-    <div className="space-y-1 text-[11px]">
+    <div className="space-y-1 text-xs">
       <Row label="Регистрирани" value={p.registered_voters?.toLocaleString()} />
       <Row label="Вписани допълнително" value={p.added_voters?.toLocaleString()} />
       <Row label="Гласували" value={p.actual_voters?.toLocaleString()} />
@@ -59,12 +59,12 @@ export function SectionProtocolSummary({
       <Row
         label="Валидни"
         value={p.valid_votes?.toLocaleString()}
-        valueClass="text-green-700"
+        valueClass="text-score-low"
       />
       <Row
         label="Невалидни"
         value={(p.invalid_votes + (p.null_votes ?? 0))?.toLocaleString()}
-        valueClass="text-red-600"
+        valueClass="text-score-high"
       />
       <Row
         label="Машинно гласуване"
@@ -91,7 +91,7 @@ function Row({
     <div className="flex justify-between">
       <span className="text-muted-foreground">{label}</span>
       <span
-        className={`font-mono tabular-nums ${bold ? "font-semibold" : "font-medium"} ${warn ? "text-red-600" : valueClass ?? ""}`}
+        className={`font-mono tabular-nums ${bold ? "font-semibold" : "font-medium"} ${warn ? "text-score-high" : valueClass ?? ""}`}
       >
         {value}
       </span>
@@ -112,7 +112,7 @@ function Stat({
     <span>
       <span className="text-muted-foreground">{label}</span>{" "}
       <span
-        className={`font-mono tabular-nums ${highlight ? "font-semibold text-red-600" : ""}`}
+        className={`font-mono tabular-nums ${highlight ? "font-semibold text-score-high" : ""}`}
       >
         {value}
       </span>

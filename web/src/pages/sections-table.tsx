@@ -83,7 +83,7 @@ function SortHeader({
   const active = currentSort === column;
   return (
     <th
-      className={`cursor-pointer select-none whitespace-nowrap px-2 py-2 text-left text-[11px] font-medium transition-colors ${
+      className={`cursor-pointer select-none whitespace-nowrap px-2 py-2 text-left text-xs font-medium transition-colors ${
         active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
       } ${className ?? ""}`}
       onClick={() => onSort(column)}
@@ -99,7 +99,7 @@ function SortHeader({
 
 function ViolationDetail({ electionId, sectionCode }: { electionId: string; sectionCode: string }) {
   const { data, isLoading } = useSectionViolations(electionId, sectionCode);
-  if (isLoading) return <span className="text-[10px] text-muted-foreground">...</span>;
+  if (isLoading) return <span className="text-2xs text-muted-foreground">...</span>;
   const violations = data?.violations ?? [];
   if (violations.length === 0) return null;
 
@@ -108,8 +108,8 @@ function ViolationDetail({ electionId, sectionCode }: { electionId: string; sect
       {violations.map((v, i) => (
         <div
           key={i}
-          className={`rounded px-2 py-1 text-[10px] ${
-            v.severity === "error" ? "bg-red-50 text-red-800" : "bg-yellow-50 text-yellow-800"
+          className={`rounded px-2 py-1 text-2xs ${
+            v.severity === "error" ? "bg-score-high/10 text-score-high" : "bg-score-medium/10 text-score-medium"
           }`}
         >
           <span className="font-mono font-semibold">{v.rule_id}</span>{" "}
@@ -262,7 +262,7 @@ export default function SectionsTable() {
   const sortLabel = sortLabelMap[sort] ?? sort;
 
   return (
-    <div className={`flex h-full flex-col overflow-hidden ${selectedSection ? "md:pr-[480px]" : ""}`}>
+    <div className={`flex h-full flex-col overflow-hidden ${selectedSection ? "md:pr-sidebar" : ""}`}>
       {/* Page header — intro + collapsible methodology */}
       <div className="shrink-0 border-b border-border bg-background px-3 py-2.5 md:px-4 md:py-3">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
@@ -274,11 +274,11 @@ export default function SectionsTable() {
               {election.name}
             </span>
           )}
-          <span className="ml-auto text-[11px] tabular-nums text-muted-foreground">
+          <span className="ml-auto text-xs tabular-nums text-muted-foreground">
             {loading ? "..." : <><b className="text-foreground">{total.toLocaleString("bg-BG")}</b> секции</>}
           </span>
         </div>
-        <p className="mt-1 max-w-3xl text-[12px] leading-relaxed text-muted-foreground">
+        <p className="mt-1 max-w-3xl text-muted-foreground">
           Всяка секция в тези избори. Кликнете върху заглавие на колона за
           сортиране, върху ред — за детайли.
         </p>
@@ -298,7 +298,7 @@ export default function SectionsTable() {
       />
 
       {/* Active filters summary — makes shared links self-describing */}
-      <div className="shrink-0 border-b border-border bg-secondary/30 px-3 py-1.5 text-[11px] text-muted-foreground md:px-4">
+      <div className="shrink-0 border-b border-border bg-secondary/30 px-3 py-1.5 text-xs text-muted-foreground md:px-4">
         <span className="font-medium text-foreground tabular-nums">
           {loading ? "..." : total.toLocaleString("bg-BG")}
         </span>{" "}
@@ -314,7 +314,7 @@ export default function SectionsTable() {
 
       {/* Mobile sort bar */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border bg-background px-3 py-2 md:hidden">
-        <span className="text-[11px] text-muted-foreground">Сортирай:</span>
+        <span className="text-xs text-muted-foreground">Сортирай:</span>
         <Select
           value={sort}
           onValueChange={(v: string | null) => {
@@ -355,35 +355,35 @@ export default function SectionsTable() {
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <span className="font-mono text-[11px] tabular-nums">{s.section_code}</span>
-                  <span className="ml-1.5 text-[11px] text-muted-foreground truncate">{s.settlement_name}</span>
+                  <span className="font-mono text-xs tabular-nums">{s.section_code}</span>
+                  <span className="ml-1.5 text-xs text-muted-foreground truncate">{s.settlement_name}</span>
                   {SECTION_TYPE_LABELS[s.section_type] && (
-                    <span className="ml-1 rounded bg-muted px-1 py-0.5 text-[10px] font-medium">{SECTION_TYPE_LABELS[s.section_type]}</span>
+                    <span className="ml-1 rounded bg-muted px-1 py-0.5 text-2xs font-medium">{SECTION_TYPE_LABELS[s.section_type]}</span>
                   )}
                 </div>
                 <ScoreBadge value={s.risk_score} size="lg" />
               </div>
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                 <span className="text-muted-foreground">Списък <span className="font-mono tabular-nums text-foreground">{(s.registered_voters ?? 0).toLocaleString()}</span></span>
                 <span className="text-muted-foreground">Гласували <span className="font-mono tabular-nums text-foreground">{(s.actual_voters ?? 0).toLocaleString()}</span></span>
-                <span className="text-muted-foreground">Активност <span className={`font-mono font-semibold tabular-nums ${s.turnout_rate > 1 ? "text-red-600" : "text-foreground"}`}>{pct2(s.turnout_rate * 100)}%</span></span>
+                <span className="text-muted-foreground">Активност <span className={`font-mono font-semibold tabular-nums ${s.turnout_rate > 1 ? "text-score-high" : "text-foreground"}`}>{pct2(s.turnout_rate * 100)}%</span></span>
               </div>
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                <span className="text-[10px] text-muted-foreground">B</span><ScoreBadge value={s.benford_risk} />
-                <span className="text-[10px] text-muted-foreground">P</span><ScoreBadge value={s.peer_risk} />
-                <span className="text-[10px] text-muted-foreground">A</span><ScoreBadge value={s.acf_risk} />
+                <span className="text-2xs text-muted-foreground">B</span><ScoreBadge value={s.benford_risk} />
+                <span className="text-2xs text-muted-foreground">P</span><ScoreBadge value={s.peer_risk} />
+                <span className="text-2xs text-muted-foreground">A</span><ScoreBadge value={s.acf_risk} />
                 {s.acf_multicomponent >= 1 && (
-                  <span className="rounded bg-orange-100 px-1 py-0.5 text-[10px] text-orange-700">×3</span>
+                  <span className="rounded bg-score-medium/10 px-1 py-0.5 text-2xs text-score-medium">×3</span>
                 )}
                 {s.protocol_violation_count > 0 && (
-                  <span className={`rounded px-1 py-0.5 text-[10px] font-mono font-semibold ${
-                    s.protocol_violation_count >= 3 ? "bg-red-100 text-red-800" : "bg-orange-100 text-orange-800"
+                  <span className={`rounded px-1 py-0.5 text-2xs font-mono font-semibold ${
+                    s.protocol_violation_count >= 3 ? "bg-score-high/10 text-score-high" : "bg-score-medium/10 text-score-medium"
                   }`}>
                     Пр:{s.protocol_violation_count}
                   </span>
                 )}
-                {s.arithmetic_error > 0 && <span className="rounded bg-red-100 px-1 py-0.5 text-[10px] text-red-700">АГ</span>}
-                {s.vote_sum_mismatch > 0 && <span className="rounded bg-red-100 px-1 py-0.5 text-[10px] text-red-700">НС</span>}
+                {s.arithmetic_error > 0 && <span className="rounded bg-score-high/10 px-1 py-0.5 text-2xs text-score-high">АГ</span>}
+                {s.vote_sum_mismatch > 0 && <span className="rounded bg-score-high/10 px-1 py-0.5 text-2xs text-score-high">НС</span>}
               </div>
             </div>
           ))}
@@ -393,7 +393,7 @@ export default function SectionsTable() {
             </div>
           )}
           {hasNextPage && (
-            <div ref={mobileSentinelRef} className="px-4 py-6 text-center text-[11px] text-muted-foreground">
+            <div ref={mobileSentinelRef} className="px-4 py-6 text-center text-xs text-muted-foreground">
               {isFetchingNextPage ? "Зареждане..." : `Зареждам следващи секции (${sections.length} / ${total.toLocaleString("bg-BG")})`}
             </div>
           )}
@@ -403,7 +403,7 @@ export default function SectionsTable() {
 
       {/* Desktop table */}
       <div className="hidden flex-1 overflow-auto md:block">
-        <table className="w-full text-xs">
+        <table className="w-full text-sm">
           <thead className="sticky top-0 z-10 border-b border-border bg-background">
             <tr>
               <SortHeader label="Секция" column="section_code" currentSort={sort} currentOrder={order} onSort={setSort} tooltip="Номер на избирателна секция. Кликнете за сортиране." />
@@ -432,7 +432,7 @@ export default function SectionsTable() {
                 onSort={setSort}
                 tooltip="Активност (гласували / списък). Стойност над 100% е физически невъзможна и означава грешка в протокола."
               />
-              <th className="hidden px-2 py-2 text-left text-[11px] font-medium text-muted-foreground lg:table-cell" title="Как се е променяла активността на тази секция през всички избори. Линията показва % гласували, точката е текущият избор.">
+              <th className="hidden px-2 py-2 text-left text-xs font-medium text-muted-foreground lg:table-cell" title="Как се е променяла активността на тази секция през всички избори. Линията показва % гласували, точката е текущият избор.">
                 Активност ⟶
               </th>
               <SortHeader
@@ -488,11 +488,11 @@ export default function SectionsTable() {
                   }`}
                 >
                   <td className="whitespace-nowrap px-2 py-1.5 font-mono tabular-nums">{s.section_code}</td>
-                  <td className="max-w-[200px] px-2 py-1.5" title={s.settlement_name}>
+                  <td className="max-w-cell-name px-2 py-1.5" title={s.settlement_name}>
                     <span className="flex items-center gap-1">
                       <span className="truncate">{s.settlement_name}</span>
                       {SECTION_TYPE_LABELS[s.section_type] && (
-                        <span className="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] font-medium">{SECTION_TYPE_LABELS[s.section_type]}</span>
+                        <span className="shrink-0 rounded bg-muted px-1 py-0.5 text-2xs font-medium">{SECTION_TYPE_LABELS[s.section_type]}</span>
                       )}
                     </span>
                   </td>
@@ -503,7 +503,7 @@ export default function SectionsTable() {
                     {(s.actual_voters ?? 0).toLocaleString()}
                   </td>
                   <td className="whitespace-nowrap px-2 py-1.5">
-                    <span className={`font-mono font-semibold tabular-nums ${s.turnout_rate > 1 ? "text-red-600" : ""}`}>
+                    <span className={`font-mono font-semibold tabular-nums ${s.turnout_rate > 1 ? "text-score-high" : ""}`}>
                       {pct2(s.turnout_rate * 100)}%
                     </span>
                   </td>
@@ -520,7 +520,7 @@ export default function SectionsTable() {
                       <ScoreBadge value={s.acf_risk} />
                       {s.acf_multicomponent >= 1 && (
                         <span
-                          className="rounded bg-orange-100 px-1 py-0.5 text-[10px] text-orange-700"
+                          className="rounded bg-score-medium/10 px-1 py-0.5 text-2xs text-score-medium"
                           title="АКФ в три режима: секцията показва необичайни пространствени модели едновременно по активност, победител и невалидни."
                         >
                           ×3
@@ -541,18 +541,18 @@ export default function SectionsTable() {
                               return next;
                             }, { replace: true });
                           }}
-                          className={`rounded px-1.5 py-0.5 text-[11px] font-mono font-semibold tabular-nums ${
-                            s.protocol_violation_count >= 3 ? "bg-red-100 text-red-800" : "bg-orange-100 text-orange-800"
+                          className={`rounded px-1.5 py-0.5 text-xs font-mono font-semibold tabular-nums ${
+                            s.protocol_violation_count >= 3 ? "bg-score-high/10 text-score-high" : "bg-score-medium/10 text-score-medium"
                           }`}
                         >
                           {s.protocol_violation_count} {expandedCode === s.section_code ? "▲" : "▼"}
                         </button>
                       ) : (
-                        <span className="text-[11px] text-muted-foreground/40">0</span>
+                        <span className="text-xs text-muted-foreground/40">0</span>
                       )}
                       {s.arithmetic_error ? (
                         <span
-                          className="rounded bg-red-100 px-1 py-0.5 text-[10px] text-red-700"
+                          className="rounded bg-score-high/10 px-1 py-0.5 text-2xs text-score-high"
                           title="Аритметична грешка: общо гласували ≠ валидни + невалидни. Протоколът не се сумира правилно."
                         >
                           АГ
@@ -560,7 +560,7 @@ export default function SectionsTable() {
                       ) : null}
                       {s.vote_sum_mismatch ? (
                         <span
-                          className="rounded bg-red-100 px-1 py-0.5 text-[10px] text-red-700"
+                          className="rounded bg-score-high/10 px-1 py-0.5 text-2xs text-score-high"
                           title="Несъвпадение на сумите: сборът на гласовете по партии не съвпада с общите валидни гласове."
                         >
                           НС
@@ -589,7 +589,7 @@ export default function SectionsTable() {
               <tr ref={desktopSentinelRef}>
                 <td
                   colSpan={12}
-                  className="px-4 py-6 text-center text-[11px] text-muted-foreground"
+                  className="px-4 py-6 text-center text-xs text-muted-foreground"
                 >
                   {isFetchingNextPage
                     ? "Зареждане..."
@@ -601,7 +601,7 @@ export default function SectionsTable() {
               <tr>
                 <td
                   colSpan={12}
-                  className="px-4 py-6 text-center text-[11px] text-muted-foreground"
+                  className="px-4 py-6 text-center text-xs text-muted-foreground"
                 >
                   {sections.length.toLocaleString("bg-BG")} /{" "}
                   {total.toLocaleString("bg-BG")} секции
@@ -667,11 +667,11 @@ function FiltersBar(props: {
         onClick={() => setExpanded((v) => !v)}
         className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left md:hidden"
       >
-        <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <SlidersHorizontal size={13} />
           Филтри
           {activeFilterCount > 0 && (
-            <span className="rounded-full bg-[#ce463c] px-1.5 py-0.5 text-[10px] font-bold text-white">
+            <span className="rounded-full bg-brand px-1.5 py-0.5 text-2xs font-bold text-white">
               {activeFilterCount}
             </span>
           )}
@@ -690,7 +690,7 @@ function FiltersBar(props: {
       >
         {/* District */}
         <div className="min-w-0 sm:w-44">
-          <div className="mb-0.5 text-[11px] text-muted-foreground">Област</div>
+          <div className="mb-0.5 text-xs text-muted-foreground">Област</div>
           <Select
             value={district || "all"}
             onValueChange={(v: string | null) => {
@@ -724,7 +724,7 @@ function FiltersBar(props: {
 
         {/* Municipality */}
         <div className="min-w-0 sm:w-44">
-          <div className="mb-0.5 text-[11px] text-muted-foreground">Община</div>
+          <div className="mb-0.5 text-xs text-muted-foreground">Община</div>
           <Select
             value={municipality || "all"}
             onValueChange={(v: string | null) => {
@@ -758,7 +758,7 @@ function FiltersBar(props: {
 
         {/* Section search — fuzzy by address OR exact number */}
         <div className="min-w-0 flex-1 sm:flex-none sm:w-64">
-          <div className="mb-0.5 text-[11px] text-muted-foreground">Секция / адрес</div>
+          <div className="mb-0.5 text-xs text-muted-foreground">Секция / адрес</div>
           <SectionSearchInput
             value={sectionFilter}
             onPick={(code) => {

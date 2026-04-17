@@ -95,13 +95,13 @@ export function SectionLocation({
           {settlementName ?? "—"}
         </span>
         {typeLabel && (
-          <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wide text-muted-foreground">
             {typeLabel}
           </span>
         )}
       </div>
       {address && (
-        <div className="mt-0.5 flex items-start gap-1 text-[12px] leading-snug text-muted-foreground">
+        <div className="mt-0.5 flex items-start gap-1 text-sm leading-snug text-muted-foreground">
           <MapPin size={11} className="mt-0.5 shrink-0" />
           <span className="min-w-0">
             {address}
@@ -112,7 +112,7 @@ export function SectionLocation({
                   href={googleMapsHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#ce463c] hover:underline"
+                  className="text-score-high hover:underline"
                   title="Виж в Google Maps"
                 >
                   ↗
@@ -127,7 +127,7 @@ export function SectionLocation({
 
   // The confirm-location action row.
   const confirmRow = hasCoords ? (
-    <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
       {confirmState === "confirmed" ? (
         <span className="text-muted-foreground">
           ✓ Благодарим за потвърждението.
@@ -147,13 +147,13 @@ export function SectionLocation({
             </button>
             <button
               onClick={() => setShowCorrection(true)}
-              className="rounded border border-[#ce463c] px-2.5 py-0.5 font-medium text-[#ce463c] transition-colors hover:bg-[#ce463c] hover:text-white"
+              className="rounded border border-brand px-2.5 py-0.5 font-medium text-score-high transition-colors hover:bg-brand hover:text-white"
             >
               Не
             </button>
           </div>
           {confirmState === "error" && (
-            <span className="w-full text-[10px] text-[#ce463c]">
+            <span className="w-full text-2xs text-score-high">
               Грешка при изпращане. Опитайте отново.
             </span>
           )}
@@ -163,7 +163,7 @@ export function SectionLocation({
   ) : (
     <button
       onClick={() => setShowCorrection(true)}
-      className="w-full rounded-md border border-[#ce463c] px-3 py-1.5 text-[11px] font-medium text-[#ce463c] transition-colors hover:bg-[#ce463c] hover:text-white"
+      className="w-full rounded-md border border-brand px-3 py-1.5 text-xs font-medium text-score-high transition-colors hover:bg-brand hover:text-white"
     >
       Посочете секцията на картата →
     </button>
@@ -172,7 +172,7 @@ export function SectionLocation({
   const mapBlockMobile = hasCoords ? (
     <SectionMap lat={lat} lng={lng} showAttribution={false} />
   ) : (
-    <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 text-[11px] text-muted-foreground">
+    <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 text-xs text-muted-foreground">
       Няма координати
     </div>
   );
@@ -181,7 +181,7 @@ export function SectionLocation({
   // dominate the sidebar. Attribution hidden (main map on the page shows it
   // already).
   const geocodeWarning = hasCoords ? (
-    <p className="text-[10px] leading-snug text-muted-foreground/70">
+    <p className="text-2xs leading-snug text-muted-foreground/70">
       Местоположението е определено автоматично по адрес и може да е неточно.
     </p>
   ) : null;
@@ -194,7 +194,7 @@ export function SectionLocation({
       className="h-28 rounded-lg border border-border"
     />
   ) : (
-    <div className="flex h-16 items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 text-[11px] text-muted-foreground">
+    <div className="flex h-16 items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 text-xs text-muted-foreground">
       Няма координати
     </div>
   );

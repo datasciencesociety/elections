@@ -702,13 +702,13 @@ function PartyLegend({
           {canClear && (
             <button
               onClick={onClear}
-              className="shrink-0 text-[10px] text-muted-foreground hover:text-foreground"
+              className="shrink-0 text-2xs text-muted-foreground hover:text-foreground"
             >
               ✕
             </button>
           )}
         </div>
-        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] tabular-nums text-muted-foreground">
+        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-2xs tabular-nums text-muted-foreground">
           <span>{stats.registered.toLocaleString("bg-BG")} рег.</span>
           <span>{stats.actual.toLocaleString("bg-BG")} гл.</span>
           <span className="font-medium text-foreground">{stats.turnoutPct.toFixed(2)}%</span>
@@ -738,23 +738,23 @@ function PartyLegend({
                 className={`inline-block h-2.5 w-2.5 shrink-0 rounded-sm ${isTapped ? "ring-1 ring-foreground ring-offset-1" : ""}`}
                 style={{ background: p.color }}
               />
-              <span className="min-w-0 flex-1 truncate text-[11px]">
+              <span className="min-w-0 flex-1 truncate text-xs">
                 {p.name}
               </span>
               <span
-                className="shrink-0 text-[10px] tabular-nums text-muted-foreground"
+                className="shrink-0 text-2xs tabular-nums text-muted-foreground"
                 title="Брой гласове за тази опция"
               >
                 {p.totalVotes.toLocaleString("bg-BG")}
               </span>
               <span
-                className="w-11 shrink-0 text-right text-[10px] tabular-nums text-muted-foreground/60"
+                className="w-11 shrink-0 text-right text-2xs tabular-nums text-muted-foreground/60"
                 title="Дял от всички избиратели в списъка (включва негласували). Показва колко от общо избирателите са гласували за тази опция."
               >
                 {p.pctRegistered.toFixed(2)}%
               </span>
               <span
-                className="w-12 shrink-0 text-right text-[10px] font-medium tabular-nums text-foreground"
+                className="w-12 shrink-0 text-right text-2xs font-medium tabular-nums text-foreground"
                 title="Дял от гласовете за партии по правилата на ЦИК: изключва негласувалите и 'не подкрепям никого'. Това е процентът, по който се определя 4% праг за парламента."
               >
                 {p.pctCik !== null ? `${p.pctCik.toFixed(2)}%` : "—"}
@@ -1156,7 +1156,7 @@ export default function DistrictPieMap() {
           )}
           {error && (
             <div className="rounded-md border bg-background/95 px-3 py-2 shadow-md backdrop-blur-sm">
-              <span className="text-xs text-red-600">{error}</span>
+              <span className="text-xs text-score-high">{error}</span>
             </div>
           )}
           {tab !== "abroad" && (
