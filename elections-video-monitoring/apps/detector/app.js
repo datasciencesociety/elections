@@ -10,7 +10,7 @@ const statusText     = document.getElementById('status-text');
 const statusSub      = document.getElementById('status-sub');
 const video          = document.getElementById('video');
 const canvas         = document.getElementById('canvas');
-const ctx            = canvas.getContext('2d');
+const ctx            = canvas.getContext('2d', { willReadFrequently: true });
 const mLastCheck     = document.getElementById('m-last-check');
 const mLuma          = document.getElementById('m-luma');
 const mDiff          = document.getElementById('m-diff');
@@ -42,6 +42,7 @@ const DEFAULTS = {
 // ── State ──────────────────────────────────────────────────────────────────
 let hls             = null;
 let checkTimer      = null;
+let lastCheckTime   = 0;
 let lastFrameData   = null;
 let lastChangeTime  = null;   // last time motion was detected
 let coverStartTime  = null;   // when cover condition first met
@@ -198,7 +199,11 @@ function checkFrame() {
   } else {
     lastChangeTime = now;
   }
-  lastFrameData = new Uint8ClampedArray(data);
+  if (!lastFrameData || lastFrameData.length !== data.length) {
+    lastFrameData = new Uint8ClampedArray(data);
+  } else {
+    lastFrameData.set(data);
+  }
 
   const frozenMs  = lastChangeTime ? now - lastChangeTime : 0;
   const frozenSec = frozenMs / 1000;
@@ -326,9 +331,21 @@ function loadStream(url) {
 function onVideoReady() {
   addLog('Stream loaded — monitoring started', 'ok');
   setStatus('ok', '✅', 'Stream OK', 'Monitoring active');
-  const s = readSettings();
-  checkTimer = setInterval(checkFrame, s.interval * 1000);
+  lastCheckTime = 0;
+  scheduleCheck();
   scheduleFrameCallback();
+}
+
+function scheduleCheck() {
+  checkTimer = requestAnimationFrame(ts => {
+    if (!monitoring) return;
+    const s = readSettings();
+    if (ts - lastCheckTime >= s.interval * 1000) {
+      lastCheckTime = ts;
+      checkFrame();
+    }
+    scheduleCheck();
+  });
 }
 
 function onVideoError() {
@@ -361,7 +378,7 @@ function handleStreamError(msg) {
 
 function stopMonitoring(resetStatus = true) {
   monitoring = false;
-  clearInterval(checkTimer);
+  cancelAnimationFrame(checkTimer);
   checkTimer = null;
   if (hls) { hls.destroy(); hls = null; }
   video.src         = '';
@@ -397,6 +414,10 @@ video.addEventListener('ended', () => {
 btnStart.addEventListener('click', startMonitoring);
 btnStop.addEventListener('click', () => { stopMonitoring(); addLog('Monitoring stopped by user', 'info'); });
 
+document.getElementById('btn-open-url').addEventListener('click', () => {
+  const url = elUrl.value.trim();
+  if (url) window.open(url, '_blank', 'noopener,noreferrer');
+});
 
 elUrl.addEventListener('keydown', e => { if (e.key === 'Enter') startMonitoring(); });
 

@@ -35,6 +35,17 @@ header {
 .header-title { flex: 1; min-width: 0; }
 header h1 { font-size: 1.5rem; font-weight: 700; }
 header .subtitle { color: var(--text-muted); font-size: .875rem; margin-top: .25rem; }
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-shrink: 0;
+}
+.header-actions {
+  display: flex;
+  gap: .5rem;
+  flex-shrink: 0;
+}
 
 main {
   flex: 1;
@@ -62,12 +73,13 @@ footer {
   padding: 1rem;
 }
 
-/* Input */
-.input-row {
+/* URL bar above video */
+.preview-url-row {
   display: flex;
   gap: .5rem;
-  flex-wrap: wrap;
+  margin-bottom: .75rem;
 }
+
 #stream-url {
   flex: 1;
   min-width: 220px;
@@ -78,6 +90,7 @@ footer {
   color: var(--text);
   font-size: .9rem;
   outline: none;
+  width: 100%;
 }
 #stream-url:focus { border-color: var(--blue); }
 
@@ -127,14 +140,22 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 /* Preview / Canvas */
 .preview-section {
   display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: .5rem;
+}
+.preview-url-row { display: flex; gap: .4rem; align-items: center; }
+.btn-open-url {
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: .5rem .65rem;
+  font-size: 1rem;
+  flex-shrink: 0;
+  cursor: pointer;
+  line-height: 1;
 }
 #video {
-  flex: 1;
-  min-width: 240px;
-  max-width: 480px;
   border-radius: 6px;
   background: #000;
   aspect-ratio: 16/9;
@@ -164,6 +185,8 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .metric.breach-dark   { border-color: #1e3a5f; background: #080d1a; }
 
 /* Config */
+#config-panel { order: 1; }
+
 .config-panel summary {
   cursor: pointer;
   font-weight: 600;
@@ -232,24 +255,30 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 
 @media (max-width: 500px) {
   header { padding: .75rem; flex-direction: column; align-items: flex-start; gap: .5rem; }
-  header h1 { font-size: 1.1rem; }
+  .header-title { display: none; }
   header .subtitle { display: none; }
-  #status-panel { width: 100%; white-space: normal; padding: .4rem .6rem; }
+  .header-right { width: 100%; flex-direction: row; align-items: center; gap: .4rem; overflow: hidden; }
+  .header-actions { display: flex; gap: .4rem; flex-shrink: 0; }
+  .header-actions .btn-primary,
+  .header-actions .btn-danger { padding: .45rem .6rem; font-size: .8rem; }
+  #status-panel { flex: 1; min-width: 0; width: auto; white-space: nowrap; overflow: hidden; padding: .4rem .6rem; }
   .status-text { font-size: .8rem; }
   .status-sub { font-size: .7rem; }
 
   main { padding: .75rem .5rem; gap: .75rem; }
 
-  .input-row { flex-direction: column; }
   #stream-url { min-width: 0; font-size: .8rem; padding: .6rem; }
-  .btn-primary, .btn-danger { width: 100%; padding: .6rem; }
 
-  .metrics-row { grid-template-columns: repeat(3, 1fr); gap: .3rem; }
-  .metric { padding: .4rem .5rem; border-radius: 6px; }
+  .metrics-row { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: .3rem; scrollbar-width: none; -ms-overflow-style: none; }
+  .metrics-row::-webkit-scrollbar { display: none; }
+  .metric { flex: 0 0 auto; min-width: 72px; padding: .4rem .5rem; border-radius: 6px; }
   .metric-label { font-size: .55rem; }
   .metric-value { font-size: .8rem; }
 
-  .preview-section { padding: .5rem; }
+  .preview-section  { padding: .5rem; order: 1; }
+  .metrics-row      { order: 2; }
+  #log-section      { order: 3; }
+  #config-panel     { order: 4; }
   #video { min-width: 0; max-width: 100%; width: 100%; }
 
   .config-grid { grid-template-columns: 1fr; }

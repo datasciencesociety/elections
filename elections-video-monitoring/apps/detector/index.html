@@ -12,26 +12,23 @@
       <h1>Live Stream Freeze Detector</h1>
       <p class="subtitle">Monitor any HLS or video stream for freeze, no-signal, or camera cover events</p>
     </div>
-    <section id="status-panel" class="status-idle">
-      <div class="status-icon" id="status-icon">⏸</div>
-      <div class="status-body">
-        <div class="status-text" id="status-text">Idle — enter a URL to begin</div>
-        <div class="status-sub" id="status-sub"></div>
+    <div class="header-right">
+      <section id="status-panel" class="status-idle">
+        <div class="status-icon" id="status-icon">⏸</div>
+        <div class="status-body">
+          <div class="status-text" id="status-text">Idle — enter a URL to begin</div>
+          <div class="status-sub" id="status-sub"></div>
+        </div>
+      </section>
+      <div class="header-actions">
+        <button id="btn-start" class="btn-primary" title="Start Monitoring">▶</button>
+        <button id="btn-stop" class="btn-danger" title="Stop" disabled>⏹</button>
       </div>
-    </section>
+    </div>
   </header>
 
   <main>
-    <!-- Input -->
-    <section class="card" id="input-section">
-      <div class="input-row">
-        <input type="text" id="stream-url" placeholder="Enter HLS (.m3u8) or video stream URL…" autocomplete="off" spellcheck="false">
-        <button id="btn-start" class="btn-primary">Start Monitoring</button>
-        <button id="btn-stop" class="btn-danger" disabled>Stop</button>
-      </div>
-    </section>
-
-    <!-- Metrics Row -->
+<!-- Metrics Row -->
     <section class="metrics-row" id="metrics-row">
       <div class="metric">
         <span class="metric-label">Luminance</span>
@@ -61,6 +58,10 @@
 
     <!-- Stream Preview + Canvas (hidden) -->
     <section class="card preview-section">
+      <div class="preview-url-row">
+        <input type="text" id="stream-url" placeholder="Enter HLS (.m3u8) or video stream URL…" autocomplete="off" spellcheck="false">
+        <button id="btn-open-url" class="btn-open-url" title="Open in new tab">↗</button>
+      </div>
       <video id="video" crossorigin="anonymous" muted autoplay playsinline></video>
       <canvas id="canvas" width="320" height="180"></canvas>
     </section>

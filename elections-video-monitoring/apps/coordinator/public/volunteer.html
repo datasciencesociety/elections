@@ -53,6 +53,7 @@ body {
   background: var(--bg);
   color: var(--text);
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -97,82 +98,94 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
   padding: 12px;
 }
 
-/* ── Collapsible section headers ──────────────────────────────────────────── */
-.section-toggle {
-  display: none;            /* hidden on desktop */
-  width: 100%;
-  padding: 10px 16px;
-  background: var(--surface);
-  border: none;
-  border-bottom: 1px solid var(--border);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  text-align: left;
-}
-.section-toggle::before {
-  content: '▼ ';
-  font-size: 10px;
-  transition: transform 0.2s;
-  display: inline-block;
-}
-.section-toggle.collapsed::before {
-  content: '▶ ';
-}
-.section-toggle .toggle-badge {
-  font-weight: 400;
-  color: var(--text-muted);
-  font-size: 12px;
-  margin-left: 6px;
-}
+/* ── Sheet header (mobile-only bottom-sheet inspect) ──────────────────────── */
+#sheet-header { display: none; }
 
 /* ── Responsive breakpoints ───────────────────────────────────────────────── */
 @media (max-width: 700px) {
-  body { height: auto; overflow: auto; }
-  #main-layout { flex-direction: column; overflow: visible; min-height: unset; }
-
-  header { padding: 8px 12px; flex-direction: column; align-items: flex-start; gap: 4px; }
-  header h1 { font-size: 14px; }
+  header { padding: 8px 12px; gap: 10px; }
+  header h1 { font-size: 13px; }
   #status-bar { font-size: 11px; gap: 10px; }
 
-  .section-toggle { display: block; }
+  #main-layout { flex-direction: column; }
 
   #stream-panel {
-    flex: none;
+    flex: 1;
     width: 100%;
-    overflow: visible;
     border-right: none;
-    border-bottom: 1px solid var(--border);
   }
-  #stream-panel.collapsed #stream-grid { display: none; }
 
   #stream-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
     padding: 8px;
+    padding-bottom: 24px;
   }
 
-  .stream-card { padding: 6px 8px; min-height: 44px; }
-  .card-label { font-size: 10px; }
-  .card-metrics { font-size: 10px; word-break: break-all; }
+  .stream-card { min-width: 0; }
+
+  .stream-card { padding: 6px; min-height: 44px; gap: 3px; }
+  .card-label { font-size: 11px; }
+  .card-status { font-size: 11px; }
+  .card-metrics {
+    font-size: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .status-dot { width: 10px; height: 10px; }
 
+  /* Inspect panel becomes a bottom-sheet overlay */
   #inspect-panel {
-    flex: none;
-    width: 100%;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    height: 60vh;
+    height: 60dvh;
+    transform: translateY(100%);
+    transition: transform 0.25s ease-out;
+    z-index: 50;
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
   }
-  #inspect-panel.collapsed #inspect-placeholder,
-  #inspect-panel.collapsed #inspect-frame { display: none !important; }
-  #inspect-frame { height: 80vh; min-height: 500px; }
+  #inspect-panel.sheet-open { transform: translateY(0); }
+  #inspect-placeholder { display: none; }
+
+  #sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 8px;
+  }
+  #sheet-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+  #sheet-close {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 8px;
+    min-width: 44px;
+    min-height: 36px;
+    flex-shrink: 0;
+  }
 
   #overlay h2 { font-size: 18px; }
   #overlay p { font-size: 13px; padding: 0 16px; }
-  #overlay button { padding: 10px 24px; font-size: 15px; }
-}
-
-@media (max-width: 400px) {
-  #stream-grid { grid-template-columns: 1fr; }
+  #overlay button { padding: 12px 28px; font-size: 15px; }
 }
 
 /* ── Inspect pane ─────────────────────────────────────────────────────────── */
@@ -198,6 +211,30 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
   border: none;
   width: 100%;
   display: none;
+}
+
+#inspect-loading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.iframe-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--border);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* ── Stream cards ─────────────────────────────────────────────────────────── */
@@ -311,14 +348,20 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
 </header>
 
 <div id="main-layout">
-  <button class="section-toggle" id="toggle-streams">All Streams<span class="toggle-badge" id="toggle-streams-badge"></span></button>
   <div id="stream-panel">
     <div id="stream-grid"><p id="loading-msg">Connecting to coordinator…</p></div>
   </div>
 
-  <button class="section-toggle" id="toggle-inspect">Current Stream<span class="toggle-badge" id="toggle-inspect-badge">none selected</span></button>
   <div id="inspect-panel">
+    <div id="sheet-header">
+      <div id="sheet-label"></div>
+      <button id="sheet-close" aria-label="Close">×</button>
+    </div>
     <div id="inspect-placeholder">← select a stream to inspect</div>
+    <div id="inspect-loading" style="display:none">
+      <div class="iframe-spinner"></div>
+      <div id="inspect-loading-label"></div>
+    </div>
     <iframe id="inspect-frame" allow="autoplay"></iframe>
   </div>
 </div>
@@ -396,8 +439,6 @@ async function init() {
 
   document.getElementById('stream-count').textContent =
     `Monitoring ${streamStates.length} streams`;
-  const streamsBadge = document.getElementById('toggle-streams-badge');
-  if (streamsBadge) streamsBadge.textContent = `${streamStates.length} streams`;
 
   // Try autoplay
   const playPromises = streamStates.map(s => s.video.play().catch(() => null));
@@ -449,7 +490,7 @@ function setupStream(stream) {
     label: stream.label,
     video,
     canvas,
-    ctx: canvas.getContext('2d'),
+    ctx: canvas.getContext('2d', { willReadFrequently: true }),
     lastFrameData: null,
     lastChangeTime: null,
     coverStartTime: null,
@@ -467,6 +508,7 @@ function setupStream(stream) {
   card.className = 'stream-card';
   card.dataset.streamId = stream.id;
   card.innerHTML = `
+    <div class="card-metrics"></div>
     <canvas class="card-thumb" width="192" height="108"></canvas>
     <div class="card-label" title="${escHtml(stream.label)}">${escHtml(stream.label)}</div>
     <div class="card-status-row">
@@ -476,10 +518,9 @@ function setupStream(stream) {
         <span class="status-text">initializing</span>
       </div>
     </div>
-    <div class="card-metrics"></div>
   `;
   state.thumbCanvas = card.querySelector('.card-thumb');
-  state.thumbCtx    = state.thumbCanvas.getContext('2d');
+  state.thumbCtx    = state.thumbCanvas.getContext('2d', { willReadFrequently: true });
 
   // Draw placeholder until first real video frame arrives
   (function(ctx, w, h) {
@@ -506,32 +547,24 @@ function setupStream(stream) {
     const t = Math.floor(state.video.currentTime) || 0;
     const url = `${DETECTOR_URL}?url=${encodeURIComponent(stream.url)}&t=${t}`;
 
-    // Highlight selected card
     document.querySelectorAll('.stream-card').forEach(c => c.classList.remove('selected'));
     card.classList.add('selected');
 
-    // Load in iframe
     const frame = document.getElementById('inspect-frame');
     const placeholder = document.getElementById('inspect-placeholder');
+    const loading = document.getElementById('inspect-loading');
+    document.getElementById('inspect-loading-label').textContent = stream.label;
     placeholder.style.display = 'none';
-    frame.style.display = 'block';
+    frame.style.display = 'none';
+    loading.style.display = 'flex';
+    frame.onload = () => {
+      loading.style.display = 'none';
+      frame.style.display = 'block';
+    };
     frame.src = url;
 
-    // Update inspect toggle badge and auto-expand on mobile
-    const badge = document.getElementById('toggle-inspect-badge');
-    if (badge) badge.textContent = stream.label.slice(0, 30) + (stream.label.length > 30 ? '…' : '');
-    const inspectPanel = document.getElementById('inspect-panel');
-    const inspectToggle = document.getElementById('toggle-inspect');
-    if (inspectPanel.classList.contains('collapsed')) {
-      inspectPanel.classList.remove('collapsed');
-      inspectToggle.classList.remove('collapsed');
-    }
-    // On mobile, collapse streams and scroll to inspect
-    if (window.innerWidth <= 700) {
-      document.getElementById('stream-panel').classList.add('collapsed');
-      document.getElementById('toggle-streams').classList.add('collapsed');
-      inspectToggle.scrollIntoView({ behavior: 'smooth' });
-    }
+    document.getElementById('sheet-label').textContent = stream.label;
+    document.getElementById('inspect-panel').classList.add('sheet-open');
   });
 
   document.getElementById('stream-grid').appendChild(card);
@@ -646,7 +679,7 @@ function updateCard(state) {
   card.querySelector('.status-text').textContent = statusLabel;
   const activeStatus = state.status === 'ok' || state.status === 'covered' || state.status === 'frozen' || state.status === 'dark';
   card.querySelector('.card-metrics').textContent = activeStatus
-    ? `luma=${state.luma.toFixed(0)} cover=${(state.coverRatio*100).toFixed(0)}% frozen=${state.frozenSec.toFixed(0)}s${state.recTime ? ' · ' + state.recTime : ''}`
+    ? `cover=${(state.coverRatio*100).toFixed(0)}% luma=${state.luma.toFixed(0)} frozen=${state.frozenSec.toFixed(0)}s${state.recTime ? ' · ' + state.recTime : ''}`
     : '';
 }
 
@@ -731,14 +764,16 @@ function escHtml(s) {
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── Collapsible sections (mobile) ─────────────────────────────────────────
-document.getElementById('toggle-streams').addEventListener('click', function() {
-  this.classList.toggle('collapsed');
-  document.getElementById('stream-panel').classList.toggle('collapsed');
-});
-document.getElementById('toggle-inspect').addEventListener('click', function() {
-  this.classList.toggle('collapsed');
-  document.getElementById('inspect-panel').classList.toggle('collapsed');
+// ── Bottom-sheet inspect (mobile) ─────────────────────────────────────────
+document.getElementById('sheet-close').addEventListener('click', () => {
+  document.getElementById('inspect-panel').classList.remove('sheet-open');
+  document.querySelectorAll('.stream-card').forEach(c => c.classList.remove('selected'));
+  const frame = document.getElementById('inspect-frame');
+  frame.onload = null;
+  frame.src = '';
+  frame.style.display = 'none';
+  document.getElementById('inspect-loading').style.display = 'none';
+  document.getElementById('inspect-placeholder').style.display = '';
 });
 
 // ── Boot ──────────────────────────────────────────────────────────────────────

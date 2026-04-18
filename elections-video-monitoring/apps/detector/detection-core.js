@@ -9,17 +9,25 @@ const ROWS = 9;
 function computeLuminance(data) {
   let sum = 0;
   const len = data.length;
-  for (let i = 0; i < len; i += 4) sum += (data[i] + data[i+1] + data[i+2]) / 3;
-  return sum / (len / 4);
+  const stride = 16; // sample every 4th pixel (4 bytes each)
+  let count = 0;
+  for (let i = 0; i < len; i += stride) {
+    sum += (data[i] + data[i+1] + data[i+2]) / 3;
+    count++;
+  }
+  return sum / count;
 }
 
 function computeDiff(a, b) {
   let sum = 0;
   const len = a.length;
-  for (let i = 0; i < len; i += 4) {
+  const stride = 16; // sample every 4th pixel (4 bytes each)
+  let count = 0;
+  for (let i = 0; i < len; i += stride) {
     sum += (Math.abs(a[i]-b[i]) + Math.abs(a[i+1]-b[i+1]) + Math.abs(a[i+2]-b[i+2])) / 3;
+    count++;
   }
-  return sum / (len / 4);
+  return sum / count;
 }
 
 // varianceThreshold: cells below this variance are considered "covered"

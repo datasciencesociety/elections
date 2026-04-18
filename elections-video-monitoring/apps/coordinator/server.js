@@ -322,6 +322,10 @@ const server = http.createServer(async (req, res) => {
       serveFile(res, path.join(DETECTOR_DIR, 'style.css'), 'text/css; charset=utf-8');
       return;
     }
+    if (req.method === 'GET' && url.endsWith('/detection-core.js')) {
+      serveFile(res, path.join(DETECTOR_DIR, 'detection-core.js'), 'application/javascript; charset=utf-8');
+      return;
+    }
     if (req.method === 'GET' && url.endsWith('.js')) {
       serveFile(res, path.join(__dirname, 'public', path.basename(url)), 'application/javascript; charset=utf-8');
       return;
