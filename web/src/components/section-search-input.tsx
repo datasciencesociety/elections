@@ -23,7 +23,7 @@ import {
 export default function SectionSearchInput({
   value,
   onPick,
-  placeholder = "Секция или адрес...",
+  placeholder = "Филтрирайте: адрес, секция...",
   className,
 }: {
   /** Current value of the upstream filter. Shown as the "pinned" text. */

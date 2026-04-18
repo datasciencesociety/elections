@@ -32,6 +32,15 @@ export default function Layout() {
   const { data: elections = [] } = useElections();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Pages that carry their own in-page filter (see `section-filters.tsx`).
+  // On those pages the in-page filter is the primary tool, and a second
+  // search input in the nav bar competes with it visually. The global
+  // navigator collapses away here; users who know a section code can still
+  // click the brand to go back to the landing page and search from there.
+  const isFilterPage =
+    /^\/\d+\/(sections|table)$/.test(location.pathname) ||
+    location.pathname === "/persistence";
+
   // Close menu on navigation
   useEffect(() => {
     setMenuOpen(false);
@@ -107,13 +116,21 @@ export default function Layout() {
           ))}
         </div>
 
-        {/* Desktop search — right-aligned */}
-        <div className="hidden w-full max-w-xs md:ml-auto md:block">
-          <SearchBox variant="compact" placeholder="Търсете секция..." />
-        </div>
+        {/* Desktop navigator — single-result search that goes to a section
+            page. Hidden on filter pages so the in-page filter is the one
+            obvious tool. */}
+        {!isFilterPage && (
+          <div className="hidden w-full max-w-xs md:ml-auto md:block">
+            <SearchBox
+              variant="compact"
+              placeholder="Намерете секция: адрес, училище..."
+            />
+          </div>
+        )}
 
-        {/* Share button */}
-        <ShareButton />
+        {/* Share button — takes over ml-auto when the nav search is hidden
+            so the right cluster still sits on the right edge. */}
+        <ShareButton className={isFilterPage ? "md:ml-auto" : ""} />
 
         {/* Mobile hamburger */}
         <button
@@ -155,7 +172,7 @@ export default function Layout() {
           </div>
           <SearchBox
             variant="compact"
-            placeholder="Търсете секция по адрес, град или училище..."
+            placeholder="Намерете секция: адрес, град или училище..."
           />
         </div>
       )}
