@@ -141,7 +141,7 @@ async function scrapeOik(page, oikUrl, oikLabel) {
         const url = expandRef(refs[0], servers, sik);
         if (!url) continue;
         const tourLabel = `${label} (tour ${tour}${types.length > 1 ? ` ${type}` : ''})`;
-        streams.push({ url, label: tourLabel });
+        streams.push({ section: sik, url, label: tourLabel });
       }
     }
   }

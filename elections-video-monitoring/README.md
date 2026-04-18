@@ -50,7 +50,7 @@ pnpm --filter scraper exec playwright install chromium
 
 ```sh
 pnpm dev      # coordinator on :3000, with --watch hot-reload
-pnpm seed     # load the pre-scraped sample streams (requires server running)
+pnpm seed     # load both pre-scraped sample files (le20260222 + le20250615)
 ```
 
 All three UIs are served from the same origin — no extra processes:
@@ -68,16 +68,32 @@ The detector's CORS proxy is the coordinator's own `/proxy/*` route — no separ
 ### Seed options
 
 ```sh
-pnpm seed                                          # default: apps/scraper/streams_tour1_live.json
-node scripts/seed.js apps/scraper/streams.json     # custom file
-PORT=4000 node scripts/seed.js                     # custom port
+pnpm seed                                                      # upsert both sample files (additive, default)
+pnpm seed apps/scraper/streams_le20260222_tour1_live.json      # load one file
+pnpm seed apps/scraper/streams_le20250615_tour1_live.json      # load other file
+node scripts/seed.js apps/scraper/streams.json                 # any custom file
+node scripts/seed.js --replace                                 # destructive: wipe & replace all
+node scripts/seed.js --force                                   # destructive + skip confirmation
+PORT=4000 node scripts/seed.js                                 # custom port
 ```
+
+The default mode uses `POST /api/streams/upsert` — sections are matched by their 9-digit ID. New sections are added; existing sections get their URL updated (e.g. after a device restart) and `last_checked` reset so volunteers pick them up immediately. Sessions and reports are preserved.
 
 ### Scrape fresh streams
 
 ```sh
 pnpm scrape https://evideo.bg/le20260222/index.html > apps/scraper/streams.json
 pnpm seed apps/scraper/streams.json
+```
+
+The scraper outputs `{section, url, label}` objects. The `section` field (9-digit polling station ID) is the unique key. During a live 2–3h monitoring window, you can scrape and seed incrementally to ramp up coverage:
+
+```sh
+# Add first batch of priority sections
+pnpm seed apps/scraper/priority.json
+
+# Later, add more sections — existing ones are skipped or updated
+pnpm seed apps/scraper/full.json
 ```
 
 ## Root scripts

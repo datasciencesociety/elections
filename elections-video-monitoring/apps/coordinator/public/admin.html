@@ -32,6 +32,21 @@ section {
 }
 section h2 { font-size: 14px; font-weight: 600; color: #ccc; margin-bottom: 12px; }
 
+/* Coverage bar */
+#coverage-bar-outer {
+  width: 100%; height: 22px; background: #222; border-radius: 4px; overflow: hidden; position: relative;
+}
+#coverage-bar-inner {
+  height: 100%; background: #22c55e; transition: width 0.5s ease;
+}
+#coverage-bar-outer .bar-label {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+.coverage-stats { display: flex; gap: 24px; margin-top: 8px; font-size: 12px; color: #888; flex-wrap: wrap; }
+.coverage-stats strong { color: #e0e0e0; }
+
 /* Upload */
 #upload-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
 textarea#stream-json {
@@ -49,6 +64,8 @@ button {
 #btn-upload:hover { background: #1d4ed8; }
 #btn-file-pick { background: #374151; color: #e0e0e0; }
 #btn-file-pick:hover { background: #4b5563; }
+#btn-reset { background: #7f1d1d; color: #fca5a5; font-size: 11px; margin-top: 4px; }
+#btn-reset:hover { background: #991b1b; }
 #file-input { display: none; }
 #upload-msg { font-size: 12px; padding: 4px 0; min-height: 20px; }
 #upload-msg.ok  { color: #22c55e; }
@@ -82,6 +99,22 @@ button {
 .report-count { font-weight: 600; color: #f97316; }
 
 #no-flags { color: #555; font-size: 13px; padding: 8px 0; }
+
+/* Sections list */
+#sections-list { max-height: 400px; overflow-y: auto; }
+.section-row {
+  display: flex; align-items: center; gap: 10px; padding: 5px 0;
+  border-bottom: 1px solid #1f1f1f; font-size: 12px;
+}
+.section-row:last-child { border-bottom: none; }
+.section-row .s-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.section-row .s-url { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; font-size: 10px; color: #888; }
+.section-row .s-toggle { cursor: pointer; background: none; border: 1px solid #444; color: #888; padding: 2px 8px; border-radius: 3px; font-size: 10px; }
+.section-row .s-toggle:hover { border-color: #666; color: #ccc; }
+.section-row.disabled { opacity: 0.4; }
+#sections-filter { background: #111; border: 1px solid #333; color: #e0e0e0; padding: 6px 10px; font-size: 12px; border-radius: 4px; width: 100%; margin-bottom: 8px; }
+#sections-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+#sections-count { font-size: 11px; color: #666; }
 
 /* ── Mobile responsive ────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
@@ -140,22 +173,48 @@ button {
 
 <main>
 
-  <!-- Upload -->
+  <!-- Coverage -->
   <section>
-    <h2>Upload Stream List</h2>
+    <h2>Coverage</h2>
+    <div id="coverage-bar-outer">
+      <div id="coverage-bar-inner" style="width:0%"></div>
+      <div class="bar-label"><span id="coverage-label">–</span></div>
+    </div>
+    <div class="coverage-stats">
+      <span>Total sections: <strong id="stat-total">–</strong></span>
+      <span>Enabled: <strong id="stat-enabled">–</strong></span>
+      <span>With observer: <strong id="stat-covered">–</strong></span>
+      <span>Volunteers: <strong id="stat-volunteers">–</strong></span>
+    </div>
+  </section>
+
+  <!-- Add / Update sections -->
+  <section>
+    <h2>Add / Update Sections</h2>
     <p style="font-size:12px;color:#666;margin-bottom:10px">
-      JSON array: <code style="color:#9ca3af">[{"url":"https://...","label":"Station 42"}, …]</code>
-      — replaces the current list and resets all sessions.
+      JSON array: <code style="color:#9ca3af">[{"section":"102700005","url":"https://...","label":"OIK 42 / …"}, …]</code>
+      — adds new sections or updates URL if section already exists (device restart). Section ID is auto-parsed from URL if omitted.
     </p>
     <div id="upload-row">
-      <textarea id="stream-json" placeholder='[{"url":"https://archive.evideo.bg/...","label":"..."}]'></textarea>
+      <textarea id="stream-json" placeholder='[{"section":"102700005","url":"https://archive.evideo.bg/...","label":"..."}]'></textarea>
       <div id="upload-controls">
         <button id="btn-file-pick">Choose file…</button>
         <input type="file" id="file-input" accept=".json,.csv,.txt">
-        <button id="btn-upload">Upload</button>
+        <button id="btn-upload">Add / Update</button>
         <div id="upload-msg"></div>
+        <button id="btn-reset">Reset All…</button>
       </div>
     </div>
+  </section>
+
+  <!-- Sections list -->
+  <section>
+    <div id="sections-header">
+      <h2>Sections (<span id="sections-total">0</span>)</h2>
+      <span id="sections-count"></span>
+    </div>
+    <input type="text" id="sections-filter" placeholder="Filter sections…">
+    <div id="sections-list"></div>
   </section>
 
   <!-- Flagged streams -->
@@ -183,9 +242,25 @@ button {
 </main>
 
 <script>
-// ── Upload ────────────────────────────────────────────────────────────────────
-const uploadMsg = document.getElementById('upload-msg');
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function relativeTime(tsMs) {
+  const sec = Math.floor((Date.now() - tsMs) / 1000);
+  if (sec < 60) return `${sec}s ago`;
+  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
+  return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m ago`;
+}
+function formatDuration(ms) {
+  const sec = Math.floor(ms / 1000);
+  if (sec < 60) return `${sec}s`;
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return `${m}m ${s}s`;
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
+// ── Upload (upsert) ──────────────────────────────────────────────────────────
+const uploadMsg = document.getElementById('upload-msg');
 function showMsg(text, type) {
   uploadMsg.textContent = text;
   uploadMsg.className = type;
@@ -194,7 +269,6 @@ function showMsg(text, type) {
 document.getElementById('btn-file-pick').addEventListener('click', () => {
   document.getElementById('file-input').click();
 });
-
 document.getElementById('file-input').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -206,14 +280,43 @@ document.getElementById('file-input').addEventListener('change', (e) => {
 document.getElementById('btn-upload').addEventListener('click', async () => {
   const raw = document.getElementById('stream-json').value.trim();
   if (!raw) { showMsg('Paste JSON first', 'err'); return; }
-
   let data;
   try { data = JSON.parse(raw); }
   catch (e) { showMsg('Invalid JSON: ' + e.message, 'err'); return; }
-
   if (!Array.isArray(data)) { showMsg('Expected a JSON array', 'err'); return; }
 
   showMsg('Uploading…', '');
+  try {
+    const res = await fetch('/api/streams/upsert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (!res.ok) { showMsg('Error: ' + result.error, 'err'); return; }
+    const parts = [];
+    if (result.inserted) parts.push(`${result.inserted} added`);
+    if (result.updated) parts.push(`${result.updated} updated`);
+    showMsg(parts.length ? parts.join(', ') : 'No changes (all sections already up to date)', 'ok');
+    document.getElementById('stream-json').value = '';
+    refreshSections();
+    refreshStats();
+  } catch (e) {
+    showMsg('Network error: ' + e.message, 'err');
+  }
+});
+
+document.getElementById('btn-reset').addEventListener('click', async () => {
+  if (!confirm('This will DELETE all streams, sessions, and reports. Are you sure?')) return;
+  const raw = document.getElementById('stream-json').value.trim();
+  let data = [];
+  if (raw) {
+    try { data = JSON.parse(raw); } catch { /* empty reset */ }
+  }
+  if (!Array.isArray(data) || data.length === 0) {
+    if (!confirm('No JSON provided — this will wipe everything with nothing to replace it. Continue?')) return;
+    data = []; // will fail server validation, use empty array trick
+  }
   try {
     const res = await fetch('/api/streams', {
       method: 'POST',
@@ -222,15 +325,88 @@ document.getElementById('btn-upload').addEventListener('click', async () => {
     });
     const result = await res.json();
     if (!res.ok) { showMsg('Error: ' + result.error, 'err'); return; }
-    showMsg(`Uploaded ${result.inserted.toLocaleString()} streams`, 'ok');
-    document.getElementById('stream-json').value = '';
+    showMsg(`Reset: ${result.inserted} streams loaded`, 'ok');
+    refreshSections();
+    refreshStats();
   } catch (e) {
     showMsg('Network error: ' + e.message, 'err');
   }
 });
 
+// ── Coverage stats ────────────────────────────────────────────────────────────
+async function refreshStats() {
+  try {
+    const res = await fetch('/api/streams/stats');
+    const d = await res.json();
+    document.getElementById('stat-total').textContent = d.total;
+    document.getElementById('stat-enabled').textContent = d.enabled;
+    document.getElementById('stat-covered').textContent = d.covered;
+    document.getElementById('stat-volunteers').textContent = d.volunteers;
+    const pct = d.enabled > 0 ? Math.round(100 * d.covered / d.enabled) : 0;
+    document.getElementById('coverage-bar-inner').style.width = pct + '%';
+    document.getElementById('coverage-bar-inner').style.background =
+      pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
+    document.getElementById('coverage-label').textContent = `${d.covered} / ${d.enabled} covered (${pct}%)`;
+  } catch {}
+}
+
+// ── Sections list ─────────────────────────────────────────────────────────────
+let allSections = [];
+
+async function refreshSections() {
+  try {
+    const res = await fetch('/api/streams');
+    const d = await res.json();
+    allSections = d.streams;
+    document.getElementById('sections-total').textContent = allSections.length;
+    renderSections();
+  } catch {}
+}
+
+function renderSections() {
+  const filter = document.getElementById('sections-filter').value.toLowerCase();
+  const container = document.getElementById('sections-list');
+  const filtered = filter
+    ? allSections.filter(s => s.label.toLowerCase().includes(filter) || s.section.includes(filter))
+    : allSections;
+
+  document.getElementById('sections-count').textContent =
+    filter ? `${filtered.length} of ${allSections.length} shown` : '';
+
+  container.innerHTML = '';
+  for (const s of filtered) {
+    const div = document.createElement('div');
+    div.className = 'section-row' + (s.enabled ? '' : ' disabled');
+    div.innerHTML = `
+      <span class="s-label" title="${escHtml(s.label)}">${escHtml(s.section)} — ${escHtml(s.label)}</span>
+      <span class="s-url" title="${escHtml(s.url)}">${escHtml(s.url)}</span>
+      <button class="s-toggle" data-id="${s.id}" data-enabled="${s.enabled}">${s.enabled ? 'Disable' : 'Enable'}</button>
+    `;
+    container.appendChild(div);
+  }
+}
+
+document.getElementById('sections-filter').addEventListener('input', renderSections);
+
+document.getElementById('sections-list').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.s-toggle');
+  if (!btn) return;
+  const id = Number(btn.dataset.id);
+  const newEnabled = btn.dataset.enabled === '1' ? 0 : 1;
+  btn.disabled = true;
+  try {
+    await fetch('/api/streams/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, enabled: newEnabled }),
+    });
+    refreshSections();
+    refreshStats();
+  } catch {} finally { btn.disabled = false; }
+});
+
 // ── Flagged table ─────────────────────────────────────────────────────────────
-async function refresh() {
+async function refreshFlagged() {
   let data;
   try {
     const res = await fetch('/api/flagged');
@@ -254,7 +430,6 @@ async function refresh() {
     table.style.display = 'none';
     return;
   }
-
   noFlags.style.display = 'none';
   table.style.display = '';
   tbody.innerHTML = '';
@@ -275,30 +450,11 @@ async function refresh() {
   }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function relativeTime(tsMs) {
-  const sec = Math.floor((Date.now() - tsMs) / 1000);
-  if (sec < 60) return `${sec}s ago`;
-  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
-  return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m ago`;
-}
-
-function formatDuration(ms) {
-  const sec = Math.floor(ms / 1000);
-  if (sec < 60) return `${sec}s`;
-  const m = Math.floor(sec / 60), s = sec % 60;
-  return `${m}m ${s}s`;
-}
-
-function escHtml(s) {
-  return String(s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
 // ── Boot ──────────────────────────────────────────────────────────────────────
-setInterval(refresh, 15_000);
-refresh();
+function refreshAll() { refreshStats(); refreshFlagged(); }
+setInterval(refreshAll, 15_000);
+refreshAll();
+refreshSections();
 </script>
 </body>
 </html>

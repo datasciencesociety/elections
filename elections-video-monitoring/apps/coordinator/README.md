@@ -17,8 +17,8 @@ Default port: `3000`. Override with `PORT` env var.
 | URL | Description |
 |-----|-------------|
 | `GET /` | Volunteer monitoring page — loads up to 16 streams, runs canvas detection, reports every ~10 s |
-| `GET /admin` | Admin dashboard — live table of flagged streams and volunteer count |
-| `GET /poc` | Single-stream proof-of-concept detector |
+| `GET /admin` | Admin dashboard — coverage stats, section management (enable/disable, add/update), flagged streams |
+| `GET /inspect` | Single-stream freeze/cover detector |
 
 ## API
 
@@ -28,7 +28,25 @@ Default port: `3000`. Override with `PORT` env var.
 | `POST` | `/api/heartbeat` | Keep session alive; body `{ session_id }` |
 | `POST` | `/api/report` | Submit detection results; body `{ session_id, results[] }` |
 | `GET`  | `/api/flagged` | Get streams flagged in the last 5 min by ≥2 volunteers |
-| `POST` | `/api/streams` | Bulk-replace stream list; body `[{ url, label }]` |
+| `POST` | `/api/streams` | Bulk-replace stream list; body `[{ section?, url, label }]` — **destructive**, wipes all sessions/reports |
+| `POST` | `/api/streams/upsert` | Add/update sections; body `[{ section?, url, label }]` — additive, resets `last_checked` on URL change |
+| `GET`  | `/api/streams` | List all sections with enabled state |
+| `GET`  | `/api/streams/stats` | Coverage stats: `{ total, enabled, covered, volunteers }` |
+| `POST` | `/api/streams/toggle` | Enable/disable a section; body `{ id, enabled: 0|1 }` |
+
+### Stream/section fields
+
+```jsonc
+{
+  "section": "102700005",  // 9-digit section ID (optional — parsed from URL if omitted)
+  "url": "https://archive.evideo.bg/.../102700005/recording.mp4",
+  "label": "ОИК 1027 Кочериново / 102700005 С. БАРАКОВО (tour 1)"
+}
+```
+
+The `section` field is the unique key for upserts. If omitted, the server extracts it from the URL path (`/real/<9-digit>/`). If the URL doesn't contain one, the label is used as fallback.
+
+When a device restarts and gets a new recording URL, re-uploading the same section updates the URL and resets `last_checked` so volunteers pick it up immediately.
 
 ### Report result fields
 

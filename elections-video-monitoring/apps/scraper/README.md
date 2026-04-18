@@ -30,7 +30,12 @@ node scrape-streams.js https://evideo.bg/le20260222/index.html
 # Save to file
 node scrape-streams.js https://evideo.bg/le20260222/index.html > out/streams.json
 
-# Upload the saved file to the coordinator
+# Upload the saved file to the coordinator (additive upsert)
+curl -X POST http://localhost:3000/api/streams/upsert \
+  -H 'Content-Type: application/json' \
+  -d @out/streams.json
+
+# Or replace all streams (destructive)
 curl -X POST http://localhost:3000/api/streams \
   -H 'Content-Type: application/json' \
   -d @out/streams.json
@@ -64,16 +69,17 @@ File naming convention: `streams_<election-code>[_tour<N>][_<type>].json`
 ```json
 [
   {
-    "url": "https://archive.evideo.bg/real/123456/...",
-    "label": "OIK 12 / 123456 Sofia (tour 1)",
-    "type": "live"
+    "section": "123456789",
+    "url": "https://archive.evideo.bg/real/123456789/...",
+    "label": "OIK 12 / 123456789 Sofia (tour 1)"
   },
   ...
 ]
 ```
 
-| `type` value | Description           |
-| ------------ | --------------------- |
-| `device`     | Device recording      |
-| `live`       | Live stream recording |
+| Field | Description |
+| ----- | ----------- |
+| `section` | 9-digit section ID from evideo.bg (`data-sik`). Used as unique key for upserts. |
+| `url` | Full recording URL on `archive.evideo.bg` |
+| `label` | Human-readable label: OIK name / section ID + location name + tour |
 

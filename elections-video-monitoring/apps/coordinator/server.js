@@ -18,8 +18,10 @@ db.exec('PRAGMA foreign_keys = ON');
 db.exec(`
   CREATE TABLE IF NOT EXISTS streams (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    section      TEXT,
     url          TEXT NOT NULL,
     label        TEXT NOT NULL,
+    enabled      INTEGER NOT NULL DEFAULT 1,
     last_checked INTEGER DEFAULT NULL
   );
 
@@ -54,12 +56,27 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_sessions_hb        ON sessions(last_heartbeat);
 `);
 
+// ── Migrate existing DB (add columns if missing) ─────────────────────────────
+try { db.exec('ALTER TABLE streams ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1'); } catch {}
+try { db.exec('ALTER TABLE streams ADD COLUMN section TEXT'); } catch {}
+// Backfill section from URL for existing rows: extract 9-digit number from /real/XXXXXXXXX/
+db.exec(`
+  UPDATE streams SET section = substr(url,
+    instr(url, '/real/') + 6,
+    9
+  ) WHERE section IS NULL AND instr(url, '/real/') > 0
+`);
+// Fallback: use rowid for any rows where extraction failed
+db.exec(`UPDATE streams SET section = CAST(id AS TEXT) WHERE section IS NULL`);
+try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_streams_section ON streams(section)'); } catch {}
+
 // ── Prepared statements ───────────────────────────────────────────────────────
 
 const stmt = {
   insertSession:     db.prepare('INSERT INTO sessions VALUES (?, ?, ?)'),
   pickStreams:       db.prepare(`
-    SELECT id, url, label FROM streams
+    SELECT id, url, label, section FROM streams
+    WHERE enabled = 1
     ORDER BY last_checked IS NOT NULL, last_checked ASC
     LIMIT 16
   `),
@@ -94,7 +111,25 @@ const stmt = {
     ORDER BY report_count DESC, first_seen ASC
   `),
   volunteerCount:    db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE last_heartbeat > ?'),
-  insertStream:      db.prepare('INSERT INTO streams (url, label) VALUES (?, ?)'),
+  insertStream:      db.prepare('INSERT INTO streams (section, url, label) VALUES (?, ?, ?)'),
+  upsertStream:      db.prepare(`
+    INSERT INTO streams (section, url, label) VALUES (?, ?, ?)
+    ON CONFLICT(section) DO UPDATE SET url = excluded.url, label = excluded.label, last_checked = NULL
+  `),
+  streamStats:       db.prepare(`
+    SELECT
+      COUNT(*) AS total,
+      SUM(CASE WHEN s.enabled = 1 THEN 1 ELSE 0 END) AS enabled,
+      SUM(CASE WHEN a.stream_id IS NOT NULL THEN 1 ELSE 0 END) AS covered
+    FROM streams s
+    LEFT JOIN (
+      SELECT DISTINCT a2.stream_id
+      FROM assignments a2
+      JOIN sessions se ON se.id = a2.session_id AND se.last_heartbeat > ?
+    ) a ON a.stream_id = s.id
+  `),
+  toggleStream:      db.prepare('UPDATE streams SET enabled = ? WHERE id = ?'),
+  allStreams:        db.prepare('SELECT id, section, label, url, enabled FROM streams ORDER BY section'),
 };
 
 // node:sqlite has no .transaction() helper — wrap with manual BEGIN/COMMIT
@@ -130,16 +165,36 @@ function txReport(sessionId, results, now) {
   });
 }
 
+// Extract section number from URL path: .../real/102700005/...
+function extractSection(url) {
+  const m = url.match(/\/([0-9]{9})\//);  return m ? m[1] : null;
+}
+
 function txBulkUpload(streams) {
   return transaction(() => {
     db.exec('DELETE FROM reports');
     db.exec('DELETE FROM assignments');
     db.exec('DELETE FROM sessions');
     db.exec('DELETE FROM streams');
-    for (const { url, label } of streams) {
-      stmt.insertStream.run(url, String(label));
+    for (const s of streams) {
+      const section = s.section || extractSection(s.url) || String(s.label);
+      stmt.insertStream.run(section, s.url, String(s.label));
     }
     return streams.length;
+  });
+}
+
+function txUpsertStreams(streams) {
+  return transaction(() => {
+    let inserted = 0, updated = 0;
+    for (const s of streams) {
+      const section = s.section || extractSection(s.url) || String(s.label);
+      const existing = db.prepare('SELECT url FROM streams WHERE section = ?').get(section);
+      stmt.upsertStream.run(section, s.url, String(s.label));
+      if (existing) { if (existing.url !== s.url) updated++; }
+      else inserted++;
+    }
+    return { inserted, updated };
   });
 }
 
@@ -288,6 +343,44 @@ async function handleStreamsUpload(req, res) {
   json(res, 200, { inserted });
 }
 
+async function handleStreamsUpsert(req, res) {
+  let body;
+  try { body = await readBody(req); }
+  catch (e) { json(res, 400, { error: e.message }); return; }
+
+  if (!Array.isArray(body)) {
+    json(res, 400, { error: 'Expected JSON array [{url, label}]' }); return;
+  }
+  const valid = body.filter(s => s && typeof s.url === 'string' && s.url.trim() && typeof s.label === 'string' && s.label.trim());
+  if (valid.length === 0) { json(res, 400, { error: 'No valid streams' }); return; }
+
+  const { inserted, updated } = txUpsertStreams(valid);
+  console.log(`Upserted streams: ${inserted} new, ${updated} updated URLs`);
+  json(res, 200, { inserted, updated });
+}
+
+function handleStreamStats(req, res) {
+  const cutoff = Date.now() - 120_000;
+  const stats = stmt.streamStats.get(cutoff);
+  const { count } = stmt.volunteerCount.get(cutoff);
+  json(res, 200, { total: stats.total, enabled: stats.enabled, covered: stats.covered, volunteers: count });
+}
+
+function handleStreamsList(req, res) {
+  const streams = stmt.allStreams.all();
+  json(res, 200, { streams });
+}
+
+async function handleStreamToggle(req, res) {
+  const body = await readBody(req);
+  const { id, enabled } = body;
+  if (typeof id !== 'number' || (enabled !== 0 && enabled !== 1)) {
+    json(res, 400, { error: 'id (number) and enabled (0|1) required' }); return;
+  }
+  stmt.toggleStream.run(enabled, id);
+  json(res, 200, { ok: true });
+}
+
 // ── HTTP server ───────────────────────────────────────────────────────────────
 
 const server = http.createServer(async (req, res) => {
@@ -354,8 +447,20 @@ const server = http.createServer(async (req, res) => {
       const { count } = db.prepare('SELECT COUNT(*) AS count FROM streams').get();
       json(res, 200, { count }); return;
     }
+    if (req.method === 'GET' && url === '/api/streams/stats') {
+      handleStreamStats(req, res); return;
+    }
+    if (req.method === 'GET' && url === '/api/streams') {
+      handleStreamsList(req, res); return;
+    }
     if (req.method === 'POST' && url === '/api/streams') {
       await handleStreamsUpload(req, res); return;
+    }
+    if (req.method === 'POST' && url === '/api/streams/upsert') {
+      await handleStreamsUpsert(req, res); return;
+    }
+    if (req.method === 'POST' && url === '/api/streams/toggle') {
+      await handleStreamToggle(req, res); return;
     }
 
     res.writeHead(404); res.end();
