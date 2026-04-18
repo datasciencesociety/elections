@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Election Monitor — Admin</title>
+<title data-i18n="admin.page.title">Election Monitor — Admin</title>
+<script src="i18n.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: system-ui, sans-serif; background: #0d0d0d; color: #e0e0e0; min-height: 100vh; }
@@ -163,34 +164,35 @@ button {
 <body>
 
 <header>
-  <h1>Election Stream Monitor — Admin</h1>
+  <h1 data-i18n="admin.header">Election Stream Monitor — Admin</h1>
   <div id="meta-bar">
-    <span>Active volunteers: <strong id="vol-count">–</strong></span>
-    <span>Flagged streams: <strong id="flag-count">–</strong></span>
-    <span>Updated: <strong id="last-updated">–</strong></span>
+    <span><span data-i18n="meta.volunteers">Active volunteers:</span> <strong id="vol-count">–</strong></span>
+    <span><span data-i18n="meta.flagged">Flagged streams:</span> <strong id="flag-count">–</strong></span>
+    <span><span data-i18n="meta.updated">Updated:</span> <strong id="last-updated">–</strong></span>
   </div>
+  <button id="lang-toggle" style="font-size:11px;padding:3px 8px;background:#1f2937;color:#9ca3af;border:1px solid #374151;border-radius:4px;cursor:pointer;flex-shrink:0;">EN</button>
 </header>
 
 <main>
 
   <!-- Coverage -->
   <section>
-    <h2>Coverage</h2>
+    <h2 data-i18n="coverage.title">Coverage</h2>
     <div id="coverage-bar-outer">
       <div id="coverage-bar-inner" style="width:0%"></div>
       <div class="bar-label"><span id="coverage-label">–</span></div>
     </div>
     <div class="coverage-stats">
-      <span>Total sections: <strong id="stat-total">–</strong></span>
-      <span>Enabled: <strong id="stat-enabled">–</strong></span>
-      <span>With observer: <strong id="stat-covered">–</strong></span>
-      <span>Volunteers: <strong id="stat-volunteers">–</strong></span>
+      <span><span data-i18n="stat.total">Total</span>: <strong id="stat-total">–</strong></span>
+      <span><span data-i18n="stat.enabled">Enabled</span>: <strong id="stat-enabled">–</strong></span>
+      <span><span data-i18n="stat.covered">Covered</span>: <strong id="stat-covered">–</strong></span>
+      <span><span data-i18n="stat.volunteers">Volunteers</span>: <strong id="stat-volunteers">–</strong></span>
     </div>
   </section>
 
   <!-- Add / Update sections -->
   <section>
-    <h2>Add / Update Sections</h2>
+    <h2 data-i18n="upload.title">Add / Update Sections</h2>
     <p style="font-size:12px;color:#666;margin-bottom:10px">
       JSON array: <code style="color:#9ca3af">[{"section":"102700005","url":"https://...","label":"OIK 42 / …"}, …]</code>
       — adds new sections or updates URL if section already exists (device restart). Section ID is auto-parsed from URL if omitted.
@@ -198,11 +200,11 @@ button {
     <div id="upload-row">
       <textarea id="stream-json" placeholder='[{"section":"102700005","url":"https://archive.evideo.bg/...","label":"..."}]'></textarea>
       <div id="upload-controls">
-        <button id="btn-file-pick">Choose file…</button>
+        <button id="btn-file-pick" data-i18n="upload.file">Choose file</button>
         <input type="file" id="file-input" accept=".json,.csv,.txt">
-        <button id="btn-upload">Add / Update</button>
+        <button id="btn-upload" data-i18n="upload.btn">Upload</button>
         <div id="upload-msg"></div>
-        <button id="btn-reset">Reset All…</button>
+        <button id="btn-reset" data-i18n="upload.reset">Reset all</button>
       </div>
     </div>
   </section>
@@ -210,28 +212,28 @@ button {
   <!-- Sections list -->
   <section>
     <div id="sections-header">
-      <h2>Sections (<span id="sections-total">0</span>)</h2>
+      <h2 id="sections-title">Sections (0)</h2>
       <span id="sections-count"></span>
     </div>
-    <input type="text" id="sections-filter" placeholder="Filter sections…">
+    <input type="text" id="sections-filter" data-i18n-placeholder="sections.filter.placeholder" placeholder="Filter sections…">
     <div id="sections-list"></div>
   </section>
 
   <!-- Flagged streams -->
   <section id="flagged-section">
-    <h2>Flagged Streams</h2>
+    <h2 data-i18n="flagged.title">Flagged Streams</h2>
     <span id="refresh-status">auto-refresh every 15s</span>
     <div id="flagged-container">
-      <p id="no-flags" style="display:none">No anomalies detected in the last 5 minutes.</p>
+      <p id="no-flags" data-i18n="flagged.none" style="display:none">No flagged streams</p>
       <table class="flag-table" id="flag-table" style="display:none">
         <thead>
           <tr>
-            <th>Label</th>
-            <th>URL</th>
-            <th>Flag</th>
-            <th>First seen</th>
-            <th>Duration</th>
-            <th>Reports</th>
+            <th data-i18n="table.label">Label</th>
+            <th data-i18n="table.url">URL</th>
+            <th data-i18n="table.flag">Flag</th>
+            <th data-i18n="table.firstseen">First seen</th>
+            <th data-i18n="table.duration">Duration</th>
+            <th data-i18n="table.reports">Reports</th>
           </tr>
         </thead>
         <tbody id="flagged-body"></tbody>
@@ -245,9 +247,9 @@ button {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function relativeTime(tsMs) {
   const sec = Math.floor((Date.now() - tsMs) / 1000);
-  if (sec < 60) return `${sec}s ago`;
-  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
-  return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m ago`;
+  if (sec < 60) return tf('time.sec.ago', { n: sec });
+  if (sec < 3600) return tf('time.min.ago', { n: Math.floor(sec / 60) });
+  return tf('time.hour.ago', { n: Math.floor(sec / 3600), m: Math.floor((sec % 3600) / 60) });
 }
 function formatDuration(ms) {
   const sec = Math.floor(ms / 1000);
@@ -279,13 +281,13 @@ document.getElementById('file-input').addEventListener('change', (e) => {
 
 document.getElementById('btn-upload').addEventListener('click', async () => {
   const raw = document.getElementById('stream-json').value.trim();
-  if (!raw) { showMsg('Paste JSON first', 'err'); return; }
+  if (!raw) { showMsg(t('upload.paste.first'), 'err'); return; }
   let data;
   try { data = JSON.parse(raw); }
-  catch (e) { showMsg('Invalid JSON: ' + e.message, 'err'); return; }
-  if (!Array.isArray(data)) { showMsg('Expected a JSON array', 'err'); return; }
+  catch (e) { showMsg(t('upload.invalid.json') + ' ' + e.message, 'err'); return; }
+  if (!Array.isArray(data)) { showMsg(t('upload.not.array'), 'err'); return; }
 
-  showMsg('Uploading…', '');
+  showMsg(t('upload.uploading'), '');
   try {
     const res = await fetch('/api/streams/upsert', {
       method: 'POST',
@@ -293,28 +295,28 @@ document.getElementById('btn-upload').addEventListener('click', async () => {
       body: JSON.stringify(data),
     });
     const result = await res.json();
-    if (!res.ok) { showMsg('Error: ' + result.error, 'err'); return; }
+    if (!res.ok) { showMsg(t('upload.error') + ' ' + result.error, 'err'); return; }
     const parts = [];
     if (result.inserted) parts.push(`${result.inserted} added`);
     if (result.updated) parts.push(`${result.updated} updated`);
-    showMsg(parts.length ? parts.join(', ') : 'No changes (all sections already up to date)', 'ok');
+    showMsg(parts.length ? parts.join(', ') : t('upload.noop'), 'ok');
     document.getElementById('stream-json').value = '';
     refreshSections();
     refreshStats();
   } catch (e) {
-    showMsg('Network error: ' + e.message, 'err');
+    showMsg(t('upload.network.error') + ' ' + e.message, 'err');
   }
 });
 
 document.getElementById('btn-reset').addEventListener('click', async () => {
-  if (!confirm('This will DELETE all streams, sessions, and reports. Are you sure?')) return;
+  if (!confirm(t('confirm.reset'))) return;
   const raw = document.getElementById('stream-json').value.trim();
   let data = [];
   if (raw) {
     try { data = JSON.parse(raw); } catch { /* empty reset */ }
   }
   if (!Array.isArray(data) || data.length === 0) {
-    if (!confirm('No JSON provided — this will wipe everything with nothing to replace it. Continue?')) return;
+    if (!confirm(t('confirm.empty'))) return;
     data = []; // will fail server validation, use empty array trick
   }
   try {
@@ -324,12 +326,12 @@ document.getElementById('btn-reset').addEventListener('click', async () => {
       body: JSON.stringify(data),
     });
     const result = await res.json();
-    if (!res.ok) { showMsg('Error: ' + result.error, 'err'); return; }
-    showMsg(`Reset: ${result.inserted} streams loaded`, 'ok');
+    if (!res.ok) { showMsg(t('upload.error') + ' ' + result.error, 'err'); return; }
+    showMsg(tf('upload.reset.done', { n: result.inserted }), 'ok');
     refreshSections();
     refreshStats();
   } catch (e) {
-    showMsg('Network error: ' + e.message, 'err');
+    showMsg(t('upload.network.error') + ' ' + e.message, 'err');
   }
 });
 
@@ -358,7 +360,6 @@ async function refreshSections() {
     const res = await fetch('/api/streams');
     const d = await res.json();
     allSections = d.streams;
-    document.getElementById('sections-total').textContent = allSections.length;
     renderSections();
   } catch {}
 }
@@ -370,6 +371,7 @@ function renderSections() {
     ? allSections.filter(s => s.label.toLowerCase().includes(filter) || s.section.includes(filter))
     : allSections;
 
+  document.getElementById('sections-title').textContent = tf('sections.title', { n: allSections.length });
   document.getElementById('sections-count').textContent =
     filter ? `${filtered.length} of ${allSections.length} shown` : '';
 
@@ -380,7 +382,7 @@ function renderSections() {
     div.innerHTML = `
       <span class="s-label" title="${escHtml(s.label)}">${escHtml(s.section)} — ${escHtml(s.label)}</span>
       <span class="s-url" title="${escHtml(s.url)}">${escHtml(s.url)}</span>
-      <button class="s-toggle" data-id="${s.id}" data-enabled="${s.enabled}">${s.enabled ? 'Disable' : 'Enable'}</button>
+      <button class="s-toggle" data-id="${s.id}" data-enabled="${s.enabled}">${s.enabled ? t('toggle.disable') : t('toggle.enable')}</button>
     `;
     container.appendChild(div);
   }
@@ -412,14 +414,14 @@ async function refreshFlagged() {
     const res = await fetch('/api/flagged');
     data = await res.json();
   } catch (e) {
-    document.getElementById('refresh-status').textContent = 'Connection error';
+    document.getElementById('refresh-status').textContent = t('refresh.error');
     return;
   }
 
   document.getElementById('vol-count').textContent = data.volunteer_count;
   document.getElementById('flag-count').textContent = data.flagged.length;
   document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
-  document.getElementById('refresh-status').textContent = 'auto-refresh every 15s';
+  document.getElementById('refresh-status').textContent = t('refresh.auto');
 
   const noFlags = document.getElementById('no-flags');
   const table = document.getElementById('flag-table');
@@ -439,18 +441,29 @@ async function refreshFlagged() {
     const tr = document.createElement('tr');
     const durationMs = now - row.first_seen;
     tr.innerHTML = `
-      <td data-label="Label">${escHtml(row.label)}</td>
-      <td data-label="URL" class="url-cell"><a href="${escHtml(row.url)}" target="_blank" title="${escHtml(row.url)}">${escHtml(row.url)}</a></td>
-      <td data-label="Flag"><span class="badge badge-${escHtml(row.flag_type)}">${escHtml(row.flag_type)}</span></td>
-      <td data-label="First seen">${relativeTime(row.first_seen)}</td>
-      <td data-label="Duration">${formatDuration(durationMs)}</td>
-      <td data-label="Reports"><span class="report-count">${row.report_count}</span></td>
+      <td data-label="${t('table.label')}">${escHtml(row.label)}</td>
+      <td data-label="${t('table.url')}" class="url-cell"><a href="${escHtml(row.url)}" target="_blank" title="${escHtml(row.url)}">${escHtml(row.url)}</a></td>
+      <td data-label="${t('table.flag')}"><span class="badge badge-${escHtml(row.flag_type)}">${escHtml(row.flag_type)}</span></td>
+      <td data-label="${t('table.firstseen')}">${relativeTime(row.first_seen)}</td>
+      <td data-label="${t('table.duration')}">${formatDuration(durationMs)}</td>
+      <td data-label="${t('table.reports')}"><span class="report-count">${row.report_count}</span></td>
     `;
     tbody.appendChild(tr);
   }
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
+document.getElementById('lang-toggle').addEventListener('click', () => {
+  setLang(_lang === 'bg' ? 'en' : 'bg');
+});
+
+function onLangChange() {
+  renderSections();
+  document.getElementById('refresh-status').textContent = t('refresh.auto');
+}
+
+applyTranslations();
+
 function refreshAll() { refreshStats(); refreshFlagged(); }
 setInterval(refreshAll, 15_000);
 refreshAll();

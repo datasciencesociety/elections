@@ -1,0 +1,8 @@
+{
+  "name": "proxy",
+  "private": true,
+  "scripts": {
+    "start": "node proxy.js",
+    "dev": "node --watch proxy.js"
+  }
+}

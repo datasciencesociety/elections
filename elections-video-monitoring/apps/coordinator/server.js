@@ -1,6 +1,5 @@
 'use strict';
 const http = require('http');
-const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -237,50 +236,6 @@ function serveFile(res, filePath, contentType) {
   });
 }
 
-// ── CORS Proxy ────────────────────────────────────────────────────────────────
-
-const TARGET_HOST = 'archive.evideo.bg';
-
-function handleProxy(req, res) {
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204, {
-      'access-control-allow-origin': '*',
-      'access-control-allow-methods': 'GET, HEAD',
-      'access-control-allow-headers': 'range',
-    });
-    res.end();
-    return;
-  }
-
-  const remotePath = req.url.slice('/proxy'.length); // keeps leading /
-  const upstreamHeaders = { ...req.headers, host: TARGET_HOST };
-  delete upstreamHeaders['origin'];
-  delete upstreamHeaders['referer'];
-
-  const proxyReq = https.request({
-    hostname: TARGET_HOST,
-    path: remotePath,
-    method: req.method,
-    headers: upstreamHeaders,
-  }, (proxyRes) => {
-    const responseHeaders = {
-      ...proxyRes.headers,
-      'access-control-allow-origin': '*',
-      'access-control-expose-headers': 'content-length, content-range, accept-ranges',
-    };
-    res.writeHead(proxyRes.statusCode, responseHeaders);
-    proxyRes.pipe(res, { end: true });
-  });
-
-  proxyReq.on('error', (err) => {
-    console.error('Proxy error:', err.message);
-    if (!res.headersSent) res.writeHead(502);
-    res.end();
-  });
-
-  req.pipe(proxyReq, { end: true });
-}
-
 // ── Route handlers ────────────────────────────────────────────────────────────
 
 // Pick 16 streams for a new volunteer, preferring streams not already assigned
@@ -316,15 +271,44 @@ function pickStreamsForSession(activeCutoff, limit = 16) {
   return [...unassigned, ...extra];
 }
 
+const SESSION_TTL = parseInt(process.env.SESSION_TTL_MS, 10) || 8 * 60 * 60 * 1000; // 8 h default
+
 async function handleSession(req, res) {
   let body = {};
   try { body = await readBody(req); } catch {}
+
+  // Resume existing session if the client sends a known session_id
+  if (body.session_id && stmt.sessionExists.get(body.session_id)) {
+    stmt.heartbeat.run(Date.now(), body.session_id);
+    const streams = db.prepare(`
+      SELECT s.id, s.url, s.label, s.section FROM streams s
+      JOIN assignments a ON a.stream_id = s.id
+      WHERE a.session_id = ?
+    `).all(body.session_id);
+    json(res, 200, { session_id: body.session_id, streams, resumed: true });
+    return;
+  }
+
   const requested = Number(body.count);
   const count = (Number.isInteger(requested) && requested >= 4 && requested <= 40 && requested % 4 === 0)
     ? requested : 4;
+
+  // If the client knows which streams it was watching, reassign those exact ones
+  let streams;
+  if (Array.isArray(body.stream_ids) && body.stream_ids.length > 0) {
+    const ids = body.stream_ids.map(Number).filter(Number.isInteger);
+    if (ids.length > 0) {
+      const placeholders = ids.map(() => '?').join(',');
+      streams = db.prepare(
+        `SELECT id, url, label, section FROM streams WHERE id IN (${placeholders}) AND enabled = 1`
+      ).all(...ids);
+    }
+  }
+  if (!streams || streams.length === 0) {
+    streams = pickStreamsForSession(Date.now() - SESSION_TTL, count);
+  }
+
   const sessionId = crypto.randomUUID();
-  const activeCutoff = Date.now() - 120_000;
-  const streams = pickStreamsForSession(activeCutoff, count);
   txCreateSession(sessionId, streams);
   json(res, 200, { session_id: sessionId, streams });
 }
@@ -334,9 +318,15 @@ async function handleHeartbeat(req, res) {
   const { session_id } = body;
   if (!session_id) { json(res, 400, { error: 'session_id required' }); return; }
 
+  if (!stmt.sessionExists.get(session_id)) {
+    // Session expired or was never created — tell client to reinitialise
+    json(res, 200, { ok: false, reinit: true });
+    return;
+  }
+
   const now = Date.now();
   stmt.heartbeat.run(now, session_id);
-  const cleaned = txCleanDead(now - 120_000);
+  const cleaned = txCleanDead(now - SESSION_TTL);
   if (cleaned > 0) console.log(`Cleaned ${cleaned} dead session(s)`);
   json(res, 200, { ok: true });
 }
@@ -348,7 +338,7 @@ async function handleReport(req, res) {
     json(res, 400, { error: 'session_id and results[] required' }); return;
   }
   if (!stmt.sessionExists.get(session_id)) {
-    json(res, 400, { error: 'unknown session' }); return;
+    json(res, 400, { error: 'unknown session', reinit: true }); return;
   }
   txReport(session_id, results, Date.now());
   json(res, 200, { ok: true });
@@ -423,7 +413,21 @@ const server = http.createServer(async (req, res) => {
   try {
     // Static pages
     if (req.method === 'GET' && url === '/') {
-      serveFile(res, path.join(__dirname, 'public', 'volunteer.html'), 'text/html; charset=utf-8');
+      // Inject PROXY_BASE so the client knows where to send video requests.
+      // PROXY_URL env var must be set (e.g. http://localhost:8788).
+      const proxyBase = process.env.PROXY_URL;
+      if (!proxyBase) {
+        res.writeHead(500);
+        res.end('Server misconfiguration: PROXY_URL env var is not set. Start the proxy app and set PROXY_URL.');
+        return;
+      }
+      const proxyScript = `<script>window.PROXY_BASE = '${proxyBase}';</script>`;
+      fs.readFile(path.join(__dirname, 'public', 'volunteer.html'), 'utf8', (err, html) => {
+        if (err) { res.writeHead(404); res.end('Not found'); return; }
+        const injected = html.replace('</head>', proxyScript + '\n</head>');
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(injected);
+      });
       return;
     }
     if (req.method === 'GET' && url === '/admin') {
@@ -438,7 +442,22 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(301, { Location: '/inspect/' }); res.end(); return;
     }
     if (req.method === 'GET' && url === '/inspect/') {
-      serveFile(res, path.join(DETECTOR_DIR, 'index.html'), 'text/html; charset=utf-8');
+      // Inject PROXY_BASE so detector/app.js routes through the standalone proxy.
+      const proxyBase = process.env.PROXY_URL;
+      if (!proxyBase) {
+        res.writeHead(500);
+        res.end('Server misconfiguration: PROXY_URL env var is not set. Start the proxy app and set PROXY_URL.');
+        return;
+      }
+      fs.readFile(path.join(DETECTOR_DIR, 'index.html'), 'utf8', (err, html) => {
+        if (err) { res.writeHead(404); res.end('Not found'); return; }
+        const injected = html.replace(
+          '</head>',
+          `<script>window.PROXY_BASE = '${proxyBase}';</script>\n</head>`,
+        );
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(injected);
+      });
       return;
     }
     if (req.method === 'GET' && url.startsWith('/inspect/') && url.endsWith('.js')) {
@@ -455,12 +474,6 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'GET' && url.endsWith('.js')) {
       serveFile(res, path.join(__dirname, 'public', path.basename(url)), 'application/javascript; charset=utf-8');
-      return;
-    }
-
-    // CORS proxy
-    if (url.startsWith('/proxy/')) {
-      handleProxy(req, res);
       return;
     }
 

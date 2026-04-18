@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Stream Monitor</title>
+<title data-i18n="header.title">Stream Monitor</title>
+<script src="i18n.js"></script>
 <style>
 :root {
   --bg: #0d0d0d;
@@ -339,14 +340,14 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
 <body>
 
 <header>
-  <h1>Election Stream Monitor</h1>
+  <h1 data-i18n="header.title">Election Stream Monitor</h1>
   <div id="status-bar">
-    <span><span id="vol-indicator"></span> <span id="session-label">connecting…</span></span>
+    <span><span id="vol-indicator"></span> <span id="session-label" data-i18n="session.connecting">connecting…</span></span>
     <span id="stream-count"></span>
     <span id="last-report-label"></span>
   </div>
   <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
-    Streams:
+    <span data-i18n="streams.label">Streams:</span>
     <select id="stream-count-select" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:12px;cursor:pointer;">
       <option value="4">4</option>
       <option value="8">8</option>
@@ -359,11 +360,12 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
       <option value="24">24</option>
     </select>
   </label>
+  <button id="lang-toggle" style="font-size:11px;padding:3px 8px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;flex-shrink:0;">EN</button>
 </header>
 
 <div id="main-layout">
   <div id="stream-panel">
-    <div id="stream-grid"><p id="loading-msg">Connecting to coordinator…</p></div>
+    <div id="stream-grid"><p id="loading-msg" data-i18n="loading.connecting">Connecting to coordinator…</p></div>
   </div>
 
   <div id="inspect-panel">
@@ -371,7 +373,7 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
       <div id="sheet-label"></div>
       <button id="sheet-close" aria-label="Close">×</button>
     </div>
-    <div id="inspect-placeholder">← select a stream to inspect</div>
+    <div id="inspect-placeholder" data-i18n="inspect.placeholder">← select a stream to inspect</div>
     <div id="inspect-loading" style="display:none">
       <div class="iframe-spinner"></div>
       <div id="inspect-loading-label"></div>
@@ -381,9 +383,9 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
 </div>
 
 <div id="overlay">
-  <h2>Stream Monitor</h2>
-  <p>Your browser needs to autoplay muted video streams. Click Start to begin monitoring.</p>
-  <button id="start-btn">Start Monitoring</button>
+  <h2 data-i18n="overlay.title">Stream Monitor</h2>
+  <p data-i18n="overlay.body">Your browser needs to autoplay muted video streams. Click Start to begin monitoring.</p>
+  <button id="start-btn" data-i18n="overlay.start">Start Monitoring</button>
 </div>
 
 <!-- Hidden video container -->
@@ -421,23 +423,21 @@ const CHECK_INTERVAL_MS = 30_000;
 const REPORT_INTERVAL_MS = 30_000;
 const HEARTBEAT_INTERVAL_MS = 60_000;
 const CANVAS_W = 320, CANVAS_H = 180;
+const LS_SESSION_KEY = 'volunteer_session_id';
+const LS_STREAMS_KEY  = 'volunteer_stream_ids';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let SESSION_ID = null;
 let streamStates = [];
 let autoplayBlocked = false;
+let _lastResumed = false;
 let intervals = [];
 
 // ── Count selector ───────────────────────────────────────────────────────────
 document.getElementById('stream-count-select').addEventListener('change', () => {
-  releaseAll();
-  streamStates = [];
-  document.getElementById('stream-grid').innerHTML = '<p id="loading-msg">Reconnecting…</p>';
-  document.getElementById('stream-count').textContent = '';
-  document.getElementById('session-label').textContent = 'connecting…';
-  document.getElementById('last-report-label').textContent = '';
-  document.getElementById('vol-indicator').classList.remove('active');
-  init();
+  localStorage.removeItem(LS_SESSION_KEY); // new count = new session
+  localStorage.removeItem(LS_STREAMS_KEY);
+  reinitSession();
 });
 
 // ── Session init ──────────────────────────────────────────────────────────────
@@ -445,21 +445,30 @@ async function init() {
   let data;
   try {
     const requestedCount = parseInt(document.getElementById('stream-count-select').value, 10);
+    const savedId      = localStorage.getItem(LS_SESSION_KEY);
+    const savedStreams  = JSON.parse(localStorage.getItem(LS_STREAMS_KEY) || 'null');
     const res = await fetch('/api/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ count: requestedCount }),
+      body: JSON.stringify({
+        count: requestedCount,
+        ...(savedId      ? { session_id: savedId }              : {}),
+        ...(savedStreams  ? { stream_ids: savedStreams }         : {}),
+      }),
     });
     data = await res.json();
   } catch (e) {
-    document.getElementById('loading-msg').textContent = 'Failed to connect. Retrying in 10s…';
+    document.getElementById('loading-msg').textContent = t('connect.failed');
     setTimeout(init, 10_000);
     return;
   }
 
   SESSION_ID = data.session_id;
+  _lastResumed = data.resumed;
+  localStorage.setItem(LS_SESSION_KEY, SESSION_ID);
+  localStorage.setItem(LS_STREAMS_KEY, JSON.stringify(data.streams.map(s => s.id)));
   document.getElementById('session-label').textContent =
-    'Session ' + SESSION_ID.slice(0, 8);
+    t(data.resumed ? 'session.resumed' : 'session.new') + ' ' + SESSION_ID.slice(0, 8);
 
   const grid = document.getElementById('stream-grid');
   grid.innerHTML = '';
@@ -469,7 +478,7 @@ async function init() {
   }
 
   document.getElementById('stream-count').textContent =
-    `Monitoring ${streamStates.length} streams`;
+    tf('monitoring.count', { n: streamStates.length });
 
   // Try autoplay
   const playPromises = streamStates.map(s => s.video.play().catch(() => null));
@@ -498,8 +507,11 @@ document.getElementById('start-btn').addEventListener('click', () => {
 
 // ── Stream setup ──────────────────────────────────────────────────────────────
 function setupStream(stream) {
-  // Rewrite URL through local proxy
-  const proxiedUrl = '/proxy' + stream.url.replace(/^https?:\/\/[^/]+/, '');
+  // Route through proxy. PROXY_BASE is injected by the server (see server.js);
+  // defaults to coordinator's own /proxy if not set.
+  const _proxyBase = (typeof window !== 'undefined' && window.PROXY_BASE) || (location.origin + '/proxy');
+  const _u = new URL(stream.url);
+  const proxiedUrl = _proxyBase + '/' + _u.hostname + _u.pathname + _u.search;
 
   const video = document.createElement('video');
   video.muted = true;
@@ -546,7 +558,7 @@ function setupStream(stream) {
       <div class="card-status">
         <svg class="hg-icon" aria-hidden="true"><use href="#hg"/></svg>
         <span class="status-dot dot-init"></span>
-        <span class="status-text">initializing</span>
+        <span class="status-text">${t('status.initializing')}</span>
       </div>
     </div>
   `;
@@ -697,13 +709,13 @@ function updateCard(state) {
   }[state.status] || 'dot-init';
 
   const statusLabel = {
-    initializing: 'Initializing',
-    loading:  'Loading',
-    ok:       'OK',
-    covered:  'COVERED',
-    frozen:   'FROZEN',
-    dark:     'DARK / MISSING',
-    error:    'Error',
+    initializing: t('status.initializing'),
+    loading:  t('status.loading'),
+    ok:       t('status.ok'),
+    covered:  t('status.covered'),
+    frozen:   t('status.frozen'),
+    dark:     t('status.dark'),
+    error:    t('status.error'),
   }[state.status] || state.status;
 
   card.querySelector('.status-dot').className = `status-dot ${dotClass}`;
@@ -725,28 +737,54 @@ async function sendReport() {
     luma: s.luma,
   }));
   try {
-    await fetch('/api/report', {
+    const res = await fetch('/api/report', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: SESSION_ID, results }),
     });
-    document.getElementById('last-report-label').textContent =
-      'Last report: ' + new Date().toLocaleTimeString();
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      if (err.reinit) { reinitSession(); return; }
+    } else {
+      document.getElementById('last-report-label').textContent =
+        t('last.report') + ' ' + new Date().toLocaleTimeString();
+    }
   } catch (e) { /* silent — will retry */ }
 }
 
 async function sendHeartbeat() {
   if (!SESSION_ID) return;
   try {
-    await fetch('/api/heartbeat', {
+    const res = await fetch('/api/heartbeat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: SESSION_ID }),
     });
+    const data = await res.json().catch(() => ({}));
+    if (data.reinit) { reinitSession(); return; }
     document.getElementById('vol-indicator').classList.add('active');
   } catch (e) {
     document.getElementById('vol-indicator').classList.remove('active');
   }
+}
+
+// Recover immediately when the tab comes back to the foreground
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && SESSION_ID) sendHeartbeat();
+});
+
+// Soft reinit: keeps stream IDs in localStorage so the same sections are reclaimed
+function reinitSession() {
+  localStorage.removeItem(LS_SESSION_KEY); // session gone, but keep LS_STREAMS_KEY
+  SESSION_ID = null;
+  releaseAll();
+  streamStates = [];
+  document.getElementById('stream-grid').innerHTML = `<p id="loading-msg" data-i18n="reconnecting">${t('reconnecting')}</p>`;
+  document.getElementById('stream-count').textContent = '';
+  document.getElementById('session-label').textContent = t('session.connecting');
+  document.getElementById('last-report-label').textContent = '';
+  document.getElementById('vol-indicator').classList.remove('active');
+  init();
 }
 
 // ── Page unload — release all video network connections ───────────────────────
@@ -808,6 +846,21 @@ document.getElementById('sheet-close').addEventListener('click', () => {
 });
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
+document.getElementById('lang-toggle').addEventListener('click', () => {
+  setLang(_lang === 'bg' ? 'en' : 'bg');
+});
+
+function onLangChange() {
+  if (SESSION_ID) {
+    document.getElementById('session-label').textContent =
+      t(_lastResumed ? 'session.resumed' : 'session.new') + ' ' + SESSION_ID.slice(0, 8);
+    document.getElementById('stream-count').textContent =
+      tf('monitoring.count', { n: streamStates.length });
+  }
+  for (const state of streamStates) updateCard(state);
+}
+
+applyTranslations();
 init();
 </script>
 </body>

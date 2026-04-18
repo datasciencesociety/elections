@@ -1,5 +1,10 @@
 'use strict';
 
+// PROXY_BASE can be overridden by the host page (e.g. coordinator injects
+// window.PROXY_BASE = location.origin + '/proxy' before loading this script).
+// Default targets the standalone proxy app on its local dev port.
+const PROXY_BASE = (typeof window !== 'undefined' && window.PROXY_BASE) || 'http://localhost:8788';
+
 // ── DOM refs ───────────────────────────────────────────────────────────────
 const elUrl          = document.getElementById('stream-url');
 const btnStart       = document.getElementById('btn-start');
@@ -294,16 +299,17 @@ function startMonitoring() {
 }
 
 function loadStream(url) {
-  // Route archive.evideo.bg through a CORS proxy so canvas.getImageData() works.
-  // When served under the coordinator (/inspect), use its /proxy/ route;
-  // otherwise fall back to the standalone proxy on localhost:8788.
-  if (/^https?:\/\/archive\.evideo\.bg/i.test(url)) {
-    const isCoordinator = location.pathname.startsWith('/inspect');
-    const proxyBase = isCoordinator
-      ? location.origin + '/proxy'
-      : 'http://localhost:8788';
-    url = proxyBase + url.replace(/^https?:\/\/[^/]+/, '');
+  // Route all external (non-same-origin) video URLs through the CORS proxy
+  // so canvas.getImageData() is not blocked by cross-origin restrictions.
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname !== location.hostname) {
+      url = PROXY_BASE + '/' + parsed.hostname + parsed.pathname + parsed.search;
+    }
+  } catch (_) {
+    // Relative or invalid URL — pass through unchanged
   }
+
   const isHls = url.includes('.m3u8') || url.includes('hls');
 
   if (typeof Hls !== 'undefined' && Hls.isSupported() && isHls) {

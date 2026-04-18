@@ -7,27 +7,15 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <div class="header-title">
-      <h1>Live Stream Freeze Detector</h1>
-      <p class="subtitle">Monitor any HLS or video stream for freeze, no-signal, or camera cover events</p>
-    </div>
-    <div class="header-right">
-      <section id="status-panel" class="status-idle">
-        <div class="status-icon" id="status-icon">⏸</div>
-        <div class="status-body">
-          <div class="status-text" id="status-text">Idle — enter a URL to begin</div>
-          <div class="status-sub" id="status-sub"></div>
-        </div>
-      </section>
-      <div class="header-actions">
-        <button id="btn-start" class="btn-primary" title="Start Monitoring">▶</button>
-        <button id="btn-stop" class="btn-danger" title="Stop" disabled>⏹</button>
-      </div>
-    </div>
-  </header>
-
   <main>
+    <section id="status-panel" class="status-idle">
+      <div class="status-icon" id="status-icon">⏸</div>
+      <div class="status-body">
+        <div class="status-text" id="status-text">Idle — enter a URL to begin</div>
+        <div class="status-sub" id="status-sub"></div>
+      </div>
+    </section>
+
 <!-- Metrics Row -->
     <section class="metrics-row" id="metrics-row">
       <div class="metric">
@@ -60,6 +48,8 @@
     <section class="card preview-section">
       <div class="preview-url-row">
         <input type="text" id="stream-url" placeholder="Enter HLS (.m3u8) or video stream URL…" autocomplete="off" spellcheck="false">
+        <button id="btn-start" class="btn-primary" title="Start Monitoring">▶</button>
+        <button id="btn-stop" class="btn-danger" title="Stop" disabled>⏹</button>
         <button id="btn-open-url" class="btn-open-url" title="Open in new tab">↗</button>
       </div>
       <video id="video" crossorigin="anonymous" muted autoplay playsinline></video>

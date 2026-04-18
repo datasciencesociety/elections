@@ -2,7 +2,7 @@
   "name": "bg-election-dashboard",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter coordinator dev",
+    "dev": "pnpm -r --parallel dev",
     "start": "pnpm --filter coordinator start",
     "test": "pnpm --filter coordinator test",
     "scrape": "pnpm --filter scraper scrape",
