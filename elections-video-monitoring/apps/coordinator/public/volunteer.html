@@ -132,6 +132,10 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
   body { height: auto; overflow: auto; }
   #main-layout { flex-direction: column; overflow: visible; min-height: unset; }
 
+  header { padding: 8px 12px; flex-direction: column; align-items: flex-start; gap: 4px; }
+  header h1 { font-size: 14px; }
+  #status-bar { font-size: 11px; gap: 10px; }
+
   .section-toggle { display: block; }
 
   #stream-panel {
@@ -144,8 +148,15 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
   #stream-panel.collapsed #stream-grid { display: none; }
 
   #stream-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    padding: 8px;
   }
+
+  .stream-card { padding: 6px 8px; min-height: 44px; }
+  .card-label { font-size: 10px; }
+  .card-metrics { font-size: 10px; word-break: break-all; }
+  .status-dot { width: 10px; height: 10px; }
 
   #inspect-panel {
     flex: none;
@@ -153,7 +164,15 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
   }
   #inspect-panel.collapsed #inspect-placeholder,
   #inspect-panel.collapsed #inspect-frame { display: none !important; }
-  #inspect-frame { height: 70vh; }
+  #inspect-frame { height: 80vh; min-height: 500px; }
+
+  #overlay h2 { font-size: 18px; }
+  #overlay p { font-size: 13px; padding: 0 16px; }
+  #overlay button { padding: 10px 24px; font-size: 15px; }
+}
+
+@media (max-width: 400px) {
+  #stream-grid { grid-template-columns: 1fr; }
 }
 
 /* ── Inspect pane ─────────────────────────────────────────────────────────── */

@@ -406,6 +406,9 @@ elUrl.addEventListener('keydown', e => { if (e.key === 'Enter') startMonitoring(
   applySettings(loadSettings());
   addLog('Stream Freeze Detector ready', 'info');
 
+  // Detect iframe embedding for tighter mobile layout
+  if (window !== window.top) document.body.classList.add('in-iframe');
+
   const params = new URLSearchParams(location.search);
   const urlParam = params.get('url');
   const tParam   = params.get('t');

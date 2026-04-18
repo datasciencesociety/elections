@@ -231,9 +231,45 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 .log-time { color: var(--text-muted); margin-right: .5rem; }
 
 @media (max-width: 500px) {
-  header { padding: 1rem; }
+  header { padding: .75rem; flex-direction: column; align-items: flex-start; gap: .5rem; }
+  header h1 { font-size: 1.1rem; }
+  header .subtitle { display: none; }
+  #status-panel { width: 100%; white-space: normal; padding: .4rem .6rem; }
+  .status-text { font-size: .8rem; }
+  .status-sub { font-size: .7rem; }
+
+  main { padding: .75rem .5rem; gap: .75rem; }
+
   .input-row { flex-direction: column; }
-  #stream-url { min-width: 0; }
+  #stream-url { min-width: 0; font-size: .8rem; padding: .6rem; }
+  .btn-primary, .btn-danger { width: 100%; padding: .6rem; }
+
+  .metrics-row { grid-template-columns: repeat(3, 1fr); gap: .3rem; }
+  .metric { padding: .4rem .5rem; border-radius: 6px; }
+  .metric-label { font-size: .55rem; }
+  .metric-value { font-size: .8rem; }
+
+  .preview-section { padding: .5rem; }
+  #video { min-width: 0; max-width: 100%; width: 100%; }
+
+  .config-grid { grid-template-columns: 1fr; }
+
+  #alert-log { max-height: 180px; font-size: .7rem; }
+  .log-entry { padding: .25rem .4rem; }
+  .log-time { font-size: .65rem; }
+
+  footer { font-size: .65rem; padding: .5rem; }
+}
+
+@media (max-width: 360px) {
+  .metrics-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Hide footer + subtitle when embedded in iframe */
+@media (max-width: 500px) {
+  body.in-iframe footer { display: none; }
+  body.in-iframe header { padding: .5rem .75rem; }
+  body.in-iframe main { padding: .5rem; gap: .5rem; }
 }
 
 @media (prefers-color-scheme: light) {

@@ -82,6 +82,49 @@ button {
 .report-count { font-weight: 600; color: #f97316; }
 
 #no-flags { color: #555; font-size: 13px; padding: 8px 0; }
+
+/* ── Mobile responsive ────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  header { padding: 10px 12px; flex-direction: column; align-items: flex-start; gap: 4px; }
+  header h1 { font-size: 14px; }
+  #meta-bar { font-size: 11px; gap: 12px; }
+
+  main { padding: 12px; gap: 16px; }
+  section { padding: 12px; }
+
+  #upload-row { flex-direction: column; }
+  textarea#stream-json { min-width: 0; width: 100%; height: 80px; font-size: 10px; }
+  #upload-controls { flex-direction: row; flex-wrap: wrap; gap: 6px; min-width: 0; }
+  #upload-controls button { flex: 1; min-width: 100px; }
+
+  /* Convert table to card layout on mobile */
+  .flag-table thead { display: none; }
+  .flag-table, .flag-table tbody, .flag-table tr, .flag-table td {
+    display: block; width: 100%;
+  }
+  .flag-table tr {
+    background: #111;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 8px;
+  }
+  .flag-table tr:hover td { background: transparent; }
+  .flag-table td {
+    padding: 3px 0;
+    border-bottom: none;
+    font-size: 12px;
+  }
+  .flag-table td::before {
+    content: attr(data-label);
+    font-size: 10px;
+    color: #888;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 2px;
+  }
+  .url-cell { max-width: 100%; white-space: normal; word-break: break-all; }
+}
 </style>
 </head>
 <body>
@@ -221,12 +264,12 @@ async function refresh() {
     const tr = document.createElement('tr');
     const durationMs = now - row.first_seen;
     tr.innerHTML = `
-      <td>${escHtml(row.label)}</td>
-      <td class="url-cell"><a href="${escHtml(row.url)}" target="_blank" title="${escHtml(row.url)}">${escHtml(row.url)}</a></td>
-      <td><span class="badge badge-${escHtml(row.flag_type)}">${escHtml(row.flag_type)}</span></td>
-      <td>${relativeTime(row.first_seen)}</td>
-      <td>${formatDuration(durationMs)}</td>
-      <td><span class="report-count">${row.report_count}</span></td>
+      <td data-label="Label">${escHtml(row.label)}</td>
+      <td data-label="URL" class="url-cell"><a href="${escHtml(row.url)}" target="_blank" title="${escHtml(row.url)}">${escHtml(row.url)}</a></td>
+      <td data-label="Flag"><span class="badge badge-${escHtml(row.flag_type)}">${escHtml(row.flag_type)}</span></td>
+      <td data-label="First seen">${relativeTime(row.first_seen)}</td>
+      <td data-label="Duration">${formatDuration(durationMs)}</td>
+      <td data-label="Reports"><span class="report-count">${row.report_count}</span></td>
     `;
     tbody.appendChild(tr);
   }
