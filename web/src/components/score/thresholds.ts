@@ -10,12 +10,12 @@
  * by the build pipeline. Below that the section is treated as in-norm.
  */
 
-export const SCORE_THRESHOLDS = {
+const SCORE_THRESHOLDS = {
   high: 0.6,
   medium: 0.3,
 } as const;
 
-export type ScoreLevel = "high" | "medium" | "low";
+type ScoreLevel = "high" | "medium" | "low";
 
 export function scoreLevel(value: number): ScoreLevel {
   if (value >= SCORE_THRESHOLDS.high) return "high";

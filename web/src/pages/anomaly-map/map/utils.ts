@@ -55,7 +55,7 @@ export function offsetOverlappingSections<
   return result;
 }
 
-export function getRiskValue(
+function getRiskValue(
   s: AnomalySection,
   methodology: AnomalyMethodology,
 ): number {

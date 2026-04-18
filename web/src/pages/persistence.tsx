@@ -3,7 +3,6 @@ import { useSearchParams } from "react-router";
 import SectionPreview from "@/components/section-preview.js";
 import Sidebar from "@/components/sidebar.js";
 import MethodologyExplainer from "@/components/methodology-explainer.js";
-import SectionSearchInput from "@/components/section-search-input.js";
 import {
   Select,
   SelectContent,
@@ -11,15 +10,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { PersistenceSection as PersistentSection } from "@/lib/api/types.js";
+import type { AnomalyMethodology, PersistenceSection as PersistentSection } from "@/lib/api/types.js";
 import { usePersistenceInfinite } from "@/lib/hooks/use-persistence.js";
+import { useDistricts, useMunicipalities } from "@/lib/hooks/use-geography.js";
 import AppFooter from "@/components/app-footer.js";
 import {
   ScoreBadge,
   SCORE_SOLID_CLASS,
   scoreLevel,
 } from "@/components/score/index.js";
-import { SlidersHorizontal, ChevronDown, ChevronUp } from "lucide-react";
+import { Info } from "lucide-react";
+import { Filters, useFilters, hasSpecialExcluded } from "@/components/section-filters.js";
 
 type SortColumn =
   | "persistence_score"
@@ -33,6 +34,18 @@ type SortColumn =
   | "avg_registered"
   | "avg_voted"
   | "avg_turnout";
+
+/** Default sort for each methodology lens. Per-method flag sorts (benford,
+ *  peer, acf) would need new server sort keys; for now those fall back to
+ *  the combined persistence score, which is still methodology-aware through
+ *  its weighted avg_risk. */
+const DEFAULT_SORT_BY_METHODOLOGY: Record<AnomalyMethodology, SortColumn> = {
+  protocol: "total_violations",
+  combined: "persistence_score",
+  benford: "persistence_score",
+  peer: "persistence_score",
+  acf: "persistence_score",
+};
 
 function FlagDots({ section, electionsCount }: { section: PersistentSection; electionsCount: number }) {
   const items = [
@@ -114,12 +127,12 @@ export default function Persistence() {
   const LIMIT = 50;
 
   // Read state from URL
-  const sort = (searchParams.get("sort") ?? "persistence_score") as SortColumn;
+  const { district, municipality, sectionSearch, sectionTypes, onlyAnomalies, methodology } = useFilters();
+  const sort = (searchParams.get("sort") ?? DEFAULT_SORT_BY_METHODOLOGY[methodology]) as SortColumn;
   const order = (searchParams.get("order") ?? "desc") as "asc" | "desc";
   const minElections = parseInt(searchParams.get("min") ?? "5", 10);
-  const excludeSpecial = searchParams.get("special") !== "1";
   const expandedSection = searchParams.get("preview") ?? null;
-  const sectionSearch = searchParams.get("q") ?? "";
+  const excludeSpecial = hasSpecialExcluded(sectionTypes);
 
   const setParam = useCallback(
     (
@@ -152,9 +165,15 @@ export default function Persistence() {
       minElections,
       excludeSpecial,
       section: sectionSearch || undefined,
+      district: district || undefined,
+      municipality: municipality || undefined,
+      minScore: onlyAnomalies ? 0.3 : 0,
     },
     LIMIT,
   );
+
+  const { data: districts = [] } = useDistricts();
+  const { data: municipalities = [] } = useMunicipalities(district || undefined);
   const error = isError ? "Грешка при зареждане" : null;
 
   // Flatten paged persistence results. The first page carries the total
@@ -198,11 +217,22 @@ export default function Persistence() {
     return () => { document.title = "Изборен монитор"; };
   }, []);
 
+  const [infoOpen, setInfoOpen] = useState(false);
+
   // Human-readable filter summary
   const activeFilters: string[] = [];
   if (minElections !== 5) activeFilters.push(`мин. ${minElections} избори`);
-  if (!excludeSpecial) activeFilters.push("със специални секции");
+  if (hasSpecialExcluded(sectionTypes)) activeFilters.push("без специални");
   if (sectionSearch) activeFilters.push(`секция ${sectionSearch}`);
+  if (onlyAnomalies) activeFilters.push("само аномалии");
+  if (district) {
+    const d = districts.find((x) => String(x.id) === district);
+    if (d) activeFilters.push(`област ${d.name}`);
+  }
+  if (municipality) {
+    const m = municipalities.find((x) => String(x.id) === municipality);
+    if (m) activeFilters.push(`община ${m.name}`);
+  }
   const sortLabelMap: Record<SortColumn, string> = {
     persistence_score: "индекс",
     elections_flagged: "отбелязани избори",
@@ -220,38 +250,69 @@ export default function Persistence() {
 
   return (
     <div className={`flex h-full flex-col overflow-hidden ${expandedSection ? "md:pr-sidebar" : ""}`}>
-      {/* Page header — intro + collapsible methodology */}
-      <div className="shrink-0 border-b border-border bg-background px-3 py-2.5 md:px-4 md:py-3">
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-          <h1 className="font-display text-base font-semibold tracking-tight md:text-lg">
+      {/* Page header — title + info toggle + counter */}
+      <div className="shrink-0 border-b border-border bg-background px-3 py-2 md:px-4 md:py-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+          <h1 className="font-display tracking-tight">
             Системни сигнали във времето
           </h1>
+          <button
+            type="button"
+            onClick={() => setInfoOpen((v) => !v)}
+            className="inline-flex items-center rounded p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+            aria-expanded={infoOpen}
+            aria-label="Какво е това"
+            title="Какво е това"
+          >
+            <Info size={16} />
+          </button>
           {electionsCount > 0 && (
             <span className="text-xs text-muted-foreground">
               {electionsCount} избори от 2021 г. насам
             </span>
           )}
+          <label
+            className="flex items-center gap-2 text-xs text-muted-foreground"
+            title="Минимален брой избори, в които секцията трябва да присъства. По-висок праг изключва секции с малко данни."
+          >
+            <span>присъства в поне</span>
+            <Select
+              value={String(minElections)}
+              onValueChange={(v: string | null) =>
+                setParam({ min: v && v !== "5" ? v : null, offset: null })
+              }
+            >
+              <SelectTrigger size="sm" className="w-20 text-xs">
+                <SelectValue>{minElections}+</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {[3, 5, 8, 10, 12].map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n}+
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span>избори</span>
+          </label>
           <span className="ml-auto text-xs tabular-nums text-muted-foreground">
             {loading ? "..." : data ? <><b className="text-foreground">{data.total.toLocaleString("bg-BG")}</b> секции</> : null}
           </span>
         </div>
-        <p className="mt-1 max-w-3xl text-muted-foreground">
-          Секции, в които статистически сигнали се появяват повтарящо се
-          в множество избори. Индексът комбинира средния риск с това колко
-          често секцията показва отклонения. По-високата стойност значи
-          по-системно повтарящ се сигнал.
-        </p>
-        <MethodologyExplainer variant="inline" className="mt-2" />
+        {infoOpen && (
+          <>
+            <p className="mt-2 max-w-prose text-muted-foreground">
+              Секции, в които статистически сигнали се появяват повтарящо се
+              в множество избори. Индексът комбинира средния риск с това колко
+              често секцията показва отклонения. По-високата стойност значи
+              по-системно повтарящ се сигнал.
+            </p>
+            <MethodologyExplainer variant="inline" className="mt-2" />
+          </>
+        )}
       </div>
 
-      {/* Controls — collapsible on mobile */}
-      <PersistenceFiltersBar
-        minElections={minElections}
-        excludeSpecial={excludeSpecial}
-        sectionSearch={sectionSearch}
-        setParam={setParam}
-        activeFilterCount={activeFilters.length}
-      />
+      <Filters />
 
       {/* Active filters summary */}
       <div className="shrink-0 border-b border-border bg-secondary/30 px-3 py-1.5 text-xs text-muted-foreground md:px-4">
@@ -561,99 +622,3 @@ export default function Persistence() {
   );
 }
 
-/** Filters bar — mobile-collapsible, reuses the same pattern as sections-table. */
-function PersistenceFiltersBar(props: {
-  minElections: number;
-  excludeSpecial: boolean;
-  sectionSearch: string;
-  setParam: (updates: Record<string, string | null>) => void;
-  activeFilterCount: number;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const { minElections, excludeSpecial, sectionSearch, setParam, activeFilterCount } =
-    props;
-
-  return (
-    <div className="shrink-0 border-b border-border bg-background">
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left md:hidden"
-      >
-        <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          <SlidersHorizontal size={13} />
-          Филтри
-          {activeFilterCount > 0 && (
-            <span className="rounded-full bg-brand px-1.5 py-0.5 text-2xs font-bold text-white">
-              {activeFilterCount}
-            </span>
-          )}
-        </span>
-        {expanded ? (
-          <ChevronUp size={14} className="text-muted-foreground" />
-        ) : (
-          <ChevronDown size={14} className="text-muted-foreground" />
-        )}
-      </button>
-
-      <div
-        className={`flex-wrap items-end gap-2 px-2 py-2 md:flex md:gap-3 md:px-4 md:py-2.5 ${
-          expanded ? "flex" : "hidden md:flex"
-        }`}
-      >
-        <div
-          title="Минимален брой избори, в които секцията трябва да присъства. По-висок праг изключва секции с малко данни и прави сигнала по-стабилен."
-        >
-          <div className="mb-0.5 text-xs text-muted-foreground">Мин. избори</div>
-          <Select
-            value={String(minElections)}
-            onValueChange={(v: string | null) =>
-              setParam({
-                min: v && v !== "5" ? v : null,
-                offset: null,
-              })
-            }
-          >
-            <SelectTrigger size="sm" className="w-24 text-xs">
-              <SelectValue>{minElections}+</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {[3, 5, 8, 10, 12].map((n) => (
-                <SelectItem key={n} value={String(n)}>
-                  {n}+
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div
-          className="flex items-end pb-1"
-          title="Изключва подвижни секции, болници, кораби и затвори, където условията на гласуване се различават от нормалните и статистическите методи не важат."
-        >
-          <label className="flex cursor-pointer items-center gap-1 text-xs text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={excludeSpecial}
-              onChange={(e) =>
-                setParam({
-                  special: e.target.checked ? null : "1",
-                  offset: null,
-                })
-              }
-              className="size-3 accent-red-500"
-            />
-            Без специални
-          </label>
-        </div>
-
-        <div className="min-w-0 flex-1 sm:flex-none sm:w-64">
-          <div className="mb-0.5 text-xs text-muted-foreground">Секция / адрес</div>
-          <SectionSearchInput
-            value={sectionSearch}
-            onPick={(code) => setParam({ q: code || null, offset: null })}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}

@@ -56,7 +56,7 @@ interface CikConfig {
   areaLen: number;
 }
 
-export const CIK_ELECTION_MAP: Record<number, CikConfig> = {
+const CIK_ELECTION_MAP: Record<number, CikConfig> = {
   // pe202410: HAS_PROTO dataEl=64, suffixes 0 (ХМ) and 1 (Х). 9510 machine, 3410 paper sections.
   1: { prefix: "pe202410", type: "p", protoSuffix: "auto", scanSuffix: ".0", dataEl: 64, areaLen: 2 },
   // pe202410_ks: same structure as pe202410 but special commission ballots. Uses HAS_PROTO + HAS_PROTO_KS.
@@ -94,7 +94,7 @@ export const CIK_ELECTION_MAP: Record<number, CikConfig> = {
   18: { prefix: "pi2021", type: "p", protoSuffix: "", scanSuffix: "", dataEl: 64, areaLen: 2 },
 };
 
-export interface ProtocolLinks {
+interface ProtocolLinks {
   protocol: string;
   scan: string;
 }

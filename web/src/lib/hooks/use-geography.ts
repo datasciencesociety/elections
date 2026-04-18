@@ -6,7 +6,6 @@ import {
   getDistricts,
   getMissingCoordinates,
   getMunicipalities,
-  getRiks,
   getSectionSiblings,
   getSettlementPeers,
 } from "../api/geography.js";
@@ -20,14 +19,6 @@ export function useDistricts() {
   return useQuery({
     queryKey: ["districts"],
     queryFn: getDistricts,
-    staleTime: Infinity,
-  });
-}
-
-export function useRiks() {
-  return useQuery({
-    queryKey: ["riks"],
-    queryFn: getRiks,
     staleTime: Infinity,
   });
 }

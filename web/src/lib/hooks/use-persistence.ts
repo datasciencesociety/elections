@@ -5,16 +5,8 @@ import {
   type PersistenceQuery,
 } from "../api/persistence.js";
 
-export function usePersistence(query: PersistenceQuery = {}) {
-  return useQuery({
-    queryKey: ["persistence", query],
-    queryFn: () => getPersistence(query),
-    staleTime: 60_000,
-  });
-}
-
 /**
- * Infinite-scroll variant of `usePersistence`. Bumps `offset` page-by-page
+ * Infinite-scroll paginated persistence index. Bumps `offset` page-by-page
  * and flattens via `flatMap` in the caller.
  */
 export function usePersistenceInfinite(

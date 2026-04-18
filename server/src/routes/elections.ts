@@ -116,6 +116,8 @@ elections.get("/persistence", (c) => {
   const offset = Math.max(parseInt(c.req.query("offset") ?? "0", 10), 0);
   const excludeSpecial = c.req.query("exclude_special") === "true";
   const sectionFilter = c.req.query("section") || undefined;
+  const district = c.req.query("district") || undefined;
+  const municipality = c.req.query("municipality") || undefined;
 
   const result = getPersistence(db, {
     minElections,
@@ -126,6 +128,8 @@ elections.get("/persistence", (c) => {
     offset,
     excludeSpecial,
     sectionFilter,
+    district,
+    municipality,
   });
 
   return c.json({

@@ -42,25 +42,9 @@ export function getAbroadBrowse(
   });
 }
 
-export function getRiks(): Promise<GeoEntity[]> {
-  return apiGet<GeoEntity[]>("/geography/riks");
-}
-
 export function getMunicipalities(districtId?: string): Promise<GeoEntity[]> {
   return apiGet<GeoEntity[]>("/geography/municipalities", {
     district: districtId,
-  });
-}
-
-export function getKmetstva(municipalityId?: string): Promise<GeoEntity[]> {
-  return apiGet<GeoEntity[]>("/geography/kmetstva", {
-    municipality: municipalityId,
-  });
-}
-
-export function getLocalRegions(municipalityId?: string): Promise<GeoEntity[]> {
-  return apiGet<GeoEntity[]>("/geography/local-regions", {
-    municipality: municipalityId,
   });
 }
 

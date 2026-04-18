@@ -14,14 +14,14 @@
 
 const BASE = "/api";
 
-export class ApiError extends Error {
+class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
     this.name = "ApiError";
   }
 }
 
-export interface QueryParams {
+interface QueryParams {
   [key: string]: string | number | boolean | undefined | null;
 }
 

@@ -21,6 +21,8 @@ export interface PersistenceQuery {
   offset?: number;
   excludeSpecial?: boolean;
   section?: string;
+  district?: string;
+  municipality?: string;
 }
 
 export function getPersistence(
@@ -35,6 +37,8 @@ export function getPersistence(
     offset: q.offset,
     exclude_special: q.excludeSpecial ? "true" : undefined,
     section: q.section,
+    district: q.district,
+    municipality: q.municipality,
   });
 }
 

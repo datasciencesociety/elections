@@ -39,11 +39,3 @@ export const ANOMALY_MIN_RISK = 0.5;
 // top of each other at the same coordinate.
 export const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5)); // ~137.5°
 export const OFFSET_RADIUS = 0.00018; // ~20 m at Bulgarian latitudes
-
-// Section type → Bulgarian label, used by the sidebar header chip.
-export const SECTION_TYPE_LABELS: Record<string, string> = {
-  mobile: "Подвижна",
-  hospital: "Болница",
-  abroad: "Чужбина",
-  prison: "Затвор",
-};

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Map, useMap } from "@/components/ui/map";
 import MapLibreGL from "maplibre-gl";
 
-export const SUBMIT_URL =
+const SUBMIT_URL =
   ((import.meta as any).env?.VITE_CORRECTION_SHEET_URL as string | undefined) ??
   "https://script.google.com/macros/s/AKfycbwPXGgqgruuWemNRAft0UtufkZhsm8CINDBjvN2liGVYrIlYjxlDnd5sSbxw-GPjyur/exec";
 

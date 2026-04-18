@@ -35,6 +35,8 @@ export interface PersistenceOptions {
   offset: number;
   excludeSpecial: boolean;
   sectionFilter?: string;
+  district?: string;
+  municipality?: string;
 }
 
 export interface PersistenceSection {
@@ -83,6 +85,31 @@ export function getPersistence(
     : "";
   const sectionClause = opts.sectionFilter ? " AND ss.section_code LIKE ?" : "";
 
+  // District/municipality filter operates on the most-recent location per
+  // section — matches how persistence aggregates across elections. Built as
+  // an EXISTS subquery so it only fires when asked.
+  const locBuild = () => {
+    const clauses: string[] = [];
+    const params: unknown[] = [];
+    if (opts.district) {
+      clauses.push("loc.district_id = ?");
+      params.push(Number(opts.district));
+    }
+    if (opts.municipality) {
+      clauses.push("loc.municipality_id = ?");
+      params.push(Number(opts.municipality));
+    }
+    if (clauses.length === 0) return { clause: "", params };
+    const clause = ` AND EXISTS (
+      SELECT 1 FROM sections sec
+      JOIN locations loc ON loc.id = sec.location_id
+      WHERE sec.section_code = ss.section_code
+        AND ${clauses.join(" AND ")}
+    )`;
+    return { clause, params };
+  };
+  const loc = locBuild();
+
   const sql = `
     WITH agg AS (
       SELECT
@@ -101,7 +128,7 @@ export function getPersistence(
         COUNT(DISTINCT CASE WHEN ss.protocol_violation_count > 0 THEN ss.election_id END) AS protocol_flags,
         ROUND(AVG(ss.turnout_rate), 4) AS avg_turnout
       FROM section_scores ss
-      WHERE 1=1${typeClause}${sectionClause}
+      WHERE 1=1${typeClause}${sectionClause}${loc.clause}
       GROUP BY ss.section_code
       HAVING elections_present >= ?
     ),
@@ -145,7 +172,7 @@ export function getPersistence(
         COUNT(DISTINCT CASE WHEN ss.risk_score >= 0.3 THEN ss.election_id END) AS elections_flagged,
         ROUND(SUM(${weightExpr} * ss.risk_score) / SUM(${weightExpr}), 4) AS weighted_avg_risk
       FROM section_scores ss
-      WHERE 1=1${typeClause}${sectionClause}
+      WHERE 1=1${typeClause}${sectionClause}${loc.clause}
       GROUP BY ss.section_code
       HAVING elections_present >= ?
     ),
@@ -157,8 +184,11 @@ export function getPersistence(
     SELECT COUNT(*) AS total FROM scored WHERE persistence_score >= ?
   `;
 
+  // Param order must match SQL placeholder order:
+  // (1) sectionFilter LIKE? (2) loc.district/municipality? (3) minElections (HAVING) (4) minScore (WHERE)
   const params: unknown[] = [];
   if (opts.sectionFilter) params.push(`%${opts.sectionFilter}%`);
+  params.push(...loc.params);
   params.push(opts.minElections);
   params.push(opts.minScore);
 

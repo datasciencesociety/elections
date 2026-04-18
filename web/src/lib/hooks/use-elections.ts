@@ -1,12 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { listElections, findElection } from "../api/elections.js";
+import { listElections } from "../api/elections.js";
 
 /**
  * React Query wrapper around `GET /api/elections`.
  *
  * Election metadata never changes during a session, so the list is cached
- * forever (`staleTime: Infinity`). Pages that need a single election look it
- * up locally via `findElection` instead of hitting an extra endpoint.
+ * forever (`staleTime: Infinity`).
  */
 export function useElections() {
   return useQuery({
@@ -14,12 +13,4 @@ export function useElections() {
     queryFn: listElections,
     staleTime: Infinity,
   });
-}
-
-export function useElection(id: number | string | undefined) {
-  const { data, ...rest } = useElections();
-  return {
-    ...rest,
-    data: id != null && data ? findElection(data, id) : null,
-  };
 }
