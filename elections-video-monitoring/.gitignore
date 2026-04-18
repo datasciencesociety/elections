@@ -2,6 +2,8 @@
 node_modules/
 *.log
 .env
+.env.state
+*.state
 
 # SQLite runtime files
 *.db
