@@ -682,7 +682,7 @@ function checkStream(state, now) {
   // Recording wall-clock time
   state.recTime = state.recStart
     ? new Date(state.recStart.getTime() + video.currentTime * 1000)
-        .toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        .toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/Sofia' })
     : null;
 
   // Classify
@@ -755,7 +755,7 @@ async function sendReport() {
       if (err.reinit) { reinitSession(); return; }
     } else {
       document.getElementById('last-report-label').textContent =
-        t('last.report') + ' ' + new Date().toLocaleTimeString();
+        t('last.report') + ' ' + new Date().toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/Sofia' });
     }
   } catch (e) { /* silent — will retry */ }
 }

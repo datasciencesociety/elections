@@ -114,11 +114,13 @@ btnResetConfig.addEventListener('click', () => { applySettings(DEFAULTS); saveSe
 
 // ── Log ────────────────────────────────────────────────────────────────────
 function addLog(msg, level = 'info') {
-  const time = new Date().toLocaleTimeString();
-  logEntries.push({ time, level, msg });
+  const now = new Date();
+  const utc = now.toISOString();
+  const displayTime = now.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/Sofia' });
+  logEntries.push({ utc, level, msg });
   const entry = document.createElement('div');
   entry.className = `log-entry ${level}`;
-  entry.innerHTML = `<span class="log-time">${time}</span>${escHtml(msg)}`;
+  entry.innerHTML = `<span class="log-time">${displayTime}</span>${escHtml(msg)}`;
   alertLog.prepend(entry);
 }
 
@@ -127,7 +129,7 @@ function escHtml(s) {
 }
 
 btnCopyLog.addEventListener('click', () => {
-  const text = logEntries.map(e => `[${e.time}] [${e.level.toUpperCase()}] ${e.msg}`).join('\n');
+  const text = logEntries.map(e => `[${e.utc}] [${e.level.toUpperCase()}] ${e.msg}`).join('\n');
   navigator.clipboard.writeText(text).catch(() => {});
 });
 btnClearLog.addEventListener('click', () => { alertLog.innerHTML = ''; logEntries = []; });
@@ -224,7 +226,7 @@ function checkFrame() {
   const coverDurSec = coverStartTime ? (now - coverStartTime) / 1000 : 0;
 
   // ── Update metrics ───────────────────────────────────────────────────────
-  mLastCheck.textContent = new Date().toLocaleTimeString();
+  mLastCheck.textContent = new Date().toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/Sofia' });
   mLuma.textContent      = luma.toFixed(1);
   mDiff.textContent      = diff !== null ? diff.toFixed(2) : '—';
   mCover.textContent     = (coverRatio * 100).toFixed(1) + '%';
@@ -240,7 +242,7 @@ function checkFrame() {
   const recStart  = parseRecordingStart(elUrl.value);
   if (recStart && mediaTime) {
     const wallTime = new Date(recStart.getTime() + mediaTime * 1000);
-    mRectime.textContent = wallTime.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    mRectime.textContent = wallTime.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/Sofia' });
   } else {
     mRectime.textContent = mediaTime ? new Date(mediaTime * 1000).toISOString().slice(11, 19) : '—';
   }
@@ -269,7 +271,7 @@ function checkFrame() {
     setStatus('warn', '⚠️', t('freeze.warn'),
       tf('freeze.warn.detail', { s: frozenSec.toFixed(0), dur: s.freezeSec }));
   } else {
-    setStatus('ok', '✅', t('stream.ok'), tf('stream.ok.checked', { t: new Date().toLocaleTimeString() }));
+    setStatus('ok', '✅', t('stream.ok'), tf('stream.ok.checked', { t: new Date().toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/Sofia' }) }));
   }
 }
 

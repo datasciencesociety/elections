@@ -426,7 +426,7 @@ async function refreshFlagged() {
 
   document.getElementById('vol-count').textContent = data.volunteer_count;
   document.getElementById('flag-count').textContent = data.flagged.length;
-  document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+  document.getElementById('last-updated').textContent = new Date().toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/Sofia' });
   document.getElementById('refresh-status').textContent = t('refresh.auto');
 
   const noFlags = document.getElementById('no-flags');
