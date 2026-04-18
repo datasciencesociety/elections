@@ -58,8 +58,11 @@
 
     /* Type scale — anchored at 16px base, matching industry standard.
        Every line-height a multiple of the 4px baseline grid.
-       text-xs through text-4xl are Tailwind defaults — we only add text-2xs (micro)
-       and text-md (reading body, between base and lg). */
+       text-xs through text-4xl are Tailwind defaults — we add text-3xs (chart
+       axis labels), text-2xs (micro), and text-md (reading body, between base
+       and lg). Never use text-[Npx] — the scale is the source of truth. */
+    --text-3xs: 9px;
+    --text-3xs--line-height: 12px;
     --text-2xs: 10px;
     --text-2xs--line-height: 14px;
     --text-md: 18px;
@@ -165,7 +168,6 @@
   }
   html {
     @apply font-sans;
-    font-size: 1.0625rem;
     font-feature-settings: "locl";
     font-language-override: "BGR";
   }

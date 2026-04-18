@@ -202,7 +202,7 @@ export default function SectionsTable() {
       district: district || undefined,
       municipality: municipality || undefined,
       section: sectionFilter || undefined,
-      excludeSpecial: hasSpecialExcluded(sectionTypes),
+      sectionTypes: Array.from(sectionTypes),
     },
     PAGE_SIZE,
   );
@@ -273,23 +273,6 @@ export default function SectionsTable() {
 
   return (
     <div className={`flex h-full flex-col overflow-hidden ${selectedSection ? "md:pr-sidebar" : ""}`}>
-      {/* Page header — title, election name, total count. */}
-      <div className="shrink-0 border-b border-border bg-background px-3 py-2.5 md:px-4 md:py-3">
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-          <h1 className="font-display text-base font-semibold tracking-tight md:text-lg">
-            Таблица на избирателните секции
-          </h1>
-          {election && (
-            <span className="text-xs text-muted-foreground">
-              {election.name}
-            </span>
-          )}
-          <span className="ml-auto text-xs tabular-nums text-muted-foreground">
-            {loading ? "..." : <><b className="text-foreground">{total.toLocaleString("bg-BG")}</b> секции</>}
-          </span>
-        </div>
-      </div>
-
       <Filters />
 
       {/* Active filters summary — makes shared links self-describing */}

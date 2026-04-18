@@ -1108,9 +1108,10 @@ export default function DistrictPieMap() {
     // the mobile layout for a collapsible bottom-sheet: wrap the
     // <aside> in a controlled `collapsed` state and toggle between
     // `h-10` (just the title bar) and `max-h-[45vh]` on a chevron tap.
-    <div className="flex h-full w-full flex-col md:flex-row">
-      <div className="relative min-h-0 flex-1">
-        {/* Top-left controls — still overlaid on the map */}
+    <div className="flex h-full w-full flex-col">
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <div className="relative min-h-0 flex-1">
+          {/* Top-left controls — still overlaid on the map */}
         <div className="absolute top-2 left-2 z-10 flex flex-wrap items-center gap-1.5 md:top-3 md:left-3 md:gap-2">
           {/* Tab switcher — МИР / Общини / Чужбина */}
           <div className="inline-flex overflow-hidden rounded-md border bg-background/95 shadow-md backdrop-blur-sm">
@@ -1228,6 +1229,7 @@ export default function DistrictPieMap() {
           />
         </aside>
       )}
+      </div>
     </div>
   );
 }

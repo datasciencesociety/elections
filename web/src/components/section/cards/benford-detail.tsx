@@ -113,12 +113,12 @@ export function BenfordDetail({
                         }}
                       />
                     </div>
-                    <span className="w-16 text-right text-[9px] font-mono tabular-nums text-muted-foreground">
+                    <span className="w-16 text-right text-3xs font-mono tabular-nums text-muted-foreground">
                       {digitCounts[i]}/{totalDigits} = {(o * 100).toFixed(0)}%
                     </span>
                   </div>
                   {digitCounts[i] > 0 && diff > 0.08 && (
-                    <div className="ml-4 text-[9px] text-muted-foreground/70">
+                    <div className="ml-4 text-3xs text-muted-foreground/70">
                       очаквано {(expected * 100).toFixed(0)}%, реално{" "}
                       {(o * 100).toFixed(0)}%
                       {diff > 0.15 ? " — силно отклонение" : " — леко отклонение"}
@@ -128,7 +128,7 @@ export function BenfordDetail({
               );
             })}
           </div>
-          <div className="mt-1 flex items-center gap-3 text-[9px] text-muted-foreground">
+          <div className="mt-1 flex items-center gap-3 text-3xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <span className="inline-block h-2 w-3 rounded-sm bg-muted-foreground/15" />{" "}
               По Бенфорд

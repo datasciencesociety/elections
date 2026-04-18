@@ -160,12 +160,12 @@ export default function SectionDetail() {
 
         {/* Editorial header */}
         <div className="mb-6">
-          <div className="flex flex-wrap items-baseline gap-3">
-            <h1 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl md:text-3xl">
               {sectionCode}
             </h1>
             <span
-              className={`rounded-full px-3 py-0.5 text-xs font-semibold ${flaggedChipClass}`}
+              className={`self-center rounded-full px-3 py-1 text-2xs font-medium uppercase tracking-eyebrow ${flaggedChipClass}`}
             >
               {flaggedCount}/{history.length} отбелязани
             </span>
@@ -243,7 +243,7 @@ export default function SectionDetail() {
                 key={h.election_id}
                 className="group flex flex-1 flex-col items-center gap-0.5"
               >
-                <span className="font-mono text-[9px] tabular-nums text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
+                <span className="font-mono text-3xs tabular-nums text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
                   {h.risk_score.toFixed(2)}
                 </span>
                 <div
@@ -255,7 +255,7 @@ export default function SectionDetail() {
                   title={`${h.election_name}: ${h.risk_score.toFixed(3)}`}
                 />
                 <span
-                  className="max-w-full truncate text-[7px] leading-tight text-muted-foreground"
+                  className="max-w-full truncate text-3xs text-muted-foreground"
                   title={h.election_name}
                 >
                   {h.election_date.slice(2, 7)}
@@ -407,7 +407,7 @@ function SiblingsStrip({
                     {s.section_code}
                   </span>
                   {isCurrent && (
-                    <span className="text-[9px] font-medium uppercase tracking-wider text-score-high">
+                    <span className="text-3xs font-medium uppercase tracking-wider text-score-high">
                       Избрана
                     </span>
                   )}
@@ -509,7 +509,7 @@ function PeerStripPlot({
         })}
       </div>
       {/* Axis labels */}
-      <div className="mt-1 flex justify-between text-[9px] font-mono tabular-nums text-muted-foreground">
+      <div className="mt-1 flex justify-between text-3xs font-mono tabular-nums text-muted-foreground">
         <span>{(min * 100).toFixed(0)}%</span>
         {current && (
           <span className="text-score-high font-semibold">

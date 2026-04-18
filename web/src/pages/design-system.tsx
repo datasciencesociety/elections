@@ -796,71 +796,122 @@ export default function DesignSystem() {
               </div>
             </div>
 
-            {/* Map filter panel */}
+            {/* Unified section filters */}
             <div className="mt-8">
-              <Eyebrow>Map filter · floating top-left</Eyebrow>
-              <div
-                className="mt-3 inline-block border border-border bg-card shadow-sm"
-                style={{ minWidth: 280 }}
-              >
-                <div className="flex items-center justify-between border-b border-border px-3 py-2">
-                  <span className="text-xs font-medium uppercase tracking-eyebrow text-muted-foreground">
-                    Филтър
+              <Eyebrow>Section filters · full-width, two tiers</Eyebrow>
+              <p className="mt-2 max-w-prose text-muted-foreground">
+                Един компонент, рендериран идентично на всяка страница, която филтрира
+                секции (карта на аномалиите, таблица, системни сигнали). State живее в
+                URL-а. Без children, без slot-ове, без per-page варианти — „същото
+                навсякъде&quot; означава буквално същото.
+              </p>
+              <div className="mt-3 overflow-hidden border border-border bg-background">
+                {/* Methodology tier — eyebrow + text tabs with brand underline */}
+                <div className="flex items-center gap-4 border-b border-border/60 px-4 py-2.5">
+                  <span className="shrink-0 text-xs font-medium uppercase tracking-eyebrow text-muted-foreground">
+                    Методология
                   </span>
-                  <span className="text-xs text-muted-foreground">↓</span>
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+                    {[
+                      { l: "Протокол", on: true },
+                      { l: "Обобщена", on: false },
+                      { l: "Бенфорд", on: false },
+                      { l: "Съседи", on: false },
+                      { l: "АКФ", on: false },
+                    ].map((m) => (
+                      <span
+                        key={m.l}
+                        className={`text-sm ${
+                          m.on
+                            ? "brand-underline text-foreground"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {m.l}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-3 p-3">
-                  <div>
-                    <Eyebrow>Методология</Eyebrow>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {["Обобщена", "Протокол", "Съседи", "Бенфорд", "АКФ"].map((m, i) => (
-                        <span
-                          key={m}
-                          className={`rounded border px-2 py-1 text-xs ${
-                            i === 0
-                              ? "border-foreground bg-foreground text-background"
-                              : "border-border text-muted-foreground"
-                          }`}
-                        >
-                          {m}
-                        </span>
-                      ))}
+
+                {/* Filter tier — selects, search, types, toggle */}
+                <div className="flex flex-wrap items-end gap-4 px-4 py-3">
+                  <div className="min-w-0 sm:w-44">
+                    <div className="mb-1 text-xs text-muted-foreground">Област</div>
+                    <div className="flex h-8 items-center justify-between rounded-md border border-input bg-card px-3 text-sm">
+                      <span>Всички</span>
+                      <span className="text-muted-foreground">▾</span>
                     </div>
                   </div>
-                  <div>
-                    <Eyebrow>Тип секция</Eyebrow>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {[
-                        { l: "Обикновени", on: true },
-                        { l: "Подвижна", on: true },
-                        { l: "Болница", on: false },
-                        { l: "Затвор", on: false },
-                        { l: "Чужбина", on: false },
-                      ].map((t) => (
-                        <span
-                          key={t.l}
-                          className={`rounded px-2 py-1 text-2xs font-medium uppercase tracking-wide ${
-                            t.on ? "bg-muted text-foreground" : "text-muted-foreground"
-                          }`}
-                        >
-                          {t.l}
-                        </span>
-                      ))}
+                  <div className="min-w-0 sm:w-44">
+                    <div className="mb-1 text-xs text-muted-foreground">Община</div>
+                    <div className="flex h-8 items-center justify-between rounded-md border border-input bg-card px-3 text-sm text-muted-foreground">
+                      <span>Всички</span>
+                      <span>▾</span>
                     </div>
                   </div>
-                  <label className="flex items-center gap-2 text-sm">
-                    <span className="inline-block h-4 w-4 border border-foreground bg-foreground" />
-                    <span>Само с аномалии</span>
+                  <div className="min-w-0 flex-1 sm:w-64">
+                    <div className="mb-1 text-xs text-muted-foreground">Секция / адрес</div>
+                    <div className="flex h-8 items-center rounded-md border border-input bg-card px-3 text-sm text-muted-foreground/70">
+                      Търсете секция...
+                    </div>
+                  </div>
+                  <div className="min-w-0 sm:w-44">
+                    <div className="mb-1 text-xs text-muted-foreground">Тип секция</div>
+                    <div className="flex h-8 items-center justify-between rounded-md border border-input bg-card px-3 text-sm">
+                      <span>Без специални</span>
+                      <span className="text-muted-foreground">▾</span>
+                    </div>
+                  </div>
+                  <label className="flex h-8 items-center gap-2 text-sm text-muted-foreground">
+                    <span className="inline-block size-4 rounded-sm border border-foreground bg-foreground" />
+                    Само аномалии
                   </label>
-                  <div className="border-t border-border pt-2 font-mono text-xs tabular-nums text-muted-foreground">
-                    1 247 / 11 893 секции
-                  </div>
                 </div>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Методология и тип секция — еднакъв rounded chip, dark pill активно състояние,
-                статус линия в mono.
+                Горен ред: лещата над данните (методология). Долен ред: ограничители
+                (кой район, кои секции). Hairline{" "}
+                <code className="font-mono">border-border/60</code> разделя нивата.
+                Активният таб носи{" "}
+                <code className="font-mono">.brand-underline</code> — единственият
+                индикатор за избор, никакви pill-ове.
               </p>
+            </div>
+
+            {/* Map counter — separated from the filters */}
+            <div className="mt-8">
+              <Eyebrow>Map counter · floating top-right</Eyebrow>
+              <p className="mt-2 max-w-prose text-muted-foreground">
+                Единственият контрол, който още плава над картата. Статус линия в mono,
+                без pill, без бутони — филтрите се задават от централната лента по-горе.
+              </p>
+              <div
+                className="mt-3 inline-block rounded-md border border-border bg-card px-2 py-1.5 font-mono text-2xs tabular-nums text-muted-foreground shadow-sm"
+              >
+                <span className="text-foreground">1 247</span> /{" "}
+                <span className="text-foreground">11 893</span> секции
+              </div>
+            </div>
+
+            {/* Mobile filter drawer */}
+            <div className="mt-8">
+              <Eyebrow>Mobile · collapsed behind single toggle</Eyebrow>
+              <p className="mt-2 max-w-prose text-muted-foreground">
+                На mobile и двата реда се свиват зад един toggle „Филтри · N&quot;.
+                Брояч на активните филтри носи единствения red pill в лентата.
+              </p>
+              <div className="mt-3 max-w-xs overflow-hidden border border-border bg-background">
+                <div className="flex items-center justify-between gap-2 px-3 py-2">
+                  <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-eyebrow text-muted-foreground">
+                    <span aria-hidden>☰</span>
+                    Филтри
+                    <span className="rounded-full bg-brand px-1.5 py-0.5 text-2xs font-bold text-white">
+                      2
+                    </span>
+                  </span>
+                  <span className="text-muted-foreground">▾</span>
+                </div>
+              </div>
             </div>
 
             {/* Sections table */}

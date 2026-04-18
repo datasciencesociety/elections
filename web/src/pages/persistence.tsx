@@ -132,7 +132,6 @@ export default function Persistence() {
   const order = (searchParams.get("order") ?? "desc") as "asc" | "desc";
   const minElections = parseInt(searchParams.get("min") ?? "5", 10);
   const expandedSection = searchParams.get("preview") ?? null;
-  const excludeSpecial = hasSpecialExcluded(sectionTypes);
 
   const setParam = useCallback(
     (
@@ -163,7 +162,7 @@ export default function Persistence() {
       sort,
       order,
       minElections,
-      excludeSpecial,
+      sectionTypes: Array.from(sectionTypes),
       section: sectionSearch || undefined,
       district: district || undefined,
       municipality: municipality || undefined,
@@ -183,7 +182,6 @@ export default function Persistence() {
     [pages],
   );
   const total = pages?.pages[0]?.total ?? 0;
-  const electionsCount = pages?.pages[0]?.elections_count ?? 0;
   const data = pages?.pages[0]
     ? { ...pages.pages[0], sections, total }
     : null;
@@ -250,83 +248,69 @@ export default function Persistence() {
 
   return (
     <div className={`flex h-full flex-col overflow-hidden ${expandedSection ? "md:pr-sidebar" : ""}`}>
-      {/* Page header — title + info toggle + counter */}
-      <div className="shrink-0 border-b border-border bg-background px-3 py-2 md:px-4 md:py-3">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-          <h1 className="font-display tracking-tight">
-            Системни сигнали във времето
-          </h1>
-          <button
-            type="button"
-            onClick={() => setInfoOpen((v) => !v)}
-            className="inline-flex items-center rounded p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-            aria-expanded={infoOpen}
-            aria-label="Какво е това"
-            title="Какво е това"
-          >
-            <Info size={16} />
-          </button>
-          {electionsCount > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {electionsCount} избори от 2021 г. насам
-            </span>
-          )}
-          <label
-            className="flex items-center gap-2 text-xs text-muted-foreground"
-            title="Минимален брой избори, в които секцията трябва да присъства. По-висок праг изключва секции с малко данни."
-          >
-            <span>присъства в поне</span>
-            <Select
-              value={String(minElections)}
-              onValueChange={(v: string | null) =>
-                setParam({ min: v && v !== "5" ? v : null, offset: null })
-              }
-            >
-              <SelectTrigger size="sm" className="w-20 text-xs">
-                <SelectValue>{minElections}+</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {[3, 5, 8, 10, 12].map((n) => (
-                  <SelectItem key={n} value={String(n)}>
-                    {n}+
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span>избори</span>
-          </label>
-          <span className="ml-auto text-xs tabular-nums text-muted-foreground">
-            {loading ? "..." : data ? <><b className="text-foreground">{data.total.toLocaleString("bg-BG")}</b> секции</> : null}
-          </span>
-        </div>
-        {infoOpen && (
-          <>
-            <p className="mt-2 max-w-prose text-muted-foreground">
-              Секции, в които статистически сигнали се появяват повтарящо се
-              в множество избори. Индексът комбинира средния риск с това колко
-              често секцията показва отклонения. По-високата стойност значи
-              по-системно повтарящ се сигнал.
-            </p>
-            <MethodologyExplainer variant="inline" className="mt-2" />
-          </>
-        )}
-      </div>
-
       <Filters />
 
+      {infoOpen && (
+        <div className="shrink-0 border-b border-border bg-background px-3 py-2 md:px-4">
+          <p className="max-w-prose text-muted-foreground">
+            Секции, в които статистически сигнали се появяват повтарящо се
+            в множество избори. Индексът комбинира средния риск с това колко
+            често секцията показва отклонения. По-високата стойност значи
+            по-системно повтарящ се сигнал.
+          </p>
+          <MethodologyExplainer variant="inline" className="mt-2" />
+        </div>
+      )}
+
       {/* Active filters summary */}
-      <div className="shrink-0 border-b border-border bg-secondary/30 px-3 py-1.5 text-xs text-muted-foreground md:px-4">
-        <span className="font-medium text-foreground tabular-nums">
-          {loading ? "..." : data ? data.total.toLocaleString("bg-BG") : "—"}
-        </span>{" "}
-        секции · сортирано по <span className="text-foreground">{sortLabel}</span>{" "}
-        {order === "desc" ? "↓" : "↑"}
-        {activeFilters.length > 0 && (
-          <>
-            {" · филтри: "}
-            <span className="text-foreground">{activeFilters.join(" · ")}</span>
-          </>
-        )}
+      <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-border bg-secondary/30 px-3 py-1.5 text-xs text-muted-foreground md:px-4">
+        <button
+          type="button"
+          onClick={() => setInfoOpen((v) => !v)}
+          className="inline-flex items-center rounded p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          aria-expanded={infoOpen}
+          aria-label="Какво е това"
+          title="Какво е това"
+        >
+          <Info size={14} />
+        </button>
+        <span>
+          <span className="font-medium text-foreground tabular-nums">
+            {loading ? "..." : data ? data.total.toLocaleString("bg-BG") : "—"}
+          </span>{" "}
+          секции · сортирано по <span className="text-foreground">{sortLabel}</span>{" "}
+          {order === "desc" ? "↓" : "↑"}
+          {activeFilters.length > 0 && (
+            <>
+              {" · филтри: "}
+              <span className="text-foreground">{activeFilters.join(" · ")}</span>
+            </>
+          )}
+        </span>
+        <label
+          className="ml-auto flex items-center gap-2"
+          title="Минимален брой избори, в които секцията трябва да присъства. По-висок праг изключва секции с малко данни."
+        >
+          <span>присъства в поне</span>
+          <Select
+            value={String(minElections)}
+            onValueChange={(v: string | null) =>
+              setParam({ min: v && v !== "5" ? v : null, offset: null })
+            }
+          >
+            <SelectTrigger size="sm" className="w-20 text-xs">
+              <SelectValue>{minElections}+</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {[3, 5, 8, 10, 12].map((n) => (
+                <SelectItem key={n} value={String(n)}>
+                  {n}+
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span>избори</span>
+        </label>
       </div>
 
       {/* Mobile sort bar */}

@@ -84,8 +84,8 @@ function StackedBar({
   const isCompact = density === "sm";
   const dotSize = isCompact ? "h-1.5 w-1.5" : "h-1.5 w-1.5";
   const dotShape = isCompact ? "rounded-sm" : "rounded-full";
-  const itemText = isCompact ? "text-[9px]" : "text-2xs";
-  const valueText = isCompact ? "text-[9px]" : "text-2xs";
+  const itemText = isCompact ? "text-3xs" : "text-2xs";
+  const valueText = isCompact ? "text-3xs" : "text-2xs";
   const legendGap = isCompact ? "gap-x-2 gap-y-0" : "gap-x-3 gap-y-0";
   const wrapperSpacing = isCompact ? "space-y-0.5" : "space-y-1";
   const trackBg = isCompact ? "" : "bg-muted";

@@ -249,7 +249,7 @@ function AddressHeader({
           {group.settlement || "—"}
         </div>
         {group.sections.length > 1 && (
-          <div className="shrink-0 text-[9px] uppercase tracking-wide text-muted-foreground">
+          <div className="shrink-0 text-3xs uppercase tracking-wide text-muted-foreground">
             {group.sections.length} секции
           </div>
         )}

@@ -113,11 +113,13 @@ export function Filters() {
         )}
       </button>
 
-      {/* Methodology — the lens over the data. Same row, same component,
-          every page that renders <Filters/> gets it. Active tab carries the
-          brand underline; everything else is plain text on plain background. */}
+      {/* Methodology — the lens over the data. Below `2xl` it sits on its own
+          row above the filter fields; at `2xl+` we collapse this row into the
+          filter row so wide viewports only show one filter strip. `2xl` is
+          the threshold because anything below that doesn't have the horizontal
+          room to fit methodology + all six filter fields on one line. */}
       <div
-        className={`items-center gap-4 border-b border-border/60 px-3 py-2 md:flex md:px-4 md:py-2.5 ${
+        className={`items-center gap-4 border-b border-border/60 px-3 py-2 md:flex md:px-4 md:py-2.5 2xl:hidden ${
           expanded ? "flex" : "hidden md:flex"
         }`}
       >
@@ -150,6 +152,33 @@ export function Filters() {
           expanded ? "flex" : "hidden md:flex"
         }`}
       >
+        {/* Methodology — inline with the fields at `2xl+` only, where there
+            is enough horizontal room for all six fields on one line. */}
+        <div className="hidden items-end gap-4 2xl:flex">
+          <Field label="Методология">
+            <div className="flex h-8 items-center gap-x-4">
+              {METHODOLOGIES.map((m) => {
+                const active = methodology === m.key;
+                return (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() => setMethodology(m.key)}
+                    className={`text-sm transition-colors ${
+                      active
+                        ? "brand-underline text-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+          <span className="mb-2 h-6 w-px bg-border" aria-hidden="true" />
+        </div>
+
         {/* District */}
         <Field label="Област" className="sm:w-44">
           <Select
@@ -161,7 +190,7 @@ export function Filters() {
               })
             }
           >
-            <SelectTrigger size="sm" className="w-full text-sm">
+            <SelectTrigger size="sm" className="w-full text-sm font-medium">
               <SelectValue>
                 {district
                   ? districts.find((d) => String(d.id) === district)?.name ?? "—"
@@ -188,7 +217,7 @@ export function Filters() {
             }
             disabled={!district}
           >
-            <SelectTrigger size="sm" className="w-full text-sm">
+            <SelectTrigger size="sm" className="w-full text-sm font-medium">
               <SelectValue>
                 {municipality
                   ? municipalities.find((m) => String(m.id) === municipality)?.name ?? "—"
@@ -206,32 +235,37 @@ export function Filters() {
           </Select>
         </Field>
 
-        {/* Section search */}
-        <Field label="Секция / адрес" className="flex-1 sm:w-64">
+        {/* Section search — flexes to fill the remaining row at every size so
+            the bar never horizontal-scrolls. Capped on large viewports so it
+            doesn't swallow the row. */}
+        <Field label="Секция / адрес" className="w-full sm:flex-1 sm:min-w-60 lg:max-w-sm">
           <SectionSearchInput
             value={sectionSearch}
             onPick={(code) => update({ q: code || null })}
           />
         </Field>
 
-        {/* Section types multi-select */}
-        <Field label="Тип секция" className="sm:w-44">
-          <SectionTypesPicker
-            value={sectionTypes}
-            onChange={(next) => update({ types: serializeSectionTypes(next) })}
-          />
-        </Field>
+        {/* Right cluster — type + only-anomalies. Divider only at lg+, where
+            the cluster reliably sits on the same row; below lg it wraps and
+            an orphaned left-border looks wrong. */}
+        <div className="flex flex-wrap items-end gap-3 md:ml-auto md:gap-4 lg:border-l lg:border-border lg:pl-4">
+          <Field label="Тип секция" className="sm:w-44">
+            <SectionTypesPicker
+              value={sectionTypes}
+              onChange={(next) => update({ types: serializeSectionTypes(next) })}
+            />
+          </Field>
 
-        {/* Only anomalies toggle — aligned with the bottom of the field row */}
-        <label className="flex h-8 cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={onlyAnomalies}
-            onChange={(e) => update({ only: e.target.checked ? "1" : null })}
-            className="size-4 accent-foreground"
-          />
-          Само аномалии
-        </label>
+          <label className="flex h-8 cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={onlyAnomalies}
+              onChange={(e) => update({ only: e.target.checked ? "1" : null })}
+              className="size-4 accent-foreground"
+            />
+            Само аномалии
+          </label>
+        </div>
       </div>
     </div>
   );
@@ -268,7 +302,9 @@ function Field({
 }) {
   return (
     <div className={`min-w-0 ${className}`}>
-      <div className="mb-1 text-xs text-muted-foreground">{label}</div>
+      <div className="mb-1 text-2xs font-medium uppercase tracking-eyebrow text-muted-foreground">
+        {label}
+      </div>
       {children}
     </div>
   );

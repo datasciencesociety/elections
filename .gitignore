@@ -17,6 +17,7 @@ data/geocode_locations.py
 # Tool configs
 .claude/
 .codex/
+.mcp.json
 
 # Python
 __pycache__/

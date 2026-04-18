@@ -153,7 +153,7 @@ export default function SectionPreview({
               key={h.election_id}
               className="group flex flex-1 flex-col items-center gap-0.5"
             >
-              <span className="text-[7px] font-mono tabular-nums text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
+              <span className="text-3xs font-mono tabular-nums text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
                 {h.risk_score.toFixed(2)}
               </span>
               <div
@@ -161,7 +161,7 @@ export default function SectionPreview({
                 style={{ height: `${Math.max(3, h.risk_score * 48)}px` }}
                 title={`${h.election_name}: ${h.risk_score.toFixed(3)}`}
               />
-              <span className="max-w-full truncate text-[6px] leading-tight text-muted-foreground">
+              <span className="max-w-full truncate text-3xs text-muted-foreground">
                 {h.election_date.slice(2, 7)}
               </span>
             </div>
@@ -216,7 +216,7 @@ function Stat({
 }) {
   return (
     <div className="rounded-lg border border-border p-2 text-center">
-      <div className="text-[9px] uppercase text-muted-foreground">{label}</div>
+      <div className="text-3xs uppercase text-muted-foreground">{label}</div>
       <div className="text-sm font-bold">{value}</div>
     </div>
   );
