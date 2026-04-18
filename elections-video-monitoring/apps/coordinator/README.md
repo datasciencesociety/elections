@@ -38,15 +38,25 @@ Default port: `3000`. Override with `PORT` env var.
 
 ```jsonc
 {
-  "section": "102700005",  // 9-digit section ID (optional — parsed from URL if omitted)
+  "section": "102700005",        // 9-digit section ID (optional — parsed from URL if omitted)
   "url": "https://archive.evideo.bg/.../102700005/recording.mp4",
-  "label": "ОИК 1027 Кочериново / 102700005 С. БАРАКОВО (tour 1)"
+  "label": "ОИК 1027 Кочериново / 102700005 С. БАРАКОВО (tour 1)",
+  "assigned_users": "4905dd,8d4a1a"  // optional — see below
 }
 ```
+
+| Field | Required | Description |
+| ----- | -------- | ----------- |
+| `section` | no | 9-digit section ID. Unique upsert key. Parsed from URL if omitted; falls back to `label`. |
+| `url` | yes | Recording URL on `archive.evideo.bg`. |
+| `label` | yes | Human-readable name shown in the admin and volunteer UIs. |
+| `assigned_users` | no | Comma-separated volunteer user IDs (provided by auth at login) that are pre-assigned to this section. Volunteers with a matching ID will have the section prioritised in their session. Sections with no or few assignments are also available for volunteers to self-select. |
 
 The `section` field is the unique key for upserts. If omitted, the server extracts it from the URL path (`/real/<9-digit>/`). If the URL doesn't contain one, the label is used as fallback.
 
 When a device restarts and gets a new recording URL, re-uploading the same section updates the URL and resets `last_checked` so volunteers pick it up immediately.
+
+The scraper (`apps/scraper`) produces `section`, `url`, and `label` only. Add `assigned_users` manually for sections that need dedicated volunteer coverage.
 
 ### Report result fields
 

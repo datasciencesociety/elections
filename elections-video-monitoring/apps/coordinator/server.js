@@ -68,11 +68,15 @@ db.exec(`
 // Fallback: use rowid for any rows where extraction failed
 db.exec(`UPDATE streams SET section = CAST(id AS TEXT) WHERE section IS NULL`);
 try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_streams_section ON streams(section)'); } catch {}
+try { db.exec('ALTER TABLE streams ADD COLUMN assigned_users TEXT'); } catch {}
+// rename old column if it exists from a previous run
+try { db.exec('ALTER TABLE streams RENAME COLUMN allowed_users TO assigned_users'); } catch {}
+try { db.exec('ALTER TABLE sessions ADD COLUMN user_id TEXT'); } catch {}
 
 // ── Prepared statements ───────────────────────────────────────────────────────
 
 const stmt = {
-  insertSession:     db.prepare('INSERT INTO sessions VALUES (?, ?, ?)'),
+  insertSession:     db.prepare('INSERT INTO sessions (id, assigned_at, last_heartbeat, user_id) VALUES (?, ?, ?, ?)'),
   // pickStreams is dynamic — see pickStreamsForSession()
   insertAssignment:  db.prepare('INSERT OR REPLACE INTO assignments VALUES (?, ?, ?)'),
   heartbeat:         db.prepare('UPDATE sessions SET last_heartbeat = ? WHERE id = ?'),
@@ -105,10 +109,10 @@ const stmt = {
     ORDER BY report_count DESC, first_seen ASC
   `),
   volunteerCount:    db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE last_heartbeat > ?'),
-  insertStream:      db.prepare('INSERT INTO streams (section, url, label) VALUES (?, ?, ?)'),
+  insertStream:      db.prepare('INSERT INTO streams (section, url, label, assigned_users) VALUES (?, ?, ?, ?)'),
   upsertStream:      db.prepare(`
-    INSERT INTO streams (section, url, label) VALUES (?, ?, ?)
-    ON CONFLICT(section) DO UPDATE SET url = excluded.url, label = excluded.label, last_checked = NULL
+    INSERT INTO streams (section, url, label, assigned_users) VALUES (?, ?, ?, ?)
+    ON CONFLICT(section) DO UPDATE SET url = excluded.url, label = excluded.label, assigned_users = excluded.assigned_users, last_checked = NULL
   `),
   streamStats:       db.prepare(`
     SELECT
@@ -123,7 +127,7 @@ const stmt = {
     ) a ON a.stream_id = s.id
   `),
   toggleStream:      db.prepare('UPDATE streams SET enabled = ? WHERE id = ?'),
-  allStreams:        db.prepare('SELECT id, section, label, url, enabled FROM streams ORDER BY section'),
+  allStreams:        db.prepare('SELECT id, section, label, url, enabled, assigned_users FROM streams ORDER BY section'),
 };
 
 // node:sqlite has no .transaction() helper — wrap with manual BEGIN/COMMIT
@@ -139,10 +143,10 @@ function transaction(fn) {
   }
 }
 
-function txCreateSession(sessionId, streams) {
+function txCreateSession(sessionId, streams, userId = null) {
   transaction(() => {
     const now = Date.now();
-    stmt.insertSession.run(sessionId, now, now);
+    stmt.insertSession.run(sessionId, now, now, userId);
     for (const s of streams) {
       stmt.insertAssignment.run(sessionId, s.id, now);
     }
@@ -172,7 +176,7 @@ function txBulkUpload(streams) {
     db.exec('DELETE FROM streams');
     for (const s of streams) {
       const section = s.section || extractSection(s.url) || String(s.label);
-      stmt.insertStream.run(section, s.url, String(s.label));
+      stmt.insertStream.run(section, s.url, String(s.label), s.assigned_users || null);
     }
     return streams.length;
   });
@@ -184,7 +188,7 @@ function txUpsertStreams(streams) {
     for (const s of streams) {
       const section = s.section || extractSection(s.url) || String(s.label);
       const existing = db.prepare('SELECT url FROM streams WHERE section = ?').get(section);
-      stmt.upsertStream.run(section, s.url, String(s.label));
+      stmt.upsertStream.run(section, s.url, String(s.label), s.assigned_users || null);
       if (existing) { if (existing.url !== s.url) updated++; }
       else inserted++;
     }
@@ -238,37 +242,62 @@ function serveFile(res, filePath, contentType) {
 
 // ── Route handlers ────────────────────────────────────────────────────────────
 
-// Pick 16 streams for a new volunteer, preferring streams not already assigned
-// to any currently-active session.  Falls back to least-recently-checked when
-// there are fewer unassigned streams than needed.
-function pickStreamsForSession(activeCutoff, limit = 16) {
-  // Streams assigned to alive sessions
+// Pick streams for a new volunteer.
+// Priority order:
+//   1. Sections pre-assigned to this userId (assigned_users contains the ID) that have no active coverage
+//   2. Other unassigned sections (not currently watched by any live session)
+//   3. Fallback: least-recently-checked sections regardless of assignment (when pool is small)
+// TODO: replace userId stub with real user ID from auth
+function pickStreamsForSession(activeCutoff, limit = 16, userId = null) {
+  const activeSub = `
+    SELECT a.stream_id FROM assignments a
+    JOIN sessions se ON se.id = a.session_id
+    WHERE se.last_heartbeat > ?
+  `;
+
+  // 1. Pre-assigned sections for this user, not currently covered
+  let prioritized = [];
+  if (userId) {
+    prioritized = db.prepare(`
+      SELECT s.id, s.url, s.label, s.section FROM streams s
+      WHERE s.enabled = 1
+        AND s.id NOT IN (${activeSub})
+        AND s.assigned_users IS NOT NULL
+        AND (',' || s.assigned_users || ',') LIKE ('%,' || ? || ',%')
+      ORDER BY s.last_checked IS NOT NULL, s.last_checked ASC, RANDOM()
+      LIMIT ?
+    `).all(activeCutoff, userId, limit);
+  }
+
+  if (prioritized.length >= limit) return prioritized;
+
+  // 2. Other unassigned sections (exclude already-picked)
+  const excl1 = prioritized.map(s => s.id);
+  const ph1 = excl1.length ? excl1.map(() => '?').join(',') : 'NULL';
   const unassigned = db.prepare(`
     SELECT s.id, s.url, s.label, s.section FROM streams s
     WHERE s.enabled = 1
-      AND s.id NOT IN (
-        SELECT a.stream_id FROM assignments a
-        JOIN sessions se ON se.id = a.session_id
-        WHERE se.last_heartbeat > ?
-      )
+      AND s.id NOT IN (${activeSub})
+      AND s.id NOT IN (${ph1})
     ORDER BY s.last_checked IS NOT NULL, s.last_checked ASC, RANDOM()
     LIMIT ?
-  `).all(activeCutoff, limit);
+  `).all(activeCutoff, ...excl1, limit - prioritized.length);
 
-  if (unassigned.length >= limit) return unassigned;
+  const picked = [...prioritized, ...unassigned];
+  if (picked.length >= limit) return picked;
 
-  // Not enough unassigned — pad with least-recently-checked assigned streams
-  const exclude = unassigned.map(s => s.id);
-  const placeholders = exclude.length ? exclude.map(() => '?').join(',') : 'NULL';
+  // 3. Pad with least-recently-checked (pool exhausted — all sections already covered)
+  const excl2 = picked.map(s => s.id);
+  const ph2 = excl2.length ? excl2.map(() => '?').join(',') : 'NULL';
   const extra = db.prepare(`
     SELECT s.id, s.url, s.label, s.section FROM streams s
     WHERE s.enabled = 1
-      AND s.id NOT IN (${placeholders})
+      AND s.id NOT IN (${ph2})
     ORDER BY s.last_checked IS NOT NULL, s.last_checked ASC, RANDOM()
     LIMIT ?
-  `).all(...exclude, limit - unassigned.length);
+  `).all(...excl2, limit - picked.length);
 
-  return [...unassigned, ...extra];
+  return [...picked, ...extra];
 }
 
 const SESSION_TTL = parseInt(process.env.SESSION_TTL_MS, 10) || 8 * 60 * 60 * 1000; // 8 h default
@@ -305,11 +334,11 @@ async function handleSession(req, res) {
     }
   }
   if (!streams || streams.length === 0) {
-    streams = pickStreamsForSession(Date.now() - SESSION_TTL, count);
+    streams = pickStreamsForSession(Date.now() - SESSION_TTL, count, body.user_id || null);
   }
 
   const sessionId = crypto.randomUUID();
-  txCreateSession(sessionId, streams);
+  txCreateSession(sessionId, streams, body.user_id || null);
   json(res, 200, { session_id: sessionId, streams });
 }
 

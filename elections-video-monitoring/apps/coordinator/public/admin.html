@@ -110,6 +110,7 @@ button {
 .section-row:last-child { border-bottom: none; }
 .section-row .s-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .section-row .s-url { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; font-size: 10px; color: #888; }
+.section-row .s-users { font-size: 10px; color: #818cf8; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; flex-shrink: 0; }
 .section-row .s-toggle { cursor: pointer; background: none; border: 1px solid #444; color: #888; padding: 2px 8px; border-radius: 3px; font-size: 10px; }
 .section-row .s-toggle:hover { border-color: #666; color: #ccc; }
 .section-row.disabled { opacity: 0.4; }
@@ -194,11 +195,11 @@ button {
   <section>
     <h2 data-i18n="upload.title">Add / Update Sections</h2>
     <p style="font-size:12px;color:#666;margin-bottom:10px">
-      JSON array: <code style="color:#9ca3af">[{"section":"102700005","url":"https://...","label":"OIK 42 / …"}, …]</code>
-      — adds new sections or updates URL if section already exists (device restart). Section ID is auto-parsed from URL if omitted.
+      JSON array: <code style="color:#9ca3af">[{"section":"102700005","url":"https://...","label":"OIK 42 / …","assigned_users":"4905dd,8d4a1a"}, …]</code>
+      — adds new sections or updates URL if section already exists (device restart). Section ID is auto-parsed from URL if omitted. <code style="color:#9ca3af">assigned_users</code> is an optional comma-separated list of volunteer IDs pre-assigned to this section; volunteers can also self-select sections with low or no assignments.
     </p>
     <div id="upload-row">
-      <textarea id="stream-json" placeholder='[{"section":"102700005","url":"https://archive.evideo.bg/...","label":"..."}]'></textarea>
+      <textarea id="stream-json" placeholder='[{"section":"102700005","url":"https://archive.evideo.bg/...","label":"...","assigned_users":"4905dd,8d4a1a"}]'></textarea>
       <div id="upload-controls">
         <button id="btn-file-pick" data-i18n="upload.file">Choose file</button>
         <input type="file" id="file-input" accept=".json,.csv,.txt">
@@ -275,7 +276,11 @@ document.getElementById('file-input').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = (ev) => { document.getElementById('stream-json').value = ev.target.result; };
+  reader.onload = (ev) => {
+    document.getElementById('stream-json').value = ev.target.result;
+    e.target.value = ''; // reset so the same file can be picked again
+    document.getElementById('btn-upload').click();
+  };
   reader.readAsText(file);
 });
 
@@ -382,6 +387,7 @@ function renderSections() {
     div.innerHTML = `
       <span class="s-label" title="${escHtml(s.label)}">${escHtml(s.section)} — ${escHtml(s.label)}</span>
       <span class="s-url" title="${escHtml(s.url)}">${escHtml(s.url)}</span>
+      ${s.assigned_users ? `<span class="s-users" title="Pre-assigned: ${escHtml(s.assigned_users)}">${escHtml(s.assigned_users)}</span>` : ''}
       <button class="s-toggle" data-id="${s.id}" data-enabled="${s.enabled}">${s.enabled ? t('toggle.disable') : t('toggle.enable')}</button>
     `;
     container.appendChild(div);

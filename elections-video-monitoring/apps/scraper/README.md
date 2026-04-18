@@ -83,3 +83,18 @@ File naming convention: `streams_<election-code>[_tour<N>][_<type>].json`
 | `url` | Full recording URL on `archive.evideo.bg` |
 | `label` | Human-readable label: OIK name / section ID + location name + tour |
 
+The scraper only emits `section`, `url`, and `label`. The optional `assigned_users` field (comma-separated volunteer IDs) must be added manually after scraping when you want to pre-assign specific volunteers to a section:
+
+```json
+[
+  {
+    "section": "123456789",
+    "url": "https://archive.evideo.bg/real/123456789/...",
+    "label": "OIK 12 / 123456789 Sofia (tour 1)",
+    "assigned_users": "4905dd,8d4a1a"
+  }
+]
+```
+
+Volunteers whose auth-provided user ID appears in `assigned_users` will have those sections prioritised in their session. Sections with no `assigned_users` or with fewer assignments are also available for volunteers to self-select.
+
