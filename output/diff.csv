@@ -1,0 +1,1252 @@
+section,type,field,party,candidate,got,expected,comment
+010100001,protocol,valid_votes_machine,,,116,146,high_prob_ocr: single digit confusion
+010100001,preferences,candidate,7,Без,total=7 paper=0 machine=7,total=8 paper=1 machine=7,likely_ocr: single digit differs
+010100001,preferences,candidate,12,Без,total=19 paper=0 machine=19,total=28 paper=9 machine=19,unknown_cause
+010100002,protocol,voted_count,,,183,283,likely_ocr: single digit differs
+010100002,protocol,no_support_paper,,,4,7,likely_ocr: single digit differs
+010100002,preferences,candidate,2,Без,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+010100002,preferences,candidate,4,101,total=3 paper=3 machine=0,total=4 paper=3 machine=1,likely_ocr: single digit differs
+010100002,preferences,candidate,4,Без,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+010100002,preferences,candidate,5,Без,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+010100002,preferences,candidate,7,107,total=1 paper=1 machine=0,total=2 paper=1 machine=1,likely_ocr: single digit differs
+010100002,preferences,candidate,8,113,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+010100002,preferences,candidate,13,Без,total=4 paper=4 machine=0,total=1 paper=1 machine=0,high_prob_ocr: single digit confusion
+010100002,preferences,candidate,28,102,total=7 paper=4 machine=3,total=10 paper=7 machine=3,unknown_cause
+010100002,preferences,candidate,28,122,total=4 paper=2 machine=2,total=6 paper=4 machine=2,likely_ocr: single digit differs
+020400183,protocol,no_support_machine,,,0,1,likely_ocr: value missed (read as 0/empty)
+020400183,votes,party_votes,4,,total=7 paper=7 machine=0,total=8 paper=7 machine=1,possible_ocr: small difference
+020400183,preferences,candidate,4,103,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+020400183,preferences,candidate,4,106,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+020400183,preferences,candidate,4,108,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+020400183,preferences,candidate,4,Без,total=0 paper=0 machine=0,total=4 paper=3 machine=1,likely_ocr: value missed (read as 0/empty)
+020400183,preferences,candidate,6,101,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,6,102,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,6,Без,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,7,101,MISSING,total=3 paper=2 machine=1,missing_data
+020400183,preferences,candidate,7,102,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,7,103,MISSING,total=1 paper=1 machine=0,missing_data
+020400183,preferences,candidate,7,104,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,7,105,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,7,106,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,7,107,MISSING,total=1 paper=1 machine=0,missing_data
+020400183,preferences,candidate,7,108,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,7,109,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,7,110,MISSING,total=1 paper=1 machine=0,missing_data
+020400183,preferences,candidate,7,111,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,7,112,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,7,113,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,7,114,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,7,115,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,7,Без,MISSING,total=6 paper=4 machine=2,missing_data
+020400183,preferences,candidate,8,101,MISSING,total=2 paper=0 machine=2,missing_data
+020400183,preferences,candidate,8,102,MISSING,total=1 paper=1 machine=0,missing_data
+020400183,preferences,candidate,8,103,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,104,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,105,MISSING,total=1 paper=0 machine=1,missing_data
+020400183,preferences,candidate,8,106,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,107,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,108,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,109,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,110,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,111,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,112,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,113,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,114,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,115,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,116,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,117,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,118,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,119,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,120,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,121,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,122,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,123,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,124,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,125,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,126,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,127,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,128,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,8,Без,MISSING,total=2 paper=1 machine=1,missing_data
+020400183,preferences,candidate,9,101,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,9,Без,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,10,101,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,10,102,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,10,103,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,10,104,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,10,Без,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,11,101,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,11,102,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,11,Без,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,12,101,MISSING,total=5 paper=4 machine=1,missing_data
+020400183,preferences,candidate,12,102,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,12,103,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,12,104,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,12,105,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,12,106,MISSING,total=1 paper=1 machine=0,missing_data
+020400183,preferences,candidate,12,107,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,12,108,MISSING,total=1 paper=1 machine=0,missing_data
+020400183,preferences,candidate,12,109,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,12,110,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,12,111,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,12,112,MISSING,total=1 paper=0 machine=1,missing_data
+020400183,preferences,candidate,12,113,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,12,114,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,12,115,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,12,116,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,12,117,MISSING,total=1 paper=1 machine=0,missing_data
+020400183,preferences,candidate,12,Без,MISSING,total=11 paper=8 machine=3,missing_data
+020400183,preferences,candidate,13,123,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,13,124,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,13,125,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,13,126,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,13,127,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,13,128,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,13,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+020400183,preferences,candidate,17,Без,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+020400183,preferences,candidate,18,101,total=2 paper=1 machine=1,total=15 paper=14 machine=1,unknown_cause
+020400183,preferences,candidate,18,123,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,18,124,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,18,125,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,18,126,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,18,127,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,18,128,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,18,Без,total=0 paper=0 machine=0,total=22 paper=15 machine=7,likely_ocr: value missed (read as 0/empty)
+020400183,preferences,candidate,20,101,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,20,102,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,20,103,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,20,104,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,20,Без,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,21,101,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,21,Без,MISSING,total=1 paper=1 machine=0,missing_data
+020400183,preferences,candidate,22,101,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,22,102,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,22,103,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,22,104,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,22,105,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,22,106,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,22,107,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,22,108,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,22,109,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,22,110,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,22,111,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,22,112,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,22,Без,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,23,101,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,23,102,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,23,103,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,23,104,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,23,Без,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,24,101,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,24,102,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,24,103,MISSING,total=1 paper=0 machine=1,missing_data
+020400183,preferences,candidate,24,104,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,24,105,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,24,106,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,24,107,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,24,Без,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,25,101,MISSING,total=1 paper=1 machine=0,missing_data
+020400183,preferences,candidate,25,102,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,25,103,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,25,104,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,25,105,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,25,106,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,25,107,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,25,108,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,25,109,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,25,110,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,25,111,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,25,112,MISSING,total=2 paper=2 machine=0,missing_data
+020400183,preferences,candidate,25,113,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,25,114,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,25,115,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,25,116,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,25,Без,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,26,101,MISSING,total=6 paper=4 machine=2,missing_data
+020400183,preferences,candidate,26,102,MISSING,total=6 paper=4 machine=2,missing_data
+020400183,preferences,candidate,26,103,MISSING,total=1 paper=0 machine=1,missing_data
+020400183,preferences,candidate,26,104,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,26,105,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,26,106,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,26,107,MISSING,total=1 paper=1 machine=0,missing_data
+020400183,preferences,candidate,26,108,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,26,109,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,26,110,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,26,111,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,26,112,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,26,113,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,26,114,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,26,115,MISSING,total=1 paper=0 machine=1,missing_data
+020400183,preferences,candidate,26,116,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,26,117,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,26,118,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,26,119,MISSING,total=1 paper=1 machine=0,missing_data
+020400183,preferences,candidate,26,120,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,26,Без,MISSING,total=10 paper=7 machine=3,missing_data
+020400183,preferences,candidate,27,Без,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+020400183,preferences,candidate,28,101,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+020400183,preferences,candidate,28,102,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+020400183,preferences,candidate,28,122,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+020400183,preferences,candidate,28,123,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,28,124,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,28,125,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,28,126,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,28,127,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,28,128,MISSING,total=0 paper=0 machine=0,missing_data
+020400183,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=11 paper=7 machine=4,likely_ocr: value missed (read as 0/empty)
+030603396,protocol,unused_ballots,,,426215,415,unknown: large difference
+030603396,protocol,valid_votes_paper,,,46,76,likely_ocr: single digit differs
+030603396,protocol,machine_ballots,,,0,99,likely_ocr: value missed (read as 0/empty)
+030603396,protocol,no_support_machine,,,0,2,likely_ocr: value missed (read as 0/empty)
+030603396,protocol,valid_votes_machine,,,94,97,likely_ocr: single digit differs
+030603396,preferences,candidate,1,113,total=2 paper=2 machine=0,EXTRA,extra_data
+030603396,preferences,candidate,1,115,total=113 paper=113 machine=0,EXTRA,extra_data
+030603396,preferences,candidate,1,116,total=114 paper=114 machine=0,EXTRA,extra_data
+030603396,preferences,candidate,1,117,total=115 paper=115 machine=0,EXTRA,extra_data
+030603396,preferences,candidate,1,118,total=116 paper=116 machine=0,EXTRA,extra_data
+030603396,preferences,candidate,1,119,total=117 paper=117 machine=0,EXTRA,extra_data
+030603396,preferences,candidate,1,120,total=118 paper=118 machine=0,EXTRA,extra_data
+030603396,preferences,candidate,1,121,total=119 paper=119 machine=0,EXTRA,extra_data
+030603396,preferences,candidate,1,122,total=120 paper=120 machine=0,EXTRA,extra_data
+030603396,preferences,candidate,1,Без,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,2,109,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,2,Без,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,3,113,total=4 paper=4 machine=0,EXTRA,extra_data
+030603396,preferences,candidate,3,115,total=113 paper=113 machine=0,EXTRA,extra_data
+030603396,preferences,candidate,3,116,total=114 paper=114 machine=0,EXTRA,extra_data
+030603396,preferences,candidate,3,117,total=115 paper=115 machine=0,EXTRA,extra_data
+030603396,preferences,candidate,3,118,total=116 paper=116 machine=0,EXTRA,extra_data
+030603396,preferences,candidate,3,119,total=117 paper=117 machine=0,EXTRA,extra_data
+030603396,preferences,candidate,3,120,total=118 paper=118 machine=0,EXTRA,extra_data
+030603396,preferences,candidate,3,121,total=119 paper=119 machine=0,EXTRA,extra_data
+030603396,preferences,candidate,3,122,total=120 paper=120 machine=0,EXTRA,extra_data
+030603396,preferences,candidate,4,101,total=0 paper=0 machine=0,total=2 paper=1 machine=1,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,4,108,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,4,Без,total=0 paper=0 machine=0,total=9 paper=4 machine=5,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,7,101,total=1 paper=1 machine=0,total=3 paper=1 machine=2,likely_ocr: single digit differs
+030603396,preferences,candidate,7,109,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,7,122,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,7,123,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,7,Без,total=0 paper=0 machine=0,total=9 paper=5 machine=4,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,8,102,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+030603396,preferences,candidate,8,103,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,8,104,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+030603396,preferences,candidate,8,106,total=0 paper=0 machine=0,total=2 paper=1 machine=1,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,8,107,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,8,120,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,8,123,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,8,124,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,8,125,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,8,126,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,8,127,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,8,128,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,8,129,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,8,130,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,8,131,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,8,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,12,101,total=4 paper=4 machine=0,total=18 paper=7 machine=11,unknown_cause
+030603396,preferences,candidate,12,116,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,12,123,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,12,124,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,12,125,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,12,126,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,12,127,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,12,128,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,12,129,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,12,130,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,12,131,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,12,132,MISSING,total=1 paper=0 machine=1,missing_data
+030603396,preferences,candidate,12,Без,total=0 paper=0 machine=0,total=11 paper=3 machine=8,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,13,104,total=0 paper=0 machine=0,total=2 paper=0 machine=2,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,13,111,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,13,123,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,13,124,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,13,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,17,101,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,17,104,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,17,Без,total=0 paper=0 machine=0,total=2 paper=0 machine=2,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,18,104,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,18,107,total=2 paper=2 machine=0,total=9 paper=2 machine=7,likely_ocr: single digit differs
+030603396,preferences,candidate,18,108,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,18,110,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,18,118,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,18,120,total=9 paper=9 machine=0,total=14 paper=9 machine=5,unknown_cause
+030603396,preferences,candidate,18,123,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,18,124,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,18,125,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,18,126,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,18,127,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,18,128,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,18,129,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,18,130,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,18,131,MISSING,total=2 paper=2 machine=0,missing_data
+030603396,preferences,candidate,18,132,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,18,Без,total=0 paper=0 machine=0,total=18 paper=13 machine=5,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,26,101,MISSING,total=5 paper=2 machine=3,missing_data
+030603396,preferences,candidate,26,102,MISSING,total=2 paper=0 machine=2,missing_data
+030603396,preferences,candidate,26,103,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,104,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,105,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,106,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,107,MISSING,total=8 paper=0 machine=8,missing_data
+030603396,preferences,candidate,26,108,MISSING,total=1 paper=0 machine=1,missing_data
+030603396,preferences,candidate,26,109,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,110,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,111,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,112,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,113,MISSING,total=1 paper=0 machine=1,missing_data
+030603396,preferences,candidate,26,114,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,115,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,116,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,117,MISSING,total=1 paper=0 machine=1,missing_data
+030603396,preferences,candidate,26,118,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,119,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,120,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,121,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,122,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,123,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,124,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,125,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,126,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,127,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,128,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,129,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,130,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,131,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,26,132,MISSING,total=1 paper=0 machine=1,missing_data
+030603396,preferences,candidate,26,Без,MISSING,total=10 paper=2 machine=8,missing_data
+030603396,preferences,candidate,28,101,total=1 paper=0 machine=1,total=3 paper=2 machine=1,likely_ocr: single digit differs
+030603396,preferences,candidate,28,111,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+030603396,preferences,candidate,28,123,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,28,124,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,28,125,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,28,126,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,28,127,MISSING,total=0 paper=0 machine=0,missing_data
+030603396,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=5 paper=3 machine=2,likely_ocr: value missed (read as 0/empty)
+040600010,protocol,machine_ballots,,,2,98,unknown_cause
+040600010,protocol,no_support_machine,,,,4,non_numeric
+040600010,preferences,candidate,4,109,total=2 paper=2 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+040600010,preferences,candidate,4,110,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+040600010,preferences,candidate,4,Без,total=3 paper=0 machine=3,total=10 paper=7 machine=3,unknown_cause
+040600010,preferences,candidate,7,Без,total=3 paper=0 machine=3,total=7 paper=4 machine=3,likely_ocr: single digit differs
+040600010,preferences,candidate,10,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+040600010,preferences,candidate,12,Без,total=14 paper=14 machine=0,total=26 paper=14 machine=12,unknown_cause
+040600010,preferences,candidate,16,105,total=4 paper=0 machine=4,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+040600010,preferences,candidate,16,Без,total=0 paper=0 machine=0,total=4 paper=0 machine=4,likely_ocr: value missed (read as 0/empty)
+040600010,preferences,candidate,17,Без,total=4 paper=4 machine=0,total=7 paper=4 machine=3,likely_ocr: single digit differs
+040600010,preferences,candidate,18,Без,total=19 paper=19 machine=0,total=21 paper=19 machine=2,possible_ocr: small difference
+040600010,preferences,candidate,22,Без,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+040600010,preferences,candidate,25,105,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+040600010,preferences,candidate,25,Без,total=0 paper=0 machine=0,total=2 paper=1 machine=1,likely_ocr: value missed (read as 0/empty)
+040600010,preferences,candidate,26,Без,total=0 paper=0 machine=0,total=17 paper=6 machine=11,likely_ocr: value missed (read as 0/empty)
+040600010,preferences,candidate,27,Без,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+040600010,preferences,candidate,28,Без,total=8 paper=8 machine=0,total=15 paper=8 machine=7,unknown_cause
+050900094,protocol,valid_votes_paper,,,0,106,likely_ocr: value missed (read as 0/empty)
+050900094,votes,party_votes,18,,total=24 paper=24 machine=0,total=27 paper=24 machine=3,possible_ocr: small difference
+050900094,votes,party_votes,22,,total=0 paper=0 machine=0,total=9 paper=5 machine=4,likely_ocr: value missed (read as 0/empty)
+050900094,votes,party_votes,23,,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+050900094,votes,party_votes,26,,total=0 paper=0 machine=0,total=17 paper=6 machine=11,likely_ocr: value missed (read as 0/empty)
+050900094,votes,party_votes,27,,total=0 paper=0 machine=0,total=1 paper=0 machine=1,
+050900094,votes,party_votes,28,,total=0 paper=0 machine=0,total=13 paper=10 machine=3,likely_ocr: value missed (read as 0/empty)
+050900094,preferences,candidate,18,101,total=0 paper=0 machine=0,total=3 paper=2 machine=1,likely_ocr: value missed (read as 0/empty)
+050900094,preferences,candidate,18,102,total=0 paper=0 machine=0,total=3 paper=3 machine=0,likely_ocr: value missed (read as 0/empty)
+050900094,preferences,candidate,18,103,total=3 paper=2 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+050900094,preferences,candidate,18,104,total=3 paper=3 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+050900094,preferences,candidate,18,105,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+050900094,preferences,candidate,18,107,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+050900094,preferences,candidate,18,Без,total=0 paper=0 machine=0,total=20 paper=19 machine=1,likely_ocr: value missed (read as 0/empty)
+050900094,preferences,candidate,22,101,total=0 paper=0 machine=0,total=2 paper=1 machine=1,likely_ocr: value missed (read as 0/empty)
+050900094,preferences,candidate,22,103,total=2 paper=1 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+050900094,preferences,candidate,22,Без,total=0 paper=0 machine=0,total=7 paper=4 machine=3,likely_ocr: value missed (read as 0/empty)
+050900094,preferences,candidate,23,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+050900094,preferences,candidate,26,101,total=0 paper=0 machine=0,total=4 paper=2 machine=2,likely_ocr: value missed (read as 0/empty)
+050900094,preferences,candidate,26,103,total=4 paper=2 machine=2,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+050900094,preferences,candidate,26,106,total=0 paper=0 machine=0,total=5 paper=2 machine=3,likely_ocr: value missed (read as 0/empty)
+050900094,preferences,candidate,26,108,total=5 paper=2 machine=3,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+050900094,preferences,candidate,26,Без,total=0 paper=0 machine=0,total=8 paper=2 machine=6,likely_ocr: value missed (read as 0/empty)
+050900094,preferences,candidate,27,Без,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+050900094,preferences,candidate,28,101,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+050900094,preferences,candidate,28,102,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+050900094,preferences,candidate,28,103,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+050900094,preferences,candidate,28,104,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+050900094,preferences,candidate,28,108,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+050900094,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=10 paper=8 machine=2,likely_ocr: value missed (read as 0/empty)
+061000079,preferences,candidate,4,Без,total=0 paper=0 machine=0,total=3 paper=3 machine=0,likely_ocr: value missed (read as 0/empty)
+061000079,preferences,candidate,7,Без,total=0 paper=0 machine=0,total=14 paper=14 machine=0,likely_ocr: value missed (read as 0/empty)
+061000079,preferences,candidate,8,Без,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+061000079,preferences,candidate,10,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+061000079,preferences,candidate,11,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+061000079,preferences,candidate,12,Без,total=0 paper=0 machine=0,total=19 paper=19 machine=0,likely_ocr: value missed (read as 0/empty)
+061000079,preferences,candidate,14,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+061000079,preferences,candidate,17,Без,total=0 paper=0 machine=0,total=7 paper=7 machine=0,likely_ocr: value missed (read as 0/empty)
+061000079,preferences,candidate,18,Без,total=0 paper=0 machine=0,total=23 paper=23 machine=0,likely_ocr: value missed (read as 0/empty)
+061000079,preferences,candidate,21,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+061000079,preferences,candidate,26,Без,total=0 paper=0 machine=0,total=5 paper=5 machine=0,likely_ocr: value missed (read as 0/empty)
+061000079,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=6 paper=6 machine=0,likely_ocr: value missed (read as 0/empty)
+080300001,protocol,machine_ballots,,,0,195,likely_ocr: value missed (read as 0/empty)
+080300001,protocol,no_support_machine,,,0,5,likely_ocr: value missed (read as 0/empty)
+080300001,preferences,candidate,17,101,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300001,preferences,candidate,17,102,total=0 paper=0 machine=0,total=3 paper=2 machine=1,likely_ocr: value missed (read as 0/empty)
+080300001,preferences,candidate,17,103,total=2 paper=1 machine=1,total=1 paper=0 machine=1,likely_ocr: single digit differs
+080300001,preferences,candidate,17,104,total=3 paper=2 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300001,preferences,candidate,17,Без,total=0 paper=0 machine=0,total=8 paper=3 machine=5,likely_ocr: value missed (read as 0/empty)
+080300001,preferences,candidate,18,101,total=0 paper=0 machine=0,total=20 paper=8 machine=12,likely_ocr: value missed (read as 0/empty)
+080300001,preferences,candidate,18,102,total=12 paper=0 machine=12,total=12 paper=11 machine=1,possible_ocr: small difference
+080300001,preferences,candidate,18,103,total=9 paper=8 machine=1,total=30 paper=18 machine=12,unknown_cause
+080300001,preferences,candidate,18,104,total=23 paper=11 machine=12,total=2 paper=0 machine=2,unknown: large difference
+080300001,preferences,candidate,18,105,total=20 paper=18 machine=2,total=9 paper=6 machine=3,unknown_cause
+080300001,preferences,candidate,18,106,total=3 paper=0 machine=3,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300001,preferences,candidate,18,107,total=6 paper=6 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300001,preferences,candidate,18,108,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300001,preferences,candidate,18,110,total=1 paper=1 machine=0,total=2 paper=0 machine=2,likely_ocr: single digit differs
+080300001,preferences,candidate,18,Без,total=2 paper=0 machine=2,total=57 paper=37 machine=20,unknown_cause
+080300001,preferences,candidate,19,Без,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300001,preferences,candidate,21,103,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300001,preferences,candidate,21,104,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300001,preferences,candidate,21,Без,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300001,preferences,candidate,26,101,total=0 paper=0 machine=0,total=6 paper=0 machine=6,likely_ocr: value missed (read as 0/empty)
+080300001,preferences,candidate,26,102,total=6 paper=0 machine=6,total=2 paper=1 machine=1,likely_ocr: single digit differs
+080300001,preferences,candidate,26,103,total=1 paper=0 machine=1,total=4 paper=1 machine=3,high_prob_ocr: single digit confusion
+080300001,preferences,candidate,26,104,total=4 paper=1 machine=3,total=4 paper=0 machine=4,possible_ocr: small difference
+080300001,preferences,candidate,26,105,total=5 paper=1 machine=4,total=4 paper=0 machine=4,likely_ocr: single digit differs
+080300001,preferences,candidate,26,106,total=4 paper=0 machine=4,total=5 paper=0 machine=5,likely_ocr: single digit differs
+080300001,preferences,candidate,26,107,total=5 paper=0 machine=5,total=4 paper=0 machine=4,likely_ocr: single digit differs
+080300001,preferences,candidate,26,108,total=4 paper=0 machine=4,total=1 paper=0 machine=1,high_prob_ocr: single digit confusion
+080300001,preferences,candidate,26,110,total=1 paper=0 machine=1,total=9 paper=1 machine=8,likely_ocr: single digit differs
+080300001,preferences,candidate,26,Без,total=9 paper=1 machine=8,total=24 paper=8 machine=16,unknown_cause
+080300001,preferences,candidate,28,101,total=0 paper=0 machine=0,total=5 paper=3 machine=2,likely_ocr: value missed (read as 0/empty)
+080300001,preferences,candidate,28,102,total=2 paper=0 machine=2,total=1 paper=0 machine=1,likely_ocr: single digit differs
+080300001,preferences,candidate,28,103,total=4 paper=3 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300001,preferences,candidate,28,104,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300001,preferences,candidate,28,105,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300001,preferences,candidate,28,110,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300001,preferences,candidate,28,Без,total=1 paper=0 machine=1,total=24 paper=13 machine=11,unknown_cause
+080300002,protocol,machine_ballots,,,0,80,likely_ocr: value missed (read as 0/empty)
+080300002,protocol,no_support_machine,,,0,2,likely_ocr: value missed (read as 0/empty)
+080300003,votes,party_votes,8,,total=59 paper=59 machine=0,total=65 paper=59 machine=6,possible_ocr: small difference
+080300003,votes,party_votes,12,,total=0 paper=0 machine=0,total=5 paper=0 machine=5,
+080300003,votes,party_votes,13,,total=23 paper=23 machine=0,total=26 paper=23 machine=3,possible_ocr: small difference
+080300003,votes,party_votes,24,,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300003,votes,party_votes,28,,total=2 paper=0 machine=2,total=3 paper=1 machine=2,likely_ocr: value missed (read as 0/empty)
+080300003,preferences,candidate,17,101,total=0 paper=0 machine=0,total=4 paper=4 machine=0,likely_ocr: value missed (read as 0/empty)
+080300003,preferences,candidate,17,102,total=4 paper=4 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300003,preferences,candidate,17,103,total=2 paper=2 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300003,preferences,candidate,17,Без,total=0 paper=0 machine=0,total=6 paper=6 machine=0,likely_ocr: value missed (read as 0/empty)
+080300003,preferences,candidate,18,103,total=0 paper=0 machine=0,total=13 paper=8 machine=5,likely_ocr: value missed (read as 0/empty)
+080300003,preferences,candidate,18,104,total=13 paper=8 machine=5,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300003,preferences,candidate,18,108,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300003,preferences,candidate,18,109,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300003,preferences,candidate,18,Без,total=0 paper=0 machine=0,total=5 paper=1 machine=4,likely_ocr: value missed (read as 0/empty)
+080300003,preferences,candidate,24,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300003,preferences,candidate,26,101,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300003,preferences,candidate,26,102,total=1 paper=0 machine=1,total=2 paper=2 machine=0,likely_ocr: single digit differs
+080300003,preferences,candidate,26,103,total=2 paper=2 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300003,preferences,candidate,26,Без,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300003,preferences,candidate,28,104,total=0 paper=0 machine=0,total=2 paper=0 machine=2,likely_ocr: value missed (read as 0/empty)
+080300003,preferences,candidate,28,105,total=2 paper=0 machine=2,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300003,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300004,protocol,machine_ballots,,,3,83,unknown_cause
+080300004,votes,party_votes,4,,total=0 paper=0 machine=0,total=5 paper=4 machine=1,likely_ocr: value missed (read as 0/empty)
+080300004,votes,party_votes,7,,total=0 paper=0 machine=0,total=12 paper=3 machine=9,likely_ocr: value missed (read as 0/empty)
+080300004,votes,party_votes,8,,total=0 paper=0 machine=0,total=11 paper=10 machine=1,likely_ocr: value missed (read as 0/empty)
+080300004,votes,party_votes,12,,total=0 paper=0 machine=0,total=17 paper=8 machine=9,likely_ocr: value missed (read as 0/empty)
+080300004,votes,party_votes,13,,total=0 paper=0 machine=0,total=24 paper=21 machine=3,likely_ocr: value missed (read as 0/empty)
+080300004,votes,party_votes,17,,total=4 paper=0 machine=4,total=9 paper=5 machine=4,likely_ocr: value missed (read as 0/empty)
+080300004,preferences,candidate,4,109,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300004,preferences,candidate,4,Без,total=1 paper=0 machine=1,total=2 paper=1 machine=1,likely_ocr: single digit differs
+080300004,preferences,candidate,7,Без,total=5 paper=0 machine=5,total=6 paper=1 machine=5,high_prob_ocr: single digit confusion
+080300004,preferences,candidate,12,105,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300004,preferences,candidate,13,108,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300004,preferences,candidate,17,104,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300004,preferences,candidate,17,106,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300004,preferences,candidate,17,107,total=1 paper=1 machine=0,total=2 paper=1 machine=1,likely_ocr: single digit differs
+080300004,preferences,candidate,17,109,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300004,preferences,candidate,17,Без,total=2 paper=2 machine=0,total=4 paper=2 machine=2,likely_ocr: single digit differs
+080300004,preferences,candidate,18,101,total=6 paper=6 machine=0,total=8 paper=6 machine=2,high_prob_ocr: single digit confusion
+080300004,preferences,candidate,18,103,total=8 paper=6 machine=2,total=17 paper=6 machine=11,unknown_cause
+080300004,preferences,candidate,18,105,total=13 paper=2 machine=11,total=2 paper=2 machine=0,unknown: large difference
+080300004,preferences,candidate,18,108,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300004,preferences,candidate,18,110,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300004,preferences,candidate,18,Без,total=8 paper=8 machine=0,total=18 paper=8 machine=10,unknown_cause
+080300004,preferences,candidate,21,101,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300004,preferences,candidate,21,103,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300004,preferences,candidate,21,Без,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300004,preferences,candidate,26,101,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300004,preferences,candidate,26,102,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300004,preferences,candidate,26,103,total=1 paper=0 machine=1,total=2 paper=0 machine=2,likely_ocr: single digit differs
+080300004,preferences,candidate,26,104,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300004,preferences,candidate,26,105,total=2 paper=0 machine=2,total=3 paper=0 machine=3,likely_ocr: single digit differs
+080300004,preferences,candidate,26,107,total=3 paper=0 machine=3,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300004,preferences,candidate,26,110,total=0 paper=0 machine=0,total=5 paper=0 machine=5,likely_ocr: value missed (read as 0/empty)
+080300004,preferences,candidate,26,Без,total=3 paper=3 machine=0,total=10 paper=3 machine=7,unknown_cause
+080300004,preferences,candidate,28,101,total=1 paper=1 machine=0,total=2 paper=1 machine=1,likely_ocr: single digit differs
+080300004,preferences,candidate,28,103,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300004,preferences,candidate,28,104,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300004,preferences,candidate,28,106,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300004,preferences,candidate,28,107,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300004,preferences,candidate,28,109,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300004,preferences,candidate,28,Без,total=3 paper=3 machine=0,total=9 paper=3 machine=6,likely_ocr: single digit differs
+080300005,preferences,candidate,5,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300006,votes,party_votes,12,,total=28 paper=4 machine=24,total=51 paper=24 machine=27,unknown_cause
+080300006,preferences,candidate,18,Без,total=24 paper=14 machine=10,total=27 paper=17 machine=10,likely_ocr: single digit differs
+080300007,preferences,candidate,4,101,total=2 paper=2 machine=0,total=3 paper=2 machine=1,likely_ocr: single digit differs
+080300008,protocol,machine_ballots,,,0,113,likely_ocr: value missed (read as 0/empty)
+080300008,protocol,no_support_machine,,,0,11,likely_ocr: value missed (read as 0/empty)
+080300008,preferences,candidate,4,109,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300008,preferences,candidate,4,110,total=4 paper=0 machine=4,total=1 paper=0 machine=1,high_prob_ocr: single digit confusion
+080300008,preferences,candidate,4,Без,total=5 paper=5 machine=0,total=9 paper=5 machine=4,likely_ocr: single digit differs
+080300008,preferences,candidate,7,110,total=7 paper=0 machine=7,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300008,preferences,candidate,7,Без,total=3 paper=3 machine=0,total=10 paper=3 machine=7,unknown_cause
+080300008,preferences,candidate,12,110,total=8 paper=0 machine=8,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300008,preferences,candidate,12,Без,total=10 paper=10 machine=0,total=18 paper=10 machine=8,high_prob_ocr: single digit confusion
+080300008,preferences,candidate,13,110,total=2 paper=0 machine=2,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300008,preferences,candidate,13,Без,total=0 paper=0 machine=0,total=2 paper=0 machine=2,likely_ocr: value missed (read as 0/empty)
+080300008,preferences,candidate,17,101,total=0 paper=0 machine=0,total=4 paper=1 machine=3,likely_ocr: value missed (read as 0/empty)
+080300008,preferences,candidate,17,102,total=4 paper=1 machine=3,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300008,preferences,candidate,17,105,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300008,preferences,candidate,17,107,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300008,preferences,candidate,17,Без,total=0 paper=0 machine=0,total=3 paper=1 machine=2,likely_ocr: value missed (read as 0/empty)
+080300008,preferences,candidate,18,101,total=0 paper=0 machine=0,total=5 paper=3 machine=2,likely_ocr: value missed (read as 0/empty)
+080300008,preferences,candidate,18,102,total=5 paper=3 machine=2,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300008,preferences,candidate,18,103,total=0 paper=0 machine=0,total=16 paper=8 machine=8,likely_ocr: value missed (read as 0/empty)
+080300008,preferences,candidate,18,104,total=16 paper=8 machine=8,total=1 paper=1 machine=0,unknown: large difference
+080300008,preferences,candidate,18,105,total=1 paper=1 machine=0,total=6 paper=5 machine=1,likely_ocr: single digit differs
+080300008,preferences,candidate,18,106,total=6 paper=5 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300008,preferences,candidate,18,Без,total=0 paper=0 machine=0,total=15 paper=7 machine=8,likely_ocr: value missed (read as 0/empty)
+080300008,preferences,candidate,21,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300008,preferences,candidate,23,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300008,preferences,candidate,26,101,total=0 paper=0 machine=0,total=2 paper=0 machine=2,likely_ocr: value missed (read as 0/empty)
+080300008,preferences,candidate,26,102,total=2 paper=0 machine=2,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300008,preferences,candidate,26,103,total=0 paper=0 machine=0,total=4 paper=1 machine=3,likely_ocr: value missed (read as 0/empty)
+080300008,preferences,candidate,26,104,total=4 paper=1 machine=3,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300008,preferences,candidate,26,105,total=0 paper=0 machine=0,total=3 paper=1 machine=2,likely_ocr: value missed (read as 0/empty)
+080300008,preferences,candidate,26,106,total=3 paper=1 machine=2,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300008,preferences,candidate,26,110,total=1 paper=0 machine=1,total=2 paper=1 machine=1,likely_ocr: single digit differs
+080300008,preferences,candidate,26,Без,total=1 paper=1 machine=0,total=4 paper=2 machine=2,high_prob_ocr: single digit confusion
+080300008,preferences,candidate,28,101,total=0 paper=0 machine=0,total=3 paper=0 machine=3,likely_ocr: value missed (read as 0/empty)
+080300008,preferences,candidate,28,102,total=3 paper=0 machine=3,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300008,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=13 paper=6 machine=7,likely_ocr: value missed (read as 0/empty)
+080300009,protocol,voter_list_count,,,21,621,unknown_cause
+080300009,protocol,machine_ballots,,,0,74,likely_ocr: value missed (read as 0/empty)
+080300009,protocol,no_support_machine,,,0,1,likely_ocr: value missed (read as 0/empty)
+080300009,votes,party_votes,17,,total=13 paper=7 machine=6,total=10 paper=4 machine=6,likely_ocr: single digit differs
+080300009,preferences,candidate,4,106,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300009,preferences,candidate,7,Без,total=4 paper=3 machine=1,total=10 paper=3 machine=7,unknown_cause
+080300009,preferences,candidate,12,101,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300009,preferences,candidate,12,104,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300009,preferences,candidate,12,107,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300009,preferences,candidate,12,108,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300009,preferences,candidate,13,101,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300009,preferences,candidate,17,101,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300009,preferences,candidate,17,102,total=1 paper=1 machine=0,total=1 paper=0 machine=1,possible_ocr: small difference
+080300009,preferences,candidate,17,103,total=1 paper=0 machine=1,total=1 paper=1 machine=0,possible_ocr: small difference
+080300009,preferences,candidate,17,104,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300009,preferences,candidate,17,107,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300009,preferences,candidate,17,108,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300009,preferences,candidate,17,Без,total=0 paper=0 machine=0,total=6 paper=2 machine=4,likely_ocr: value missed (read as 0/empty)
+080300009,preferences,candidate,18,101,total=0 paper=0 machine=0,total=6 paper=3 machine=3,likely_ocr: value missed (read as 0/empty)
+080300009,preferences,candidate,18,102,total=6 paper=3 machine=3,total=2 paper=2 machine=0,likely_ocr: single digit differs
+080300009,preferences,candidate,18,103,total=2 paper=2 machine=0,total=9 paper=5 machine=4,likely_ocr: single digit differs
+080300009,preferences,candidate,18,104,total=9 paper=5 machine=4,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300009,preferences,candidate,18,105,total=0 paper=0 machine=0,total=3 paper=2 machine=1,likely_ocr: value missed (read as 0/empty)
+080300009,preferences,candidate,18,106,total=3 paper=2 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300009,preferences,candidate,18,108,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300009,preferences,candidate,18,109,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300009,preferences,candidate,18,Без,total=0 paper=0 machine=0,total=12 paper=8 machine=4,likely_ocr: value missed (read as 0/empty)
+080300009,preferences,candidate,21,Без,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300009,preferences,candidate,26,102,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300009,preferences,candidate,26,103,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300009,preferences,candidate,26,104,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300009,preferences,candidate,26,105,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300009,preferences,candidate,26,110,total=0 paper=0 machine=0,total=3 paper=0 machine=3,likely_ocr: value missed (read as 0/empty)
+080300009,preferences,candidate,26,Без,total=3 paper=0 machine=3,total=8 paper=1 machine=7,high_prob_ocr: single digit confusion
+080300009,preferences,candidate,28,101,total=0 paper=0 machine=0,total=6 paper=2 machine=4,likely_ocr: value missed (read as 0/empty)
+080300009,preferences,candidate,28,102,total=6 paper=2 machine=4,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300009,preferences,candidate,28,106,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300009,preferences,candidate,28,107,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300009,preferences,candidate,28,108,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300009,preferences,candidate,28,109,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300009,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=9 paper=5 machine=4,likely_ocr: value missed (read as 0/empty)
+080300010,protocol,voted_count,,,146,176,likely_ocr: single digit differs
+080300010,votes,party_votes,4,,total=6 paper=0 machine=6,total=14 paper=8 machine=6,likely_ocr: value missed (read as 0/empty)
+080300010,votes,party_votes,8,,total=1 paper=0 machine=1,total=2 paper=1 machine=1,likely_ocr: value missed (read as 0/empty)
+080300010,votes,party_votes,12,,total=21 paper=0 machine=21,total=40 paper=19 machine=21,likely_ocr: value missed (read as 0/empty)
+080300010,votes,party_votes,13,,total=3 paper=0 machine=3,total=5 paper=2 machine=3,likely_ocr: value missed (read as 0/empty)
+080300010,votes,party_votes,16,,total=1 paper=0 machine=1,total=3 paper=2 machine=1,likely_ocr: value missed (read as 0/empty)
+080300010,votes,party_votes,17,,total=4 paper=0 machine=4,total=12 paper=8 machine=4,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,2,110,total=1 paper=0 machine=1,EXTRA,extra_data
+080300010,preferences,candidate,2,Без,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,4,101,total=1 paper=0 machine=1,total=2 paper=1 machine=1,likely_ocr: single digit differs
+080300010,preferences,candidate,4,103,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,4,105,total=2 paper=2 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,4,107,total=5 paper=5 machine=0,total=2 paper=2 machine=0,likely_ocr: single digit differs
+080300010,preferences,candidate,4,110,total=5 paper=0 machine=5,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,4,Без,total=0 paper=0 machine=0,total=10 paper=5 machine=5,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,7,110,total=2 paper=0 machine=2,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,7,Без,total=0 paper=0 machine=0,total=2 paper=0 machine=2,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,8,110,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,8,Без,total=0 paper=0 machine=0,total=2 paper=1 machine=1,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,12,101,total=5 paper=0 machine=5,total=10 paper=5 machine=5,unknown_cause
+080300010,preferences,candidate,12,103,total=6 paper=5 machine=1,total=2 paper=1 machine=1,likely_ocr: single digit differs
+080300010,preferences,candidate,12,109,total=2 paper=1 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,12,110,total=12 paper=0 machine=12,total=1 paper=0 machine=1,unknown: large difference
+080300010,preferences,candidate,12,Без,total=11 paper=11 machine=0,total=23 paper=11 machine=12,unknown_cause
+080300010,preferences,candidate,13,102,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,13,104,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,13,106,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,13,110,total=2 paper=0 machine=2,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,13,Без,total=0 paper=0 machine=0,total=3 paper=1 machine=2,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,16,102,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,16,104,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,16,106,total=1 paper=1 machine=0,EXTRA,extra_data
+080300010,preferences,candidate,16,110,total=1 paper=0 machine=1,EXTRA,extra_data
+080300010,preferences,candidate,16,Без,total=0 paper=0 machine=0,total=2 paper=1 machine=1,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,17,101,total=0 paper=0 machine=0,total=3 paper=2 machine=1,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,17,102,total=2 paper=2 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,17,103,total=1 paper=0 machine=1,total=1 paper=1 machine=0,possible_ocr: small difference
+080300010,preferences,candidate,17,104,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,17,107,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,17,108,total=2 paper=2 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,17,110,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,17,Без,total=1 paper=1 machine=0,total=5 paper=2 machine=3,likely_ocr: single digit differs
+080300010,preferences,candidate,18,101,total=0 paper=0 machine=0,total=10 paper=5 machine=5,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,18,102,total=5 paper=5 machine=0,total=5 paper=0 machine=5,possible_ocr: small difference
+080300010,preferences,candidate,18,103,total=5 paper=0 machine=5,total=5 paper=5 machine=0,possible_ocr: small difference
+080300010,preferences,candidate,18,104,total=10 paper=5 machine=5,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,18,105,total=0 paper=0 machine=0,total=6 paper=6 machine=0,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,18,106,total=6 paper=6 machine=0,total=1 paper=1 machine=0,likely_ocr: single digit differs
+080300010,preferences,candidate,18,107,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,18,110,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,18,Без,total=1 paper=1 machine=0,total=17 paper=8 machine=9,unknown_cause
+080300010,preferences,candidate,19,101,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,19,103,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,19,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,26,101,total=0 paper=0 machine=0,total=2 paper=0 machine=2,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,26,102,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,26,103,total=2 paper=0 machine=2,total=2 paper=1 machine=1,possible_ocr: small difference
+080300010,preferences,candidate,26,104,total=2 paper=1 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,26,106,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,26,107,total=2 paper=1 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,26,108,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,26,109,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,26,110,total=0 paper=0 machine=0,total=2 paper=0 machine=2,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,26,Без,total=2 paper=0 machine=2,total=5 paper=3 machine=2,likely_ocr: single digit differs
+080300010,preferences,candidate,27,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,28,101,total=0 paper=0 machine=0,total=6 paper=3 machine=3,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,28,102,total=3 paper=3 machine=0,total=1 paper=0 machine=1,likely_ocr: single digit differs
+080300010,preferences,candidate,28,103,total=3 paper=0 machine=3,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,28,104,total=1 paper=0 machine=1,total=3 paper=0 machine=3,likely_ocr: single digit differs
+080300010,preferences,candidate,28,105,total=0 paper=0 machine=0,total=2 paper=1 machine=1,likely_ocr: value missed (read as 0/empty)
+080300010,preferences,candidate,28,106,total=4 paper=1 machine=3,total=2 paper=0 machine=2,likely_ocr: single digit differs
+080300010,preferences,candidate,28,107,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,28,108,total=2 paper=0 machine=2,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300010,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=6 paper=3 machine=3,likely_ocr: value missed (read as 0/empty)
+080300011,protocol,voted_count,,,133,233,likely_ocr: single digit differs
+080300011,votes,party_votes,4,,total=9 paper=0 machine=9,total=17 paper=8 machine=9,likely_ocr: value missed (read as 0/empty)
+080300011,votes,party_votes,7,,total=10 paper=0 machine=10,total=14 paper=4 machine=10,likely_ocr: value missed (read as 0/empty)
+080300011,votes,party_votes,12,,total=39 paper=0 machine=39,total=77 paper=38 machine=39,likely_ocr: value missed (read as 0/empty)
+080300011,votes,party_votes,13,,total=3 paper=0 machine=3,total=9 paper=6 machine=3,likely_ocr: value missed (read as 0/empty)
+080300011,votes,party_votes,17,,total=0 paper=0 machine=0,total=10 paper=9 machine=1,likely_ocr: value missed (read as 0/empty)
+080300011,votes,party_votes,18,,total=37 paper=15 machine=22,total=49 paper=27 machine=22,unknown_cause
+080300011,votes,party_votes,25,,total=1 paper=1 machine=0,total=2 paper=1 machine=1,possible_ocr: small difference
+080300011,preferences,candidate,2,104,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300011,preferences,candidate,4,107,total=3 paper=3 machine=0,total=4 paper=3 machine=1,likely_ocr: single digit differs
+080300011,preferences,candidate,7,104,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300011,preferences,candidate,12,102,total=9 paper=1 machine=8,total=8 paper=1 machine=7,likely_ocr: single digit differs
+080300011,preferences,candidate,12,103,total=3 paper=3 machine=0,total=4 paper=3 machine=1,likely_ocr: single digit differs
+080300011,preferences,candidate,12,105,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300011,preferences,candidate,12,107,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300011,preferences,candidate,12,108,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300011,preferences,candidate,12,110,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300011,preferences,candidate,13,Без,total=4 paper=4 machine=0,total=7 paper=4 machine=3,likely_ocr: single digit differs
+080300011,preferences,candidate,14,Без,total=3 paper=0 machine=3,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300011,preferences,candidate,16,105,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300011,preferences,candidate,16,Без,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300011,preferences,candidate,17,Без,total=5 paper=5 machine=0,total=6 paper=5 machine=1,high_prob_ocr: single digit confusion
+080300011,preferences,candidate,18,101,total=5 paper=5 machine=0,total=11 paper=5 machine=6,unknown_cause
+080300011,preferences,candidate,18,102,total=8 paper=2 machine=6,total=3 paper=2 machine=1,high_prob_ocr: single digit confusion
+080300011,preferences,candidate,18,103,total=11 paper=10 machine=1,total=16 paper=10 machine=6,likely_ocr: single digit differs
+080300011,preferences,candidate,18,104,total=6 paper=0 machine=6,total=2 paper=0 machine=2,likely_ocr: single digit differs
+080300011,preferences,candidate,18,105,total=2 paper=0 machine=2,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300011,preferences,candidate,18,107,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300011,preferences,candidate,18,108,total=2 paper=1 machine=1,total=1 paper=1 machine=0,likely_ocr: single digit differs
+080300011,preferences,candidate,18,110,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300011,preferences,candidate,18,Без,total=10 paper=9 machine=1,total=14 paper=9 machine=5,likely_ocr: single digit differs
+080300011,preferences,candidate,25,Без,total=1 paper=1 machine=0,total=2 paper=1 machine=1,likely_ocr: single digit differs
+080300011,preferences,candidate,26,102,total=2 paper=2 machine=0,total=4 paper=2 machine=2,likely_ocr: single digit differs
+080300011,preferences,candidate,26,103,total=2 paper=0 machine=2,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300011,preferences,candidate,26,104,total=1 paper=1 machine=0,total=2 paper=1 machine=1,likely_ocr: single digit differs
+080300011,preferences,candidate,26,105,total=1 paper=0 machine=1,total=4 paper=0 machine=4,high_prob_ocr: single digit confusion
+080300011,preferences,candidate,26,106,total=4 paper=0 machine=4,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300011,preferences,candidate,26,Без,total=1 paper=1 machine=0,total=8 paper=1 machine=7,likely_ocr: single digit differs
+080300011,preferences,candidate,28,101,total=2 paper=2 machine=0,total=10 paper=7 machine=3,unknown_cause
+080300011,preferences,candidate,28,102,total=3 paper=0 machine=3,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300011,preferences,candidate,28,104,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300011,preferences,candidate,28,105,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300011,preferences,candidate,28,Без,total=3 paper=3 machine=0,total=10 paper=3 machine=7,unknown_cause
+080300012,protocol,ballots_received,,,300,800,high_prob_ocr: single digit confusion
+080300012,protocol,valid_votes_paper,,,2,102,unknown_cause
+080300012,protocol,no_support_machine,,,,8,non_numeric
+080300012,votes,party_votes,12,,total=36 paper=14 machine=22,total=39 paper=17 machine=22,likely_ocr: single digit differs
+080300012,preferences,candidate,17,101,total=1 paper=0 machine=1,total=3 paper=2 machine=1,likely_ocr: single digit differs
+080300012,preferences,candidate,17,102,total=2 paper=2 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300012,preferences,candidate,17,110,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300012,preferences,candidate,17,Без,total=2 paper=1 machine=1,total=3 paper=2 machine=1,likely_ocr: single digit differs
+080300012,preferences,candidate,18,101,total=3 paper=0 machine=3,total=13 paper=10 machine=3,unknown_cause
+080300012,preferences,candidate,18,102,total=11 paper=10 machine=1,total=2 paper=1 machine=1,unknown_cause
+080300012,preferences,candidate,18,103,total=10 paper=1 machine=9,total=23 paper=14 machine=9,unknown_cause
+080300012,preferences,candidate,18,104,total=13 paper=12 machine=1,total=1 paper=0 machine=1,unknown: large difference
+080300012,preferences,candidate,18,105,total=4 paper=0 machine=4,total=8 paper=4 machine=4,likely_ocr: single digit differs
+080300012,preferences,candidate,18,106,total=4 paper=4 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300012,preferences,candidate,18,107,total=1 paper=0 machine=1,total=3 paper=2 machine=1,likely_ocr: single digit differs
+080300012,preferences,candidate,18,108,total=2 paper=2 machine=0,total=1 paper=1 machine=0,likely_ocr: single digit differs
+080300012,preferences,candidate,18,109,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300012,preferences,candidate,18,Без,total=9 paper=0 machine=9,total=17 paper=8 machine=9,unknown_cause
+080300012,preferences,candidate,21,101,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300012,preferences,candidate,21,102,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300012,preferences,candidate,25,101,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300012,preferences,candidate,25,102,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300012,preferences,candidate,25,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300012,preferences,candidate,26,101,total=4 paper=0 machine=4,total=5 paper=1 machine=4,likely_ocr: single digit differs
+080300012,preferences,candidate,26,102,total=2 paper=1 machine=1,total=1 paper=0 machine=1,likely_ocr: single digit differs
+080300012,preferences,candidate,26,105,total=1 paper=0 machine=1,total=2 paper=1 machine=1,likely_ocr: single digit differs
+080300012,preferences,candidate,26,106,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300012,preferences,candidate,26,Без,total=2 paper=0 machine=2,total=5 paper=3 machine=2,likely_ocr: single digit differs
+080300012,preferences,candidate,27,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300012,preferences,candidate,28,101,total=1 paper=0 machine=1,total=4 paper=3 machine=1,high_prob_ocr: single digit confusion
+080300012,preferences,candidate,28,102,total=3 paper=3 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300012,preferences,candidate,28,108,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300012,preferences,candidate,28,109,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300012,preferences,candidate,28,Без,total=5 paper=0 machine=5,total=8 paper=3 machine=5,high_prob_ocr: single digit confusion
+080300013,protocol,invalid_ballots,,,0,1,likely_ocr: value missed (read as 0/empty)
+080300013,protocol,invalid_votes,,,0,1,likely_ocr: value missed (read as 0/empty)
+080300013,protocol,valid_votes_paper,,,119,149,high_prob_ocr: single digit confusion
+080300013,protocol,machine_ballots,,,0,111,likely_ocr: value missed (read as 0/empty)
+080300013,protocol,no_support_machine,,,0,6,likely_ocr: value missed (read as 0/empty)
+080300014,protocol,invalid_ballots,,,0,1,likely_ocr: value missed (read as 0/empty)
+080300014,protocol,invalid_votes,,,0,1,likely_ocr: value missed (read as 0/empty)
+080300014,protocol,machine_ballots,,,0,110,likely_ocr: value missed (read as 0/empty)
+080300014,protocol,no_support_machine,,,0,6,likely_ocr: value missed (read as 0/empty)
+080300014,preferences,candidate,2,102,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300014,preferences,candidate,3,101,total=4 paper=0 machine=4,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,3,103,total=2 paper=0 machine=2,EXTRA,extra_data
+080300014,preferences,candidate,4,101,total=1 paper=1 machine=0,total=3 paper=1 machine=2,likely_ocr: single digit differs
+080300014,preferences,candidate,4,108,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300014,preferences,candidate,4,110,total=1 paper=1 machine=0,total=2 paper=1 machine=1,likely_ocr: single digit differs
+080300014,preferences,candidate,4,Без,total=5 paper=5 machine=0,total=8 paper=5 machine=3,high_prob_ocr: single digit confusion
+080300014,preferences,candidate,5,101,total=6 paper=0 machine=6,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,5,103,total=101 paper=0 machine=101,EXTRA,extra_data
+080300014,preferences,candidate,5,104,total=102 paper=0 machine=102,EXTRA,extra_data
+080300014,preferences,candidate,5,105,total=103 paper=0 machine=103,EXTRA,extra_data
+080300014,preferences,candidate,5,106,total=104 paper=0 machine=104,EXTRA,extra_data
+080300014,preferences,candidate,5,107,total=105 paper=0 machine=105,EXTRA,extra_data
+080300014,preferences,candidate,5,108,total=106 paper=0 machine=106,EXTRA,extra_data
+080300014,preferences,candidate,5,109,total=107 paper=0 machine=107,EXTRA,extra_data
+080300014,preferences,candidate,5,110,total=108 paper=0 machine=108,EXTRA,extra_data
+080300014,preferences,candidate,5,Без,total=109 paper=0 machine=109,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,7,103,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300014,preferences,candidate,7,105,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300014,preferences,candidate,8,101,total=9 paper=0 machine=9,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,8,103,total=101 paper=0 machine=101,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,8,104,total=102 paper=0 machine=102,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,8,105,total=103 paper=0 machine=103,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,8,106,total=104 paper=0 machine=104,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,8,107,total=105 paper=0 machine=105,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,8,108,total=106 paper=0 machine=106,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,8,109,total=107 paper=0 machine=107,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,8,110,total=108 paper=0 machine=108,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,8,Без,total=110 paper=1 machine=109,total=3 paper=1 machine=2,unknown: large difference
+080300014,preferences,candidate,10,101,total=11 paper=0 machine=11,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,10,103,total=101 paper=0 machine=101,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,10,104,total=102 paper=0 machine=102,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,10,105,total=103 paper=0 machine=103,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,10,106,total=104 paper=0 machine=104,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,10,107,total=105 paper=0 machine=105,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,10,108,total=106 paper=0 machine=106,EXTRA,extra_data
+080300014,preferences,candidate,10,109,total=107 paper=0 machine=107,EXTRA,extra_data
+080300014,preferences,candidate,10,110,total=108 paper=0 machine=108,EXTRA,extra_data
+080300014,preferences,candidate,10,Без,total=109 paper=0 machine=109,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,12,108,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300014,preferences,candidate,13,102,total=1 paper=1 machine=0,total=2 paper=1 machine=1,likely_ocr: single digit differs
+080300014,preferences,candidate,14,104,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300014,preferences,candidate,15,101,total=16 paper=0 machine=16,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,15,103,total=101 paper=0 machine=101,EXTRA,extra_data
+080300014,preferences,candidate,15,104,total=102 paper=0 machine=102,EXTRA,extra_data
+080300014,preferences,candidate,15,105,total=103 paper=0 machine=103,EXTRA,extra_data
+080300014,preferences,candidate,15,106,total=104 paper=0 machine=104,EXTRA,extra_data
+080300014,preferences,candidate,15,107,total=105 paper=0 machine=105,EXTRA,extra_data
+080300014,preferences,candidate,15,108,total=106 paper=0 machine=106,EXTRA,extra_data
+080300014,preferences,candidate,15,109,total=107 paper=0 machine=107,EXTRA,extra_data
+080300014,preferences,candidate,15,110,total=108 paper=0 machine=108,EXTRA,extra_data
+080300014,preferences,candidate,15,Без,total=109 paper=0 machine=109,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,17,103,total=2 paper=0 machine=2,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,17,Без,total=2 paper=0 machine=2,total=3 paper=1 machine=2,likely_ocr: single digit differs
+080300014,preferences,candidate,18,101,total=2 paper=0 machine=2,total=8 paper=6 machine=2,likely_ocr: single digit differs
+080300014,preferences,candidate,18,102,total=7 paper=6 machine=1,total=2 paper=1 machine=1,likely_ocr: single digit differs
+080300014,preferences,candidate,18,103,total=14 paper=1 machine=13,total=16 paper=3 machine=13,likely_ocr: single digit differs
+080300014,preferences,candidate,18,104,total=3 paper=3 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,18,105,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300014,preferences,candidate,18,106,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,18,108,total=2 paper=0 machine=2,total=3 paper=1 machine=2,likely_ocr: single digit differs
+080300014,preferences,candidate,18,110,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,18,Без,total=4 paper=0 machine=4,total=13 paper=9 machine=4,unknown_cause
+080300014,preferences,candidate,19,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300014,preferences,candidate,20,101,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300014,preferences,candidate,20,102,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,20,Без,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300014,preferences,candidate,23,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300014,preferences,candidate,26,102,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300014,preferences,candidate,26,104,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,26,108,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300014,preferences,candidate,26,109,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,26,110,total=1 paper=0 machine=1,total=2 paper=1 machine=1,likely_ocr: single digit differs
+080300014,preferences,candidate,26,Без,total=10 paper=1 machine=9,total=13 paper=4 machine=9,likely_ocr: single digit differs
+080300014,preferences,candidate,27,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300014,preferences,candidate,28,101,total=5 paper=0 machine=5,total=7 paper=2 machine=5,likely_ocr: single digit differs
+080300014,preferences,candidate,28,102,total=2 paper=2 machine=0,total=1 paper=1 machine=0,likely_ocr: single digit differs
+080300014,preferences,candidate,28,103,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300014,preferences,candidate,28,Без,total=6 paper=0 machine=6,total=12 paper=6 machine=6,unknown_cause
+080300015,protocol,valid_votes_paper,,,0,25,likely_ocr: value missed (read as 0/empty)
+080300015,votes,party_votes,27,,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300015,votes,party_votes,28,,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300015,preferences,candidate,18,102,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300015,preferences,candidate,18,103,total=1 paper=1 machine=0,total=2 paper=2 machine=0,likely_ocr: single digit differs
+080300015,preferences,candidate,18,104,total=2 paper=2 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300015,preferences,candidate,18,106,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300015,preferences,candidate,18,107,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300015,preferences,candidate,18,Без,total=0 paper=0 machine=0,total=3 paper=3 machine=0,likely_ocr: value missed (read as 0/empty)
+080300015,preferences,candidate,27,Без,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300015,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300016,protocol,valid_votes_paper,,,111,114,high_prob_ocr: single digit confusion
+080300016,votes,party_votes,2,,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300016,votes,party_votes,3,,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300016,votes,party_votes,7,,total=0 paper=0 machine=0,total=7 paper=7 machine=0,likely_ocr: value missed (read as 0/empty)
+080300016,votes,party_votes,8,,total=0 paper=0 machine=0,total=5 paper=5 machine=0,likely_ocr: value missed (read as 0/empty)
+080300016,votes,party_votes,12,,total=0 paper=0 machine=0,total=3 paper=3 machine=0,likely_ocr: value missed (read as 0/empty)
+080300016,votes,party_votes,13,,total=0 paper=0 machine=0,total=7 paper=7 machine=0,likely_ocr: value missed (read as 0/empty)
+080300016,votes,party_votes,17,,total=0 paper=0 machine=0,total=7 paper=7 machine=0,likely_ocr: value missed (read as 0/empty)
+080300016,votes,party_votes,18,,total=0 paper=0 machine=0,total=74 paper=74 machine=0,likely_ocr: value missed (read as 0/empty)
+080300017,protocol,additional_voters,,,3,5,likely_ocr: single digit differs
+080300017,protocol,invalid_ballots,,,2,1,likely_ocr: single digit differs
+080300018,preferences,candidate,17,101,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300018,preferences,candidate,17,102,total=2 paper=2 machine=0,total=1 paper=1 machine=0,likely_ocr: single digit differs
+080300018,preferences,candidate,17,103,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300018,preferences,candidate,17,Без,total=0 paper=0 machine=0,total=9 paper=8 machine=1,likely_ocr: value missed (read as 0/empty)
+080300018,preferences,candidate,18,101,total=0 paper=0 machine=0,total=4 paper=3 machine=1,likely_ocr: value missed (read as 0/empty)
+080300018,preferences,candidate,18,102,total=3 paper=3 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300018,preferences,candidate,18,103,total=0 paper=0 machine=0,total=9 paper=7 machine=2,likely_ocr: value missed (read as 0/empty)
+080300018,preferences,candidate,18,104,total=9 paper=7 machine=2,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300018,preferences,candidate,18,105,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300018,preferences,candidate,18,106,total=2 paper=2 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300018,preferences,candidate,18,Без,total=0 paper=0 machine=0,total=6 paper=5 machine=1,likely_ocr: value missed (read as 0/empty)
+080300018,preferences,candidate,19,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300018,preferences,candidate,23,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300018,preferences,candidate,26,101,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300018,preferences,candidate,26,102,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300018,preferences,candidate,26,103,total=0 paper=0 machine=0,total=2 paper=0 machine=2,likely_ocr: value missed (read as 0/empty)
+080300018,preferences,candidate,26,104,total=2 paper=0 machine=2,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300018,preferences,candidate,26,105,total=0 paper=0 machine=0,total=21 paper=17 machine=4,likely_ocr: value missed (read as 0/empty)
+080300018,preferences,candidate,26,106,total=21 paper=17 machine=4,total=1 paper=1 machine=0,unknown: large difference
+080300018,preferences,candidate,26,107,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300018,preferences,candidate,26,Без,total=0 paper=0 machine=0,total=6 paper=5 machine=1,likely_ocr: value missed (read as 0/empty)
+080300018,preferences,candidate,27,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300018,preferences,candidate,28,103,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300018,preferences,candidate,28,104,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300018,preferences,candidate,28,106,total=0 paper=0 machine=0,total=2 paper=1 machine=1,likely_ocr: value missed (read as 0/empty)
+080300018,preferences,candidate,28,107,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300018,preferences,candidate,28,110,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300018,preferences,candidate,28,Без,total=1 paper=1 machine=0,total=4 paper=4 machine=0,high_prob_ocr: single digit confusion
+080300019,protocol,voter_list_count,,,213,219,likely_ocr: single digit differs
+080300019,votes,party_votes,28,,total=3 paper=3 machine=0,total=9 paper=9 machine=0,likely_ocr: single digit differs
+080300019,preferences,candidate,2,101,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300019,preferences,candidate,26,109,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300019,preferences,candidate,26,110,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300020,protocol,additional_voters,,,4,7,likely_ocr: single digit differs
+080300020,protocol,valid_votes_paper,,,42,48,likely_ocr: single digit differs
+080300020,preferences,candidate,4,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300020,preferences,candidate,7,105,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300020,preferences,candidate,7,107,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300020,preferences,candidate,8,110,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300020,preferences,candidate,8,Без,total=0 paper=0 machine=0,total=11 paper=11 machine=0,likely_ocr: value missed (read as 0/empty)
+080300020,preferences,candidate,12,102,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300020,preferences,candidate,12,104,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300020,preferences,candidate,12,Без,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300020,preferences,candidate,17,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300020,preferences,candidate,18,101,total=0 paper=0 machine=0,total=3 paper=3 machine=0,likely_ocr: value missed (read as 0/empty)
+080300020,preferences,candidate,18,103,total=3 paper=3 machine=0,total=9 paper=9 machine=0,likely_ocr: single digit differs
+080300020,preferences,candidate,18,105,total=9 paper=9 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300020,preferences,candidate,18,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300020,preferences,candidate,26,Без,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300020,preferences,candidate,28,101,total=0 paper=0 machine=0,total=7 paper=7 machine=0,likely_ocr: value missed (read as 0/empty)
+080300020,preferences,candidate,28,103,total=4 paper=4 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300020,preferences,candidate,28,105,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300020,preferences,candidate,28,107,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300020,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=7 paper=7 machine=0,likely_ocr: value missed (read as 0/empty)
+080300021,preferences,candidate,7,101,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300021,preferences,candidate,12,101,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300021,preferences,candidate,12,103,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300021,preferences,candidate,12,104,total=1 paper=1 machine=0,total=4 paper=4 machine=0,high_prob_ocr: single digit confusion
+080300021,preferences,candidate,17,101,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300021,preferences,candidate,18,101,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300021,preferences,candidate,18,102,total=2 paper=2 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300021,preferences,candidate,18,103,total=0 paper=0 machine=0,total=5 paper=5 machine=0,likely_ocr: value missed (read as 0/empty)
+080300021,preferences,candidate,18,104,total=5 paper=5 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300021,preferences,candidate,18,Без,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300021,preferences,candidate,25,105,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300021,preferences,candidate,25,106,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300021,preferences,candidate,26,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300021,preferences,candidate,28,101,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300021,preferences,candidate,28,102,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300021,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=8 paper=8 machine=0,likely_ocr: value missed (read as 0/empty)
+080300022,protocol,machine_ballots,,,0,108,likely_ocr: value missed (read as 0/empty)
+080300022,protocol,no_support_machine,,,0,4,likely_ocr: value missed (read as 0/empty)
+080300022,votes,party_votes,4,,total=13 paper=9 machine=4,total=16 paper=9 machine=7,possible_ocr: small difference
+080300022,votes,party_votes,7,,total=14 paper=10 machine=4,total=17 paper=10 machine=7,possible_ocr: small difference
+080300022,votes,party_votes,18,,total=106 paper=82 machine=24,total=109 paper=82 machine=27,possible_ocr: small difference
+080300022,preferences,candidate,17,Без,total=6 paper=0 machine=6,total=9 paper=3 machine=6,likely_ocr: single digit differs
+080300022,preferences,candidate,18,101,total=0 paper=0 machine=0,total=3 paper=3 machine=0,likely_ocr: value missed (read as 0/empty)
+080300022,preferences,candidate,18,102,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300022,preferences,candidate,18,103,total=26 paper=3 machine=23,total=76 paper=53 machine=23,likely_ocr: single digit differs
+080300022,preferences,candidate,18,105,total=53 paper=53 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300022,preferences,candidate,18,106,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300022,preferences,candidate,18,107,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300022,preferences,candidate,18,108,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300022,preferences,candidate,18,109,total=2 paper=1 machine=1,total=1 paper=0 machine=1,likely_ocr: single digit differs
+080300022,preferences,candidate,18,110,total=2 paper=2 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300022,preferences,candidate,18,Без,total=2 paper=0 machine=2,total=23 paper=21 machine=2,unknown_cause
+080300022,preferences,candidate,19,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300022,preferences,candidate,25,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300022,preferences,candidate,26,105,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300022,preferences,candidate,26,107,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300022,preferences,candidate,26,110,total=2 paper=0 machine=2,total=3 paper=1 machine=2,likely_ocr: single digit differs
+080300022,preferences,candidate,26,Без,total=1 paper=0 machine=1,total=6 paper=5 machine=1,likely_ocr: single digit differs
+080300022,preferences,candidate,28,Без,total=1 paper=0 machine=1,total=4 paper=3 machine=1,high_prob_ocr: single digit confusion
+080300023,protocol,invalid_ballots,,,0,1,likely_ocr: value missed (read as 0/empty)
+080300023,protocol,valid_votes_paper,,,0,60,likely_ocr: value missed (read as 0/empty)
+080300023,votes,party_votes,26,,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300023,votes,party_votes,28,,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300023,preferences,candidate,18,101,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300023,preferences,candidate,18,105,total=2 paper=2 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300023,preferences,candidate,18,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300023,preferences,candidate,26,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300023,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300024,preferences,candidate,7,105,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300024,preferences,candidate,12,102,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300024,preferences,candidate,12,Без,total=0 paper=0 machine=0,total=4 paper=4 machine=0,likely_ocr: value missed (read as 0/empty)
+080300024,preferences,candidate,13,101,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300024,preferences,candidate,13,110,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,protocol,voted_count,,,52,57,likely_ocr: single digit differs
+080300025,protocol,paper_ballots,,,52,57,likely_ocr: single digit differs
+080300025,protocol,valid_votes_paper,,,0,53,likely_ocr: value missed (read as 0/empty)
+080300025,votes,party_votes,4,,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,votes,party_votes,7,,total=0 paper=0 machine=0,total=6 paper=6 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,votes,party_votes,8,,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,votes,party_votes,12,,total=0 paper=0 machine=0,total=12 paper=12 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,votes,party_votes,13,,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,votes,party_votes,16,,total=0 paper=0 machine=0,total=3 paper=3 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,votes,party_votes,17,,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,votes,party_votes,18,,total=0 paper=0 machine=0,total=12 paper=12 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,votes,party_votes,19,,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,votes,party_votes,26,,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,votes,party_votes,27,,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,votes,party_votes,28,,total=0 paper=0 machine=0,total=10 paper=10 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,preferences,candidate,18,101,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,preferences,candidate,18,103,total=1 paper=1 machine=0,total=7 paper=7 machine=0,high_prob_ocr: single digit confusion
+080300025,preferences,candidate,18,105,total=7 paper=7 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300025,preferences,candidate,18,106,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,preferences,candidate,18,108,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300025,preferences,candidate,18,Без,total=0 paper=0 machine=0,total=3 paper=3 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,preferences,candidate,19,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,preferences,candidate,26,105,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,preferences,candidate,26,107,total=2 paper=2 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300025,preferences,candidate,27,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,preferences,candidate,28,104,total=0 paper=0 machine=0,total=6 paper=6 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,preferences,candidate,28,106,total=6 paper=6 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300025,preferences,candidate,28,108,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300025,preferences,candidate,28,110,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300025,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=3 paper=3 machine=0,likely_ocr: value missed (read as 0/empty)
+080300026,preferences,candidate,2,110,total=1 paper=0 machine=1,EXTRA,extra_data
+080300026,preferences,candidate,2,Без,total=1 paper=1 machine=0,total=2 paper=1 machine=1,likely_ocr: single digit differs
+080300026,preferences,candidate,7,110,total=8 paper=0 machine=8,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300026,preferences,candidate,7,Без,total=4 paper=4 machine=0,total=12 paper=4 machine=8,unknown_cause
+080300026,preferences,candidate,8,101,total=4 paper=4 machine=0,total=7 paper=7 machine=0,likely_ocr: single digit differs
+080300026,preferences,candidate,8,110,total=2 paper=0 machine=2,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300026,preferences,candidate,8,Без,total=3 paper=3 machine=0,total=5 paper=3 machine=2,likely_ocr: single digit differs
+080300026,preferences,candidate,12,110,total=19 paper=1 machine=18,total=1 paper=1 machine=0,unknown: large difference
+080300026,preferences,candidate,12,Без,total=19 paper=19 machine=0,total=37 paper=19 machine=18,unknown_cause
+080300026,preferences,candidate,13,109,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300026,preferences,candidate,13,110,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300026,preferences,candidate,17,101,total=1 paper=1 machine=0,total=3 paper=1 machine=2,likely_ocr: single digit differs
+080300026,preferences,candidate,17,102,total=2 paper=0 machine=2,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300026,preferences,candidate,18,101,total=19 paper=19 machine=0,total=23 paper=19 machine=4,possible_ocr: small difference
+080300026,preferences,candidate,18,102,total=4 paper=0 machine=4,total=1 paper=0 machine=1,high_prob_ocr: single digit confusion
+080300026,preferences,candidate,18,103,total=25 paper=24 machine=1,total=32 paper=24 machine=8,possible_ocr: small difference
+080300026,preferences,candidate,18,104,total=8 paper=0 machine=8,total=1 paper=0 machine=1,likely_ocr: single digit differs
+080300026,preferences,candidate,18,106,total=2 paper=1 machine=1,total=1 paper=1 machine=0,likely_ocr: single digit differs
+080300026,preferences,candidate,18,Без,total=18 paper=18 machine=0,total=24 paper=18 machine=6,possible_ocr: small difference
+080300026,preferences,candidate,26,101,total=1 paper=1 machine=0,total=2 paper=1 machine=1,likely_ocr: single digit differs
+080300026,preferences,candidate,26,103,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300026,preferences,candidate,26,Без,total=2 paper=2 machine=0,total=6 paper=2 machine=4,likely_ocr: single digit differs
+080300026,preferences,candidate,28,104,total=1 paper=1 machine=0,total=2 paper=1 machine=1,likely_ocr: single digit differs
+080300026,preferences,candidate,28,105,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300026,preferences,candidate,28,Без,total=2 paper=2 machine=0,total=4 paper=2 machine=2,likely_ocr: single digit differs
+080300027,votes,party_votes,8,,total=212 paper=209 machine=3,total=214 paper=209 machine=5,possible_ocr: small difference
+080300027,votes,party_votes,17,,total=9 paper=9 machine=0,total=10 paper=9 machine=1,possible_ocr: small difference
+080300027,votes,party_votes,18,,total=50 paper=50 machine=0,total=56 paper=50 machine=6,possible_ocr: small difference
+080300027,votes,party_votes,25,,total=0 paper=0 machine=0,total=1 paper=0 machine=1,
+080300027,votes,party_votes,26,,total=4 paper=4 machine=0,total=7 paper=4 machine=3,possible_ocr: small difference
+080300027,votes,party_votes,28,,total=6 paper=6 machine=0,total=7 paper=6 machine=1,possible_ocr: small difference
+080300027,preferences,candidate,4,102,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300027,preferences,candidate,4,103,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300027,preferences,candidate,6,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300027,preferences,candidate,7,101,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300027,preferences,candidate,7,105,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300027,preferences,candidate,7,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300027,preferences,candidate,8,101,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300027,preferences,candidate,8,105,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300027,preferences,candidate,8,108,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300027,preferences,candidate,8,Без,total=136 paper=136 machine=0,total=177 paper=176 machine=1,possible_ocr: small difference
+080300027,preferences,candidate,10,104,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300027,preferences,candidate,13,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300027,preferences,candidate,17,101,total=1 paper=1 machine=0,total=2 paper=1 machine=1,likely_ocr: single digit differs
+080300027,preferences,candidate,17,103,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300027,preferences,candidate,18,101,total=28 paper=28 machine=0,total=31 paper=28 machine=3,possible_ocr: small difference
+080300027,preferences,candidate,18,103,total=18 paper=15 machine=3,total=16 paper=15 machine=1,high_prob_ocr: single digit confusion
+080300027,preferences,candidate,18,105,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300027,preferences,candidate,18,Без,total=7 paper=7 machine=0,total=9 paper=7 machine=2,likely_ocr: single digit differs
+080300027,preferences,candidate,25,Без,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300027,preferences,candidate,26,101,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300027,preferences,candidate,26,103,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300027,preferences,candidate,26,Без,total=2 paper=2 machine=0,total=4 paper=2 machine=2,likely_ocr: single digit differs
+080300027,preferences,candidate,28,Без,total=5 paper=5 machine=0,total=6 paper=5 machine=1,high_prob_ocr: single digit confusion
+080300028,protocol,unused_ballots,,,110,210,likely_ocr: single digit differs
+080300029,protocol,voter_list_count,,,0,170,likely_ocr: value missed (read as 0/empty)
+080300029,protocol,additional_voters,,,0,5,likely_ocr: value missed (read as 0/empty)
+080300029,protocol,voted_count,,,0,55,likely_ocr: value missed (read as 0/empty)
+080300029,protocol,unused_ballots,,,0,144,likely_ocr: value missed (read as 0/empty)
+080300029,protocol,invalid_ballots,,,0,1,likely_ocr: value missed (read as 0/empty)
+080300029,protocol,paper_ballots,,,0,55,likely_ocr: value missed (read as 0/empty)
+080300029,protocol,invalid_votes,,,0,4,likely_ocr: value missed (read as 0/empty)
+080300029,protocol,no_support_paper,,,0,1,likely_ocr: value missed (read as 0/empty)
+080300029,preferences,candidate,4,Без,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300029,preferences,candidate,7,105,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300029,preferences,candidate,8,103,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300029,preferences,candidate,12,102,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300029,preferences,candidate,12,Без,total=0 paper=0 machine=0,total=3 paper=3 machine=0,likely_ocr: value missed (read as 0/empty)
+080300029,preferences,candidate,13,102,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300029,preferences,candidate,13,Без,total=0 paper=0 machine=0,total=6 paper=6 machine=0,likely_ocr: value missed (read as 0/empty)
+080300029,preferences,candidate,17,101,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300029,preferences,candidate,17,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300029,preferences,candidate,18,102,total=27 paper=27 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300029,preferences,candidate,18,103,total=0 paper=0 machine=0,total=27 paper=27 machine=0,likely_ocr: value missed (read as 0/empty)
+080300029,preferences,candidate,18,110,total=3 paper=3 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300029,preferences,candidate,18,Без,total=0 paper=0 machine=0,total=3 paper=3 machine=0,likely_ocr: value missed (read as 0/empty)
+080300029,preferences,candidate,19,110,total=1 paper=1 machine=0,EXTRA,extra_data
+080300029,preferences,candidate,19,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300029,preferences,candidate,26,101,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300029,preferences,candidate,26,102,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300029,preferences,candidate,28,110,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300029,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300030,protocol,unused_ballots,,,345,346,high_prob_ocr: single digit confusion
+080300030,preferences,candidate,17,101,total=21 paper=3 machine=18,total=3 paper=3 machine=0,unknown: large difference
+080300030,preferences,candidate,17,103,total=101 paper=0 machine=101,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,17,104,total=102 paper=0 machine=102,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,17,105,total=103 paper=0 machine=103,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,17,106,total=104 paper=0 machine=104,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,17,107,total=105 paper=0 machine=105,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,17,108,total=106 paper=0 machine=106,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,17,109,total=107 paper=0 machine=107,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,17,110,total=108 paper=0 machine=108,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,17,Без,total=112 paper=3 machine=109,total=3 paper=3 machine=0,unknown: large difference
+080300030,preferences,candidate,19,101,total=20 paper=0 machine=20,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,19,103,total=101 paper=0 machine=101,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,19,104,total=102 paper=0 machine=102,EXTRA,extra_data
+080300030,preferences,candidate,19,105,total=103 paper=0 machine=103,EXTRA,extra_data
+080300030,preferences,candidate,19,106,total=104 paper=0 machine=104,EXTRA,extra_data
+080300030,preferences,candidate,19,107,total=105 paper=0 machine=105,EXTRA,extra_data
+080300030,preferences,candidate,19,108,total=106 paper=0 machine=106,EXTRA,extra_data
+080300030,preferences,candidate,19,109,total=107 paper=0 machine=107,EXTRA,extra_data
+080300030,preferences,candidate,19,110,total=108 paper=0 machine=108,EXTRA,extra_data
+080300030,preferences,candidate,19,Без,total=109 paper=0 machine=109,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,21,101,total=22 paper=0 machine=22,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,21,103,total=101 paper=0 machine=101,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,21,104,total=102 paper=0 machine=102,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,21,105,total=103 paper=0 machine=103,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,21,106,total=104 paper=0 machine=104,EXTRA,extra_data
+080300030,preferences,candidate,21,107,total=105 paper=0 machine=105,EXTRA,extra_data
+080300030,preferences,candidate,21,108,total=106 paper=0 machine=106,EXTRA,extra_data
+080300030,preferences,candidate,21,109,total=107 paper=0 machine=107,EXTRA,extra_data
+080300030,preferences,candidate,21,110,total=108 paper=0 machine=108,EXTRA,extra_data
+080300030,preferences,candidate,21,Без,total=109 paper=0 machine=109,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,23,101,total=24 paper=0 machine=24,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,23,103,total=101 paper=0 machine=101,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,23,104,total=102 paper=0 machine=102,EXTRA,extra_data
+080300030,preferences,candidate,23,105,total=103 paper=0 machine=103,EXTRA,extra_data
+080300030,preferences,candidate,23,106,total=104 paper=0 machine=104,EXTRA,extra_data
+080300030,preferences,candidate,23,107,total=105 paper=0 machine=105,EXTRA,extra_data
+080300030,preferences,candidate,23,108,total=106 paper=0 machine=106,EXTRA,extra_data
+080300030,preferences,candidate,23,109,total=107 paper=0 machine=107,EXTRA,extra_data
+080300030,preferences,candidate,23,110,total=108 paper=0 machine=108,EXTRA,extra_data
+080300030,preferences,candidate,23,Без,total=109 paper=0 machine=109,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,25,101,total=26 paper=0 machine=26,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,25,103,total=101 paper=0 machine=101,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,25,104,total=102 paper=0 machine=102,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,25,105,total=103 paper=0 machine=103,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,25,106,total=104 paper=0 machine=104,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,25,107,total=105 paper=0 machine=105,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,25,108,total=106 paper=0 machine=106,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,25,109,total=107 paper=0 machine=107,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,25,110,total=108 paper=0 machine=108,EXTRA,extra_data
+080300030,preferences,candidate,25,Без,total=109 paper=0 machine=109,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,27,101,total=29 paper=1 machine=28,total=1 paper=1 machine=0,unknown: large difference
+080300030,preferences,candidate,27,103,total=101 paper=0 machine=101,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,27,104,total=102 paper=0 machine=102,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,27,105,total=103 paper=0 machine=103,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300030,preferences,candidate,27,106,total=104 paper=0 machine=104,EXTRA,extra_data
+080300030,preferences,candidate,27,107,total=105 paper=0 machine=105,EXTRA,extra_data
+080300030,preferences,candidate,27,108,total=106 paper=0 machine=106,EXTRA,extra_data
+080300030,preferences,candidate,27,109,total=107 paper=0 machine=107,EXTRA,extra_data
+080300030,preferences,candidate,27,110,total=108 paper=0 machine=108,EXTRA,extra_data
+080300030,preferences,candidate,27,Без,total=109 paper=0 machine=109,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300032,protocol,unused_ballots,,,341340,340,unknown: large difference
+080300032,protocol,machine_ballots,,,5,55,unknown_cause
+080300032,protocol,no_support_machine,,,,1,non_numeric
+080300032,protocol,valid_votes_machine,,,57,54,likely_ocr: single digit differs
+080300032,preferences,candidate,13,Без,total=110 paper=97 machine=13,total=112 paper=97 machine=15,likely_ocr: single digit differs
+080300032,preferences,candidate,16,Без,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300032,preferences,candidate,17,101,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300032,preferences,candidate,17,102,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300032,preferences,candidate,17,108,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300032,preferences,candidate,17,109,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300032,preferences,candidate,17,Без,total=0 paper=0 machine=0,total=4 paper=2 machine=2,likely_ocr: value missed (read as 0/empty)
+080300032,preferences,candidate,18,101,total=0 paper=0 machine=0,total=6 paper=4 machine=2,likely_ocr: value missed (read as 0/empty)
+080300032,preferences,candidate,18,102,total=4 paper=2 machine=2,total=1 paper=1 machine=0,high_prob_ocr: single digit confusion
+080300032,preferences,candidate,18,103,total=1 paper=1 machine=0,total=7 paper=6 machine=1,high_prob_ocr: single digit confusion
+080300032,preferences,candidate,18,104,total=7 paper=6 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300032,preferences,candidate,18,105,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+080300032,preferences,candidate,18,106,total=1 paper=0 machine=1,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300032,preferences,candidate,18,108,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300032,preferences,candidate,18,109,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300032,preferences,candidate,18,Без,total=0 paper=0 machine=0,total=8 paper=5 machine=3,likely_ocr: value missed (read as 0/empty)
+080300032,preferences,candidate,19,Без,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300032,preferences,candidate,20,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300032,preferences,candidate,26,101,total=0 paper=0 machine=0,total=2 paper=1 machine=1,likely_ocr: value missed (read as 0/empty)
+080300032,preferences,candidate,26,102,total=2 paper=1 machine=1,total=1 paper=1 machine=0,likely_ocr: single digit differs
+080300032,preferences,candidate,26,103,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300032,preferences,candidate,26,104,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300032,preferences,candidate,26,105,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300032,preferences,candidate,26,110,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300032,preferences,candidate,26,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300032,preferences,candidate,28,101,total=0 paper=0 machine=0,total=4 paper=2 machine=2,likely_ocr: value missed (read as 0/empty)
+080300032,preferences,candidate,28,102,total=4 paper=2 machine=2,total=2 paper=2 machine=0,likely_ocr: single digit differs
+080300032,preferences,candidate,28,103,total=2 paper=2 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300032,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=5 paper=4 machine=1,likely_ocr: value missed (read as 0/empty)
+080300033,votes,party_votes,18,,total=0 paper=0 machine=0,total=6 paper=6 machine=0,likely_ocr: value missed (read as 0/empty)
+080300033,preferences,candidate,13,102,total=4 paper=4 machine=0,total=7 paper=7 machine=0,likely_ocr: single digit differs
+080300034,protocol,valid_votes_paper,,,0,39,likely_ocr: value missed (read as 0/empty)
+080300034,votes,party_votes,26,,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300034,votes,party_votes,28,,total=0 paper=0 machine=0,total=3 paper=3 machine=0,likely_ocr: value missed (read as 0/empty)
+080300034,preferences,candidate,18,102,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300034,preferences,candidate,18,103,total=2 paper=2 machine=0,total=3 paper=3 machine=0,likely_ocr: single digit differs
+080300034,preferences,candidate,18,104,total=3 paper=3 machine=0,total=1 paper=1 machine=0,likely_ocr: single digit differs
+080300034,preferences,candidate,18,105,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300034,preferences,candidate,18,110,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300034,preferences,candidate,18,Без,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300034,preferences,candidate,26,105,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300034,preferences,candidate,26,106,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300034,preferences,candidate,28,101,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+080300034,preferences,candidate,28,102,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+080300034,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+080300035,preferences,candidate,18,103,total=3 paper=3 machine=0,total=8 paper=8 machine=0,high_prob_ocr: single digit confusion
+080300036,preferences,candidate,26,Без,total=2 paper=2 machine=0,total=4 paper=4 machine=0,likely_ocr: single digit differs
+091400018,protocol,voted_count,,,288,287,likely_ocr: single digit differs
+091400018,preferences,candidate,2,Без,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+091400018,preferences,candidate,4,Без,total=4 paper=4 machine=0,total=1 paper=1 machine=0,high_prob_ocr: single digit confusion
+091400018,preferences,candidate,7,Без,total=9 paper=4 machine=5,total=6 paper=1 machine=5,likely_ocr: single digit differs
+091400018,preferences,candidate,17,Без,total=4 paper=0 machine=4,total=7 paper=3 machine=4,likely_ocr: single digit differs
+111800001,preferences,candidate,8,101,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+111800001,preferences,candidate,8,102,total=0 paper=0 machine=0,total=8 paper=8 machine=0,likely_ocr: value missed (read as 0/empty)
+111800001,preferences,candidate,8,103,total=1 paper=0 machine=1,total=9 paper=8 machine=1,likely_ocr: single digit differs
+111800001,preferences,candidate,8,104,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+111800001,preferences,candidate,8,105,total=1 paper=0 machine=1,total=6 paper=5 machine=1,likely_ocr: single digit differs
+111800001,preferences,candidate,8,106,total=2 paper=0 machine=2,total=3 paper=1 machine=2,likely_ocr: single digit differs
+111800001,preferences,candidate,8,108,total=1 paper=0 machine=1,total=4 paper=3 machine=1,high_prob_ocr: single digit confusion
+111800001,preferences,candidate,8,Без,total=0 paper=0 machine=0,total=23 paper=22 machine=1,likely_ocr: value missed (read as 0/empty)
+111800001,preferences,candidate,9,Без,total=0 paper=0 machine=0,total=1 paper=0 machine=1,likely_ocr: value missed (read as 0/empty)
+121400011,preferences,candidate,18,101,total=0 paper=0 machine=0,total=8 paper=8 machine=0,likely_ocr: value missed (read as 0/empty)
+121400011,preferences,candidate,18,102,total=2 paper=2 machine=0,total=1 paper=1 machine=0,likely_ocr: single digit differs
+121400011,preferences,candidate,18,103,total=1 paper=1 machine=0,total=4 paper=4 machine=0,high_prob_ocr: single digit confusion
+121400011,preferences,candidate,18,104,total=4 paper=4 machine=0,total=3 paper=3 machine=0,likely_ocr: single digit differs
+121400011,preferences,candidate,18,105,total=3 paper=3 machine=0,total=1 paper=1 machine=0,likely_ocr: single digit differs
+121400011,preferences,candidate,18,106,total=1 paper=1 machine=0,total=3 paper=3 machine=0,likely_ocr: single digit differs
+121400011,preferences,candidate,18,107,total=3 paper=3 machine=0,total=1 paper=1 machine=0,likely_ocr: single digit differs
+121400011,preferences,candidate,18,108,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+121400011,preferences,candidate,18,Без,total=0 paper=0 machine=0,total=32 paper=32 machine=0,likely_ocr: value missed (read as 0/empty)
+121400011,preferences,candidate,19,Без,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+121400011,preferences,candidate,26,101,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+121400011,preferences,candidate,26,102,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+121400011,preferences,candidate,26,105,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+121400011,preferences,candidate,26,106,total=2 paper=2 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+121400011,preferences,candidate,26,Без,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+121400011,preferences,candidate,27,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+121400011,preferences,candidate,28,102,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+121400011,preferences,candidate,28,103,total=1 paper=1 machine=0,total=0 paper=0 machine=0,likely_ocr: phantom value (should be 0)
+121400011,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=3 paper=3 machine=0,likely_ocr: value missed (read as 0/empty)
+151000027,protocol,unused_ballots,,,33,339,unknown_cause
+151000027,preferences,candidate,7,104,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+151000027,preferences,candidate,7,105,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+151000027,preferences,candidate,8,102,total=0 paper=0 machine=0,total=16 paper=16 machine=0,likely_ocr: value missed (read as 0/empty)
+151000027,preferences,candidate,8,103,total=1 paper=0 machine=1,total=35 paper=34 machine=1,unknown_cause
+151000027,preferences,candidate,8,104,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+151000027,preferences,candidate,8,106,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+151000027,preferences,candidate,8,108,total=3 paper=0 machine=3,total=6 paper=3 machine=3,likely_ocr: single digit differs
+151000027,preferences,candidate,8,110,total=0 paper=0 machine=0,total=20 paper=20 machine=0,likely_ocr: value missed (read as 0/empty)
+151000027,preferences,candidate,8,113,total=6 paper=6 machine=0,total=4 paper=4 machine=0,likely_ocr: single digit differs
+151000027,preferences,candidate,8,Без,total=0 paper=0 machine=0,total=6 paper=6 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,5,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,7,103,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,7,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,8,102,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,8,103,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,8,105,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,8,108,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,8,Без,total=0 paper=0 machine=0,total=4 paper=4 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,12,101,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,12,Без,total=0 paper=0 machine=0,total=3 paper=3 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,13,102,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,13,113,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,13,123,MISSING,total=0 paper=0 machine=0,missing_data
+162202040,preferences,candidate,13,124,MISSING,total=0 paper=0 machine=0,missing_data
+162202040,preferences,candidate,13,Без,total=0 paper=0 machine=0,total=18 paper=18 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,17,103,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,17,113,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,17,Без,total=0 paper=0 machine=0,total=6 paper=6 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,18,103,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,18,108,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,18,109,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,18,111,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,18,112,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,18,123,MISSING,total=0 paper=0 machine=0,missing_data
+162202040,preferences,candidate,18,124,MISSING,total=0 paper=0 machine=0,missing_data
+162202040,preferences,candidate,18,Без,total=0 paper=0 machine=0,total=71 paper=71 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,26,123,MISSING,total=0 paper=0 machine=0,missing_data
+162202040,preferences,candidate,26,124,MISSING,total=0 paper=0 machine=0,missing_data
+162202040,preferences,candidate,26,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202040,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=1 paper=1 machine=0,likely_ocr: value missed (read as 0/empty)
+162202047,protocol,unused_ballots,,,538,534,likely_ocr: single digit differs
+162202047,protocol,valid_votes_paper,,,,56,non_numeric
+162202047,votes,party_votes,12,,total=2 paper=1 machine=1,total=3 paper=2 machine=1,likely_ocr: single digit differs
+162202047,votes,party_votes,17,,total=0 paper=0 machine=0,total=3 paper=3 machine=0,likely_ocr: value missed (read as 0/empty)
+162202047,votes,party_votes,18,,total=0 paper=0 machine=0,total=32 paper=32 machine=0,likely_ocr: value missed (read as 0/empty)
+162202047,votes,party_votes,28,,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+162202047,preferences,candidate,8,Без,total=0 paper=0 machine=0,total=10 paper=10 machine=0,likely_ocr: value missed (read as 0/empty)
+162202047,preferences,candidate,12,Без,total=0 paper=0 machine=0,total=3 paper=2 machine=1,likely_ocr: value missed (read as 0/empty)
+162202047,preferences,candidate,13,123,MISSING,total=0 paper=0 machine=0,missing_data
+162202047,preferences,candidate,13,124,MISSING,total=0 paper=0 machine=0,missing_data
+162202047,preferences,candidate,13,Без,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+162202047,preferences,candidate,17,Без,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)
+162202047,preferences,candidate,18,123,MISSING,total=0 paper=0 machine=0,missing_data
+162202047,preferences,candidate,18,124,MISSING,total=0 paper=0 machine=0,missing_data
+162202047,preferences,candidate,18,Без,total=0 paper=0 machine=0,total=25 paper=25 machine=0,likely_ocr: value missed (read as 0/empty)
+162202047,preferences,candidate,26,123,MISSING,total=0 paper=0 machine=0,missing_data
+162202047,preferences,candidate,26,124,MISSING,total=0 paper=0 machine=0,missing_data
+162202047,preferences,candidate,28,Без,total=0 paper=0 machine=0,total=2 paper=2 machine=0,likely_ocr: value missed (read as 0/empty)

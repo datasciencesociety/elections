@@ -1,0 +1,74 @@
+{
+  "description": "OCR prompt templates for Bulgarian election protocol pages (27.10.2024 parliamentary elections). Each page type describes the expected structure to guide the OCR model.",
+  "form_types": {
+    "24": {"label": "Х (хартия)", "pages": 8, "has_machine": false},
+    "26": {"label": "ХМ (хартия+машина)", "pages": 14, "has_machine": true},
+    "28": {"label": "ЧХ (чужбина хартия)", "pages": 8, "has_machine": false},
+    "30": {"label": "ЧХМ (чужбина хартия+машина)", "pages": 14, "has_machine": true}
+  },
+  "pages": {
+    "1": {
+      "title": "Заглавна страница на протокола (ЧАСТ I)",
+      "prompt": "This page contains the protocol header and PART I data.\n\nExpected structure (top to bottom):\n- Control number (фабричен номер): 7-digit number at the very top and bottom of the page\n- 'ЛИСТ 1 Екземпляр за ЦИК' label\n- Form type: 'Приложение № 75-НС-х' (Form 24), '76-НС-хм' (Form 26), '77-НС-чх' (Form 28), or '78-НС-чхм' (Form 30)\n- Form number (№ формуляр): 8-digit number near the top (e.g. '01022018')\n- Section code in spaced-digit format: 'X X X X X X X X X' (9 digits separated by spaces, e.g. '0 1 0 1 0 0 0 0 1')\n- Municipality and locality names\n- RIK code: 'изборен район NN - Name' where NN is the 1-2 digit district code\n- Commission members list\n- ЧАСТ I section:\n  - А. Брой на получените бюлетини (ballots received): number in '(с цифри)' format\n\nKey fields to extract:\n  | Field | Description | Format |\n  | Control number | Фабричен номер | 7-digit number, top and bottom of page |\n  | Form type | Приложение № | 75→24, 76→26, 77→28, 78→30 |\n  | Form number | № формуляр | 8-digit number |\n  | Section code | Код на секция | 9 spaced digits → 9-digit code |\n  | RIK code | Изборен район | 1-2 digit number |\n  | Ballots received | А. Брой получени бюлетини | Integer in '(с цифри)' |"
+    },
+    "2": {
+      "title": "Данни от избирателния списък и ЧАСТ II (хартиени бюлетини)",
+      "prompt": "This page contains voter list data and paper ballot counting results.\n\nExpected structure:\n- Control number at top and bottom\n- ДАННИ ОТ ИЗБИРАТЕЛНИЯ СПИСЪК section (Form table):\n  | Row | Field | Description |\n  | 1. | Брой избиратели в списъка | Voter list count (field 8) |\n  | 2. | Вписани в допълнителната страница | Additional voters (field 11) |\n  | 3. | Брой гласували (подписи) | Voted count (field 12) |\n  Each row has two columns: description text and '(с цифри)' value\n\n- ДАННИ ИЗВЪН ИЗБИРАТЕЛНИЯ СПИСЪК section (Form table):\n  | Row | Field | Description |\n  | 4.а) | Неизползвани хартиени бюлетини | Unused ballots (field 13) |\n  | 4.б) | Недействителни хартиени бюлетини | Invalid ballots outside box (field 14) |\n\n- ЧАСТ II section (Form table):\n  | Row | Field | Description |\n  | 5. | Намерени в кутията хартиени бюлетини | Paper ballots in box (field 15) |\n  | 6. | Недействителни гласове | Invalid votes (field 16) |\n  | 7. | Действителни 'Не подкрепям никого' | No-support votes (field 17) |\n\nAll numeric values appear in '(с цифри)' format in the last column of each row."
+    },
+    "3": {
+      "title": "Разпределение на гласовете по партии — хартиени бюлетини (страница 1 от 2)",
+      "prompt": "This page contains the first part of the paper vote distribution table (точка 8).\n\nExpected structure:\n- Control number at top and bottom\n- Section header: '8. РАЗПРЕДЕЛЕНИЕ НА ГЛАСОВЕТЕ ПО КАНДИДАТСКИ ЛИСТИ ОТ ХАРТИЕНИТЕ БЮЛЕТИНИ'\n- Vote table with columns:\n  | № | Наименование на партия/коалиция | Действителни гласове |\n\nEach row contains:\n  - Party number (e.g. '2.', '4.', '18.')\n  - Party/coalition name\n  - Vote count in format: 'word_value\\n(с думи) numeric_value\\n(с цифри)'\n\nTypically contains parties 2-18 (parties 1 and 3 are not registered).\nThe numeric value after '(с цифри)' is the authoritative count.\n\nNote: Some rows may have 3 columns (№, name, combined votes) or 4 columns (№, name, words, digits) depending on OCR layout."
+    },
+    "4": {
+      "title": "Разпределение на гласовете по партии — хартиени бюлетини (страница 2 от 2) + Общо",
+      "prompt": "This page continues the paper vote distribution table and includes the total.\n\nExpected structure:\n- Control number at top and bottom\n- Continuation of vote table (typically parties 19-28)\n  - Row format may differ: first column contains 'N. PARTY NAME' (number + name combined)\n  - Vote count in '(с думи)' and '(с цифри)' columns\n\n- After the table:\n  - '9. Общ брой на действителните гласове, подадени за кандидатските листи' (total valid paper votes, field 18)\n  - Total value in '(с цифри)' format — may be in a separate Text div or in a Table row\n\nKey field to extract:\n  | Field | Description |\n  | Total valid paper votes (field 18) | '9. Общ брой' — sum of all party votes |"
+    },
+    "5": {
+      "title": "Преференции от хартиени бюлетини (страница 1 от 3)",
+      "prompt": "This page contains paper preference votes for candidates (точка 10).\n\nExpected structure:\n- Control number at top and bottom (may use 'Page-Header' label instead of 'Text')\n- Section header: '10. РАЗПРЕДЕЛЕНИЕ НА ПРЕДПОЧИТАНИЯТА (ПРЕФЕРЕНЦИЙТЕ)'\n- Preference table with party blocks. Each party block has 4 rows:\n\n  Row 1 (14 cells): [party_num, party_name, vote_101, vote_102, ..., vote_112]\n    - Party number in first cell (e.g. '2.', '4.')\n    - Votes for candidates 101-112 in cells 3-14\n\n  Row 2 (11 cells): [113, 114, 115, ..., 122, 'Без преференции']\n    - Header row for second batch of candidates\n    - Last cell is 'Без преференции' (colspan=2)\n\n  Row 3 (11-12 cells): [vote_113, vote_114, ..., vote_122, bez_pref_value]\n    - Votes for candidates 113-122\n    - Cell at index 10 is the 'Без преференции' count (may have extra trailing cell due to colspan)\n\n  Row 4 (12 cells): [101, 102, ..., 112]\n    - Header row for next party block\n\nTypically contains parties 2-10 on this page.\nThis page may be truncated (no Page-Footer) — use flush parsing."
+    },
+    "6": {
+      "title": "Преференции от хартиени бюлетини (страница 2 от 3)",
+      "prompt": "This page continues the paper preference table (точка 10).\n\nSame structure as page 5 — party blocks with 4 rows each.\nTypically contains parties 11-17.\n\nNote: This page often uses 'Page-Header' label (not 'Text') for the control number div at the top.\nThis page may be truncated — use flush parsing to recover partial table data."
+    },
+    "7": {
+      "title": "Преференции от хартиени бюлетини (страница 3 от 3) + Машинно гласуване начало",
+      "prompt": "This page has two sections:\n\n1. CONTINUATION OF PAPER PREFERENCES (точка 10):\n  - Party blocks for remaining parties (typically 21-28)\n  - Uses Pattern B format: first row has 13 cells ['N. PARTY NAME', 101, 102, ..., 112]\n  - Second row has 12 cells with vote counts for 101-112\n  - Third row: header [113, ..., 122, 'Без преференции']\n  - Fourth row: votes for 113-122 + bez_pref value at index 10\n  - КОНТРОЛА text after the table\n\n2. MACHINE VOTING SECTION (only for Form 26/30):\n  - Section header: 'ПРЕБРОЯВАНЕ НА ГЛАСОВЕТЕ ОТ БЮЛЕТИНИТЕ ОТ МАШИННО ГЛАСУВАНЕ'\n  - Table (may be labeled 'Table' or 'Form') with:\n    | Row | Field | Description |\n    | 11. | Бюлетини от машинно гласуване в кутията | Machine ballots in box (field 19) |\n    | 12. | Действителни 'Не подкрепям никого' от машинно | Machine no-support votes (field 20) |\n  - Values in '(с цифри)' format in the last column\n\nThis page may be truncated before the machine section — use flush parsing."
+    },
+    "8": {
+      "title": "Разпределение на гласовете по партии — машинно гласуване (страница 1 от 2)",
+      "prompt": "This page contains the first part of the machine vote distribution table (точка 13). Only present for Form 26/30.\n\nExpected structure:\n- Control number at top and bottom\n- Section header: '13. РАЗПРЕДЕЛЕНИЕ НА ГЛАСОВЕТЕ ПО КАНДИДАТСКИ ЛИСТИ ОТ БЮЛЕТИНТЕ ОТ МАШИННО ГЛАСУВАНЕ'\n- Vote table with columns:\n  | № | Наименование на партия/коалиция | (с думи) | (с цифри) |\n\nSame structure as page 3 but for machine votes.\nTypically contains parties 2-17.\nThe '(с цифри)' value is the authoritative count."
+    },
+    "9": {
+      "title": "Разпределение на гласовете по партии — машинно гласуване (страница 2 от 2) + Общо",
+      "prompt": "This page continues the machine vote distribution and includes the total. Only present for Form 26/30.\n\nExpected structure:\n- Continuation of machine vote table (typically parties 18-28)\n  - Row format: 'N. PARTY NAME' in first column (number + name combined)\n  - May be in a 'Form' div (not 'Table')\n\n- After the table:\n  - '14. Общ брой на действителните гласове' (total valid machine votes, field 21)\n  - Total value in '(с цифри)' format\n\nKey field to extract:\n  | Field | Description |\n  | Total valid machine votes (field 21) | '14. Общ брой' — sum of all machine party votes |"
+    },
+    "10": {
+      "title": "Преференции от машинно гласуване (страница 1 от 5)",
+      "prompt": "This page contains machine preference votes for candidates (точка 15). Only present for Form 26/30.\n\nExpected structure:\n- Control number at top and bottom (may use 'Text' label, bottom control number may also be 'Text' with y > 900)\n- This is a single-line HTML page with all divs on one line\n- Typically contains only header divs and a page number — the actual preference table starts on page 11\n\nSame table structure as paper preferences (pages 5-7)."
+    },
+    "11": {
+      "title": "Преференции от машинно гласуване (страница 2 от 5)",
+      "prompt": "This page contains machine preference votes (точка 15 continued). Only present for Form 26/30.\n\nExpected structure:\n- Control number at top (may use 'Page-Header' label)\n- Section header: '15. РАЗПРЕДЕЛЕНИЕ НА ПРЕДПОЧИТАНИЯТА (ПРЕФЕРЕНЦИЙТЕ) ЗА КАНДИДАТИТЕ'\n- Preference table with same party block structure as pages 5-7:\n  Row 1 (14 cells): [party_num, party_name, vote_101, ..., vote_112]\n  Row 2 (11 cells): [113, ..., 122, 'Без преференции']\n  Row 3 (11-12 cells): [vote_113, ..., vote_122, bez_pref_value]\n  Row 4 (12 cells): [101, ..., 112] (header for next block)\n\nTypically contains parties 2-9.\nThis page may be truncated — use flush parsing."
+    },
+    "12": {
+      "title": "Преференции от машинно гласуване (страница 3 от 5)",
+      "prompt": "Continuation of machine preference table (точка 15). Only present for Form 26/30.\nSame structure as page 11. Typically contains parties 10-16.\nMay be truncated — use flush parsing."
+    },
+    "13": {
+      "title": "Преференции от машинно гласуване (страница 4 от 5)",
+      "prompt": "Continuation of machine preference table (точка 15). Only present for Form 26/30.\nSame structure as page 11. Typically contains parties 17-22.\nMay be truncated — use flush parsing."
+    },
+    "14": {
+      "title": "Преференции от машинно гласуване (страница 5 от 5)",
+      "prompt": "Final page of machine preference table (точка 15). Only present for Form 26/30.\nSame structure as page 11 but uses Pattern B (merged party+name in first cell).\nTypically contains parties 23-28.\nEnds with КОНТРОЛА text.\nShould have Page-Footer with control number."
+    }
+  },
+  "common_patterns": {
+    "cifri_value": "Numeric values appear in '(с цифри)' format. The authoritative number is always the one labeled '(с цифри)', not '(с думи)' (words). Example: 'шестстотин (с думи) 600 (с цифри)' → extract 600.",
+    "control_number": "A 7-digit factory number (фабричен номер) appears at the top and bottom of every page. Top: first numeric-only div (Text or Page-Header label, smallest y-coordinate). Bottom: numeric div with y > 900 (Page-Footer or Text label, 5+ digits to distinguish from page number).",
+    "page_labels": "HTML divs have data-label attribute: Text, Section-Header, Form, Table, Image, Page-Footer, Page-Header. Form and Table divs contain <table> elements with structured data.",
+    "truncated_pages": "Pages 5-7 and 10-14 may be truncated mid-table in the HTML. Use flush parsing to recover partial data. Truncated pages will be missing the Page-Footer div.",
+    "colspan": "The 'Без преференции' cell uses colspan=2 in the HTML. This may result in the data row having 12 cells instead of 11. The bez value is always at index 10 (after 10 candidate votes for 113-122)."
+  }
+}

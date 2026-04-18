@@ -289,9 +289,15 @@ function startMonitoring() {
 }
 
 function loadStream(url) {
-  // Route archive.evideo.bg through the local CORS proxy so canvas.getImageData() works
+  // Route archive.evideo.bg through a CORS proxy so canvas.getImageData() works.
+  // When served under the coordinator (/inspect), use its /proxy/ route;
+  // otherwise fall back to the standalone proxy on localhost:8788.
   if (/^https?:\/\/archive\.evideo\.bg/i.test(url)) {
-    url = 'http://localhost:8788' + url.replace(/^https?:\/\/[^/]+/, '');
+    const isCoordinator = location.pathname.startsWith('/inspect');
+    const proxyBase = isCoordinator
+      ? location.origin + '/proxy'
+      : 'http://localhost:8788';
+    url = proxyBase + url.replace(/^https?:\/\/[^/]+/, '');
   }
   const isHls = url.includes('.m3u8') || url.includes('hls');
 
