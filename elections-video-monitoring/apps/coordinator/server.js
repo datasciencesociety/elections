@@ -321,7 +321,7 @@ async function handleSession(req, res) {
   try { body = await readBody(req); } catch {}
   const requested = Number(body.count);
   const count = (Number.isInteger(requested) && requested >= 4 && requested <= 40 && requested % 4 === 0)
-    ? requested : 16;
+    ? requested : 4;
   const sessionId = crypto.randomUUID();
   const activeCutoff = Date.now() - 120_000;
   const streams = pickStreamsForSession(activeCutoff, count);
