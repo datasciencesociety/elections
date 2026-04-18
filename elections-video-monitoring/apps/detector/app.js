@@ -434,9 +434,54 @@ elUrl.addEventListener('keydown', e => { if (e.key === 'Enter') startMonitoring(
   // Detect iframe embedding for tighter mobile layout
   if (window !== window.top) document.body.classList.add('in-iframe');
 
+  // Listen for messages from parent (volunteer page)
+  window.addEventListener('message', (e) => {
+    if (!e.data || !e.data.type) return;
+    if (window.parent !== window && e.source !== window.parent) return;
+    if (e.data.type === 'maximize') {
+      document.body.classList.toggle('maximized', !!e.data.value);
+      const btn = document.getElementById('btn-maximize-video');
+      if (btn) btn.textContent = e.data.value ? '⛌' : '⛶';
+      const popup = document.getElementById('phone-popup-video');
+      if (popup) popup.classList.remove('open');
+    }
+    if (e.data.type === 'set-lang' && e.data.lang) {
+      _lang = e.data.lang;
+      localStorage.setItem('lang', _lang);
+      applyTranslations();
+    }
+  });
+
   const params = new URLSearchParams(location.search);
   const urlParam = params.get('url');
   const tParam   = params.get('t');
+  const audioParam = params.get('audio');
+  if (audioParam === '1') {
+    video.muted = false;
+    document.body.classList.add('embedded-mode');
+
+    // Overlay button handlers
+    const btnMax = document.getElementById('btn-maximize-video');
+    const btnCall = document.getElementById('btn-call-video');
+    const phonePopup = document.getElementById('phone-popup-video');
+
+    btnMax.addEventListener('click', () => {
+      if (window.parent !== window) {
+        window.parent.postMessage({ type: 'toggle-maximize' }, '*');
+      }
+    });
+
+    btnCall.addEventListener('click', (e) => {
+      e.stopPropagation();
+      phonePopup.classList.toggle('open');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (phonePopup.classList.contains('open') && !phonePopup.contains(e.target) && e.target !== btnCall) {
+        phonePopup.classList.remove('open');
+      }
+    });
+  }
   if (urlParam) {
     elUrl.value = urlParam;
     if (tParam) {

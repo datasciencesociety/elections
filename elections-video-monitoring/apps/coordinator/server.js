@@ -502,6 +502,10 @@ const server = http.createServer(async (req, res) => {
       serveFile(res, path.join(__dirname, 'public', 'poc.html'), 'text/html; charset=utf-8');
       return;
     }
+    if (req.method === 'GET' && url === '/help') {
+      serveFile(res, path.join(__dirname, 'public', 'help.html'), 'text/html; charset=utf-8');
+      return;
+    }
     if (req.method === 'GET' && url === '/favicon.ico') {
       res.writeHead(204); res.end(); return;
     }
