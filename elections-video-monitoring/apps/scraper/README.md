@@ -35,19 +35,21 @@ curl -X POST http://localhost:3000/api/streams \
   -H 'Content-Type: application/json' \
   -d @out/streams.json
 
-# Only tour 1, live recordings, 5 parallel workers — name file after filters
+# Only tour 1, live recordings, 5 parallel workers — name file after election code + filters
 node scrape-streams.js https://evideo.bg/le20260222/index.html \
-  --tour=1 --type=r --concurrency=5 > our/streams_tour1_live.json
+  --tour=1 --type=r --concurrency=5 > out/streams_le20260222_tour1_live.json
 ```
 
-File naming convention: `streams[_tour<N>][_<type>].json`
+File naming convention: `streams_<election-code>[_tour<N>][_<type>].json`
 
-| Filter active | Segment    | Example                    |
-| ------------- | ---------- | -------------------------- |
-| `--tour=1`    | `_tour1`   | `streams_tour1.json`       |
-| `--type=d`    | `_device`  | `streams_device.json`      |
-| `--type=r`    | `_live`    | `streams_live.json`        |
-| both          | both       | `streams_tour1_live.json`  |
+`<election-code>` is the path segment from the index URL (e.g. `le20260222`, `pe202410`). Prefixing prevents collisions when multiple elections are archived side-by-side.
+
+| Filter active | Segment    | Example                                 |
+| ------------- | ---------- | --------------------------------------- |
+| `--tour=1`    | `_tour1`   | `streams_le20260222_tour1.json`         |
+| `--type=d`    | `_device`  | `streams_le20260222_device.json`        |
+| `--type=r`    | `_live`    | `streams_le20260222_live.json`          |
+| both          | both       | `streams_le20260222_tour1_live.json`    |
 
 ### Options
 

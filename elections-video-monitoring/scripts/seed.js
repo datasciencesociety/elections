@@ -4,15 +4,15 @@
  * Seed the coordinator with a pre-scraped streams JSON file.
  *
  * Usage:
- *   node scripts/seed.js                                      # default file
- *   node scripts/seed.js apps/scraper/streams_tour1_live.json # custom file
+ *   node scripts/seed.js                                                 # default file
+ *   node scripts/seed.js apps/scraper/streams_le20260222_tour1_live.json # custom file
  *   PORT=4000 node scripts/seed.js                           # custom port
  */
 
 const fs   = require('fs');
 const path = require('path');
 
-const file = process.argv[2] || path.join('apps', 'scraper', 'streams_tour1_live.json');
+const file = process.argv[2] || path.join('apps', 'scraper', 'streams_le20260222_tour1_live.json');
 const port = process.env.PORT || 3000;
 const url  = `http://localhost:${port}/api/streams`;
 
