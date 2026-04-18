@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Live Stream Freeze Detector</title>
+<script src="i18n.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,7 +12,7 @@
     <section id="status-panel" class="status-idle">
       <div class="status-icon" id="status-icon">⏸</div>
       <div class="status-body">
-        <div class="status-text" id="status-text">Idle — enter a URL to begin</div>
+        <div class="status-text" id="status-text" data-i18n="idle">Idle — enter a URL to begin</div>
         <div class="status-sub" id="status-sub"></div>
       </div>
     </section>
@@ -19,27 +20,27 @@
 <!-- Metrics Row -->
     <section class="metrics-row" id="metrics-row">
       <div class="metric">
-        <span class="metric-label">Luminance</span>
+        <span class="metric-label" data-i18n="metric.luma">Luminance</span>
         <span class="metric-value" id="m-luma">—</span>
       </div>
       <div class="metric">
-        <span class="metric-label">Motion Diff</span>
+        <span class="metric-label" data-i18n="metric.diff">Motion Diff</span>
         <span class="metric-value" id="m-diff">—</span>
       </div>
       <div class="metric">
-        <span class="metric-label">Cover Ratio</span>
+        <span class="metric-label" data-i18n="metric.cover">Cover Ratio</span>
         <span class="metric-value" id="m-cover">—</span>
       </div>
       <div class="metric">
-        <span class="metric-label">Frozen For</span>
+        <span class="metric-label" data-i18n="metric.frozen">Frozen For</span>
         <span class="metric-value" id="m-frozen">—</span>
       </div>
       <div class="metric">
-        <span class="metric-label">Rec. Time</span>
+        <span class="metric-label" data-i18n="metric.rectime">Rec. Time</span>
         <span class="metric-value" id="m-rectime">—</span>
       </div>
       <div class="metric">
-        <span class="metric-label">Last Check</span>
+        <span class="metric-label" data-i18n="metric.lastcheck">Last Check</span>
         <span class="metric-value" id="m-last-check">—</span>
       </div>
     </section>
@@ -47,7 +48,7 @@
     <!-- Stream Preview + Canvas (hidden) -->
     <section class="card preview-section">
       <div class="preview-url-row">
-        <input type="text" id="stream-url" placeholder="Enter HLS (.m3u8) or video stream URL…" autocomplete="off" spellcheck="false">
+        <input type="text" id="stream-url" data-i18n-placeholder="url.placeholder" placeholder="Enter HLS (.m3u8) or video stream URL…" autocomplete="off" spellcheck="false">
         <button id="btn-start" class="btn-primary" title="Start Monitoring">▶</button>
         <button id="btn-stop" class="btn-danger" title="Stop" disabled>⏹</button>
         <button id="btn-open-url" class="btn-open-url" title="Open in new tab">↗</button>
@@ -58,56 +59,57 @@
 
     <!-- Config Panel -->
     <details class="card config-panel" id="config-panel">
-      <summary>Configuration</summary>
+      <summary data-i18n="config.title">Configuration</summary>
       <div class="config-grid">
-        <label>Check Interval (s)
+        <label><span data-i18n="config.interval">Check Interval (s)</span>
           <input type="number" id="cfg-interval" min="1" max="60" value="1">
         </label>
-        <label>Freeze Alert Threshold (s)
+        <label><span data-i18n="config.freeze">Freeze Alert Threshold (s)</span>
           <input type="number" id="cfg-freeze-min" min="30" max="3600" value="300">
         </label>
-        <label>Motion Sensitivity (diff threshold)
+        <label><span data-i18n="config.motion">Motion Sensitivity (diff threshold)</span>
           <input type="range" id="cfg-motion-threshold" min="1" max="50" value="5">
           <span id="cfg-motion-val">5</span>
         </label>
-        <label>Cover Area Threshold (%)
+        <label><span data-i18n="config.coverarea">Cover Area Threshold (%)</span>
           <input type="number" id="cfg-cover-area" min="10" max="100" value="50">
         </label>
-        <label>Cover Duration Threshold (s)
+        <label><span data-i18n="config.coverdur">Cover Duration Threshold (s)</span>
           <input type="number" id="cfg-cover-duration" min="5" max="300" value="30">
         </label>
-        <label>Cover Variance Sensitivity
+        <label><span data-i18n="config.covervar">Cover Variance Sensitivity</span>
           <input type="range" id="cfg-cover-variance" min="5" max="200" value="40">
           <span id="cfg-cover-var-val">40</span>
         </label>
         <label class="checkbox-label">
-          <input type="checkbox" id="cfg-low-cpu"> Low CPU mode (160×90)
+          <input type="checkbox" id="cfg-low-cpu"> <span data-i18n="config.lowcpu">Low CPU mode (160×90)</span>
         </label>
         <label class="checkbox-label">
-          <input type="checkbox" id="cfg-notif"> Browser notifications
-          <button id="btn-test-notif" class="btn-small">Test</button>
+          <input type="checkbox" id="cfg-notif"> <span data-i18n="config.notif">Browser notifications</span>
+          <button id="btn-test-notif" class="btn-small" data-i18n="btn.testnotif">Test</button>
         </label>
       </div>
-      <button id="btn-reset-config" class="btn-secondary">Reset to Defaults</button>
+      <button id="btn-reset-config" class="btn-secondary" data-i18n="config.reset">Reset to Defaults</button>
     </details>
 
     <!-- Alert Log -->
     <section class="card" id="log-section">
       <div class="log-header">
-        <h2>Alert Log</h2>
-        <button id="btn-copy-log" class="btn-small">Copy</button>
-        <button id="btn-clear-log" class="btn-small">Clear</button>
+        <h2 data-i18n="log.title">Alert Log</h2>
+        <button id="btn-copy-log" class="btn-small" data-i18n="btn.copy">Copy</button>
+        <button id="btn-clear-log" class="btn-small" data-i18n="btn.clear">Clear</button>
       </div>
       <div id="alert-log"></div>
     </section>
   </main>
 
   <footer>
-    <span>Runs 100% in browser</span>
+    <span data-i18n="footer">Runs 100% in browser</span>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.15"></script>
   <script src="detection-core.js"></script>
+  <script>applyTranslations();</script>
   <script src="app.js"></script>
 </body>
 </html>

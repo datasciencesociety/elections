@@ -150,9 +150,9 @@ async function sendNotif(title, body) {
 
 btnTestNotif.addEventListener('click', async () => {
   if (await requestNotifPermission()) {
-    sendNotif('Test Notification', 'Notifications are working!');
+    sendNotif(t('notif.test'), t('notif.test.body'));
   } else {
-    addLog('Notification permission denied', 'warn');
+    addLog(t('log.notif.denied'), 'warn');
   }
 });
 
@@ -187,7 +187,7 @@ function checkFrame() {
   try {
     imageData = ctx.getImageData(0, 0, W, H);
   } catch (e) {
-    addLog(`CORS/SecurityError: canvas read blocked — ${e.message}`, 'alert');
+    addLog(tf('log.cors', { msg: e.message }), 'alert');
     return;
   }
   const data = imageData.data;
@@ -247,40 +247,36 @@ function checkFrame() {
 
   // ── Determine status (cover > freeze > black-frame) ──────────────────────
   if (coverStartTime && coverDurSec >= s.coverDuration) {
-    // CAMERA COVERED
-    setStatus('covered', '🎥', '🚨 CAMERA COVERED',
-      `${(coverRatio*100).toFixed(0)}% of frame covered for ${coverDurSec.toFixed(0)}s`);
-    addLog(`CAMERA COVERED — ${(coverRatio*100).toFixed(0)}% covered, ${coverDurSec.toFixed(0)}s`, 'alert');
-    sendNotif('🚨 Camera Covered', `${(coverRatio*100).toFixed(0)}% of frame covered for ${coverDurSec.toFixed(0)}s`);
+    const pct = (coverRatio*100).toFixed(0), cs = coverDurSec.toFixed(0);
+    setStatus('covered', '🎥', t('covered.status'),
+      tf('covered.detail', { pct, s: cs }));
+    addLog(tf('covered.detail', { pct, s: cs }), 'alert');
+    sendNotif(t('notif.covered'), tf('covered.detail', { pct, s: cs }));
   } else if (coverStartTime && coverDurSec > 0) {
-    setStatus('warn', '🎥', 'Possible Camera Cover',
-      `${(coverRatio*100).toFixed(0)}% covered for ${coverDurSec.toFixed(0)}s (threshold: ${s.coverDuration}s)`);
+    setStatus('warn', '🎥', t('covered.warn'),
+      tf('covered.warn.detail', { pct: (coverRatio*100).toFixed(0), s: coverDurSec.toFixed(0), dur: s.coverDuration }));
   } else if (luma < 20) {
-    // NO SIGNAL
-    setStatus('dark', '⬛', '🚨 NO SIGNAL',
-      `Average luminance: ${luma.toFixed(1)} (threshold: 20)`);
-    addLog(`NO SIGNAL — luminance ${luma.toFixed(1)}`, 'alert');
-    sendNotif('🚨 No Signal', `Stream luminance dropped to ${luma.toFixed(1)}`);
+    setStatus('dark', '⬛', t('dark.status'),
+      tf('dark.detail', { luma: luma.toFixed(1) }));
+    addLog(tf('dark.detail', { luma: luma.toFixed(1) }), 'alert');
+    sendNotif(t('notif.dark'), tf('notif.dark.body', { luma: luma.toFixed(1) }));
   } else if (frozenSec >= s.freezeSec) {
-    // FROZEN
-    setStatus('frozen', '🥶', '🚨 FROZEN / NO MOVEMENT',
-      `No movement for ${frozenSec.toFixed(0)}s`);
-    addLog(`FROZEN — no movement for ${frozenSec.toFixed(0)}s`, 'alert');
-    sendNotif('🚨 Stream Frozen', `No movement detected for ${frozenSec.toFixed(0)}s`);
+    setStatus('frozen', '🥶', t('frozen.status'),
+      tf('frozen.detail', { s: frozenSec.toFixed(0) }));
+    addLog(tf('frozen.detail', { s: frozenSec.toFixed(0) }), 'alert');
+    sendNotif(t('notif.frozen'), tf('notif.frozen.body', { s: frozenSec.toFixed(0) }));
   } else if (frozenSec > s.freezeSec * 0.7) {
-    // Approaching freeze threshold
-    setStatus('warn', '⚠️', 'Approaching Freeze Threshold',
-      `No movement for ${frozenSec.toFixed(0)}s (threshold: ${s.freezeSec}s)`);
+    setStatus('warn', '⚠️', t('freeze.warn'),
+      tf('freeze.warn.detail', { s: frozenSec.toFixed(0), dur: s.freezeSec }));
   } else {
-    // OK
-    setStatus('ok', '✅', 'Stream OK', `Last checked: ${new Date().toLocaleTimeString()}`);
+    setStatus('ok', '✅', t('stream.ok'), tf('stream.ok.checked', { t: new Date().toLocaleTimeString() }));
   }
 }
 
 // ── Stream loading ─────────────────────────────────────────────────────────
 function startMonitoring() {
   const url = elUrl.value.trim();
-  if (!url) { addLog('Please enter a stream URL', 'warn'); return; }
+  if (!url) { addLog(t('log.no.url'), 'warn'); return; }
 
   stopMonitoring();
   retryCount  = 0;
@@ -292,8 +288,8 @@ function startMonitoring() {
 
   btnStart.disabled = true;
   btnStop.disabled  = false;
-  setStatus('idle', '⏳', 'Connecting…', url);
-  addLog(`Starting stream: ${url}`, 'info');
+  setStatus('idle', '⏳', t('connecting'), url);
+  addLog(tf('log.started', { url }), 'info');
 
   loadStream(url);
 }
@@ -317,11 +313,11 @@ function loadStream(url) {
     hls.loadSource(url);
     hls.attachMedia(video);
     hls.on(Hls.Events.MANIFEST_PARSED, () => {
-      video.play().catch(e => addLog(`Autoplay blocked: ${e.message} — click the video to start`, 'warn'));
+      video.play().catch(e => addLog(tf('log.autoplay', { msg: e.message }), 'warn'));
     });
     hls.on(Hls.Events.ERROR, (_, data) => {
       if (data.fatal) {
-        handleStreamError(`HLS fatal error: ${data.type} / ${data.details}`);
+        handleStreamError(tf('log.hls.error', { type: data.type, details: data.details }));
       }
     });
   } else {
@@ -335,8 +331,8 @@ function loadStream(url) {
 }
 
 function onVideoReady() {
-  addLog('Stream loaded — monitoring started', 'ok');
-  setStatus('ok', '✅', 'Stream OK', 'Monitoring active');
+  addLog(t('log.loaded'), 'ok');
+  setStatus('ok', '✅', t('stream.ok'), t('stream.ok.active'));
   lastCheckTime = 0;
   scheduleCheck();
   scheduleFrameCallback();
@@ -356,7 +352,7 @@ function scheduleCheck() {
 
 function onVideoError() {
   const msg = video.error ? video.error.message : 'Unknown video error';
-  handleStreamError(`Video error: ${msg}`);
+  handleStreamError(tf('log.video.error', { msg }));
 }
 
 function handleStreamError(msg) {
@@ -365,8 +361,8 @@ function handleStreamError(msg) {
   if (retryCount < MAX_RETRIES) {
     retryCount++;
     const delay = 30;
-    addLog(`Retrying in ${delay}s… (attempt ${retryCount}/${MAX_RETRIES})`, 'warn');
-    setStatus('warn', '🔄', `Connection error — retrying (${retryCount}/${MAX_RETRIES})`, msg);
+    addLog(tf('log.retry', { delay, n: retryCount, max: MAX_RETRIES }), 'warn');
+    setStatus('warn', '🔄', tf('retry.status', { n: retryCount, max: MAX_RETRIES }), msg);
     clearInterval(checkTimer);
     setTimeout(() => {
       if (monitoring) {
@@ -375,9 +371,9 @@ function handleStreamError(msg) {
       }
     }, delay * 1000);
   } else {
-    setStatus('error', '❌', 'Stream Unavailable', msg);
-    addLog(`Max retries reached — stopped`, 'alert');
-    sendNotif('❌ Stream Unavailable', msg);
+    setStatus('error', '❌', t('unavailable'), msg);
+    addLog(t('log.maxretry'), 'alert');
+    sendNotif(t('notif.unavailable'), msg);
     stopMonitoring(false);
   }
 }
@@ -391,7 +387,7 @@ function stopMonitoring(resetStatus = true) {
   video.removeEventListener('error', onVideoError);
   btnStart.disabled = false;
   btnStop.disabled  = true;
-  if (resetStatus) setStatus('idle', '⏸', 'Idle — enter a URL to begin');
+  if (resetStatus) setStatus('idle', '⏸', t('idle'));
 }
 
 // ── Handle paused / stalled video ─────────────────────────────────────────
@@ -401,7 +397,7 @@ video.addEventListener('pause', () => {
   }
 });
 video.addEventListener('stalled', () => {
-  if (monitoring) addLog('Stream stalled', 'warn');
+  if (monitoring) addLog(t('log.stalled'), 'warn');
 });
 video.addEventListener('ended', () => {
   if (!monitoring) return;
@@ -409,16 +405,16 @@ video.addEventListener('ended', () => {
   const seekTo = Number(new URLSearchParams(location.search).get('t'));
   const beyondEnd = seekTo && dur && seekTo > dur;
   const msg = beyondEnd
-    ? `Requested t=${seekTo}s is past stream end (duration: ${dur.toFixed(1)}s)`
-    : `Stream ended at ${dur ? dur.toFixed(1) + 's' : '?'}`;
+    ? tf('ended.beyond', { t: seekTo, dur: dur.toFixed(1) })
+    : (dur ? tf('ended.normal', { dur: dur.toFixed(1) }) : t('ended.unknown'));
   addLog(msg, 'alert');
-  setStatus('frozen', '🥶', '🚨 STREAM ENDED', msg);
-  sendNotif('🚨 Stream Ended', msg);
+  setStatus('frozen', '🥶', t('ended'), msg);
+  sendNotif(t('notif.ended'), msg);
 });
 
 // ── Controls ───────────────────────────────────────────────────────────────
 btnStart.addEventListener('click', startMonitoring);
-btnStop.addEventListener('click', () => { stopMonitoring(); addLog('Monitoring stopped by user', 'info'); });
+btnStop.addEventListener('click', () => { stopMonitoring(); addLog(t('log.stopped'), 'info'); });
 
 document.getElementById('btn-open-url').addEventListener('click', () => {
   const url = elUrl.value.trim();
@@ -431,7 +427,7 @@ elUrl.addEventListener('keydown', e => { if (e.key === 'Enter') startMonitoring(
 (function init() {
   if (!('Notification' in window)) cfgNotif.disabled = true;
   applySettings(loadSettings());
-  addLog('Stream Freeze Detector ready', 'info');
+  addLog(t('log.ready'), 'info');
 
   // Detect iframe embedding for tighter mobile layout
   if (window !== window.top) document.body.classList.add('in-iframe');
