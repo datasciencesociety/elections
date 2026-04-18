@@ -97,10 +97,43 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
   padding: 12px;
 }
 
+/* ── Collapsible section headers ──────────────────────────────────────────── */
+.section-toggle {
+  display: none;            /* hidden on desktop */
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+.section-toggle::before {
+  content: '▼ ';
+  font-size: 10px;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+.section-toggle.collapsed::before {
+  content: '▶ ';
+}
+.section-toggle .toggle-badge {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-left: 6px;
+}
+
 /* ── Responsive breakpoints ───────────────────────────────────────────────── */
 @media (max-width: 700px) {
   body { height: auto; overflow: auto; }
   #main-layout { flex-direction: column; overflow: visible; min-height: unset; }
+
+  .section-toggle { display: block; }
+
   #stream-panel {
     flex: none;
     width: 100%;
@@ -108,7 +141,19 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
     border-right: none;
     border-bottom: 1px solid var(--border);
   }
-  #inspect-panel { height: 60vh; flex-shrink: 0; }
+  #stream-panel.collapsed #stream-grid { display: none; }
+
+  #stream-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
+  #inspect-panel {
+    flex: none;
+    width: 100%;
+  }
+  #inspect-panel.collapsed #inspect-placeholder,
+  #inspect-panel.collapsed #inspect-frame { display: none !important; }
+  #inspect-frame { height: 70vh; }
 }
 
 /* ── Inspect pane ─────────────────────────────────────────────────────────── */
@@ -247,10 +292,12 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
 </header>
 
 <div id="main-layout">
+  <button class="section-toggle" id="toggle-streams">All Streams<span class="toggle-badge" id="toggle-streams-badge"></span></button>
   <div id="stream-panel">
     <div id="stream-grid"><p id="loading-msg">Connecting to coordinator…</p></div>
   </div>
 
+  <button class="section-toggle" id="toggle-inspect">Current Stream<span class="toggle-badge" id="toggle-inspect-badge">none selected</span></button>
   <div id="inspect-panel">
     <div id="inspect-placeholder">← select a stream to inspect</div>
     <iframe id="inspect-frame" allow="autoplay"></iframe>
@@ -330,6 +377,8 @@ async function init() {
 
   document.getElementById('stream-count').textContent =
     `Monitoring ${streamStates.length} streams`;
+  const streamsBadge = document.getElementById('toggle-streams-badge');
+  if (streamsBadge) streamsBadge.textContent = `${streamStates.length} streams`;
 
   // Try autoplay
   const playPromises = streamStates.map(s => s.video.play().catch(() => null));
@@ -448,6 +497,22 @@ function setupStream(stream) {
     placeholder.style.display = 'none';
     frame.style.display = 'block';
     frame.src = url;
+
+    // Update inspect toggle badge and auto-expand on mobile
+    const badge = document.getElementById('toggle-inspect-badge');
+    if (badge) badge.textContent = stream.label.slice(0, 30) + (stream.label.length > 30 ? '…' : '');
+    const inspectPanel = document.getElementById('inspect-panel');
+    const inspectToggle = document.getElementById('toggle-inspect');
+    if (inspectPanel.classList.contains('collapsed')) {
+      inspectPanel.classList.remove('collapsed');
+      inspectToggle.classList.remove('collapsed');
+    }
+    // On mobile, collapse streams and scroll to inspect
+    if (window.innerWidth <= 700) {
+      document.getElementById('stream-panel').classList.add('collapsed');
+      document.getElementById('toggle-streams').classList.add('collapsed');
+      inspectToggle.scrollIntoView({ behavior: 'smooth' });
+    }
   });
 
   document.getElementById('stream-grid').appendChild(card);
@@ -646,6 +711,16 @@ function escHtml(s) {
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ── Collapsible sections (mobile) ─────────────────────────────────────────
+document.getElementById('toggle-streams').addEventListener('click', function() {
+  this.classList.toggle('collapsed');
+  document.getElementById('stream-panel').classList.toggle('collapsed');
+});
+document.getElementById('toggle-inspect').addEventListener('click', function() {
+  this.classList.toggle('collapsed');
+  document.getElementById('inspect-panel').classList.toggle('collapsed');
+});
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 init();
