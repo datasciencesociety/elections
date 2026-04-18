@@ -34,6 +34,8 @@ export interface PersistenceOptions {
   limit: number;
   offset: number;
   excludeSpecial: boolean;
+  /** Optional per-type allowlist. Takes precedence over `excludeSpecial`. */
+  sectionTypes?: string[];
   sectionFilter?: string;
   district?: string;
   municipality?: string;
@@ -80,9 +82,14 @@ export function getPersistence(
   const sortColumnSql = PERSISTENCE_SORT_SQL[opts.sort];
   const orderDir = opts.order === "asc" ? "ASC" : "DESC";
 
-  const typeClause = opts.excludeSpecial
-    ? " AND ss.section_type = 'normal'"
-    : "";
+  const typeClause =
+    opts.sectionTypes && opts.sectionTypes.length > 0
+      ? ` AND ss.section_type IN (${opts.sectionTypes.map(() => "?").join(",")})`
+      : opts.excludeSpecial
+        ? " AND ss.section_type = 'normal'"
+        : "";
+  const typeParams: unknown[] =
+    opts.sectionTypes && opts.sectionTypes.length > 0 ? opts.sectionTypes : [];
   const sectionClause = opts.sectionFilter ? " AND ss.section_code LIKE ?" : "";
 
   // District/municipality filter operates on the most-recent location per
@@ -185,8 +192,9 @@ export function getPersistence(
   `;
 
   // Param order must match SQL placeholder order:
-  // (1) sectionFilter LIKE? (2) loc.district/municipality? (3) minElections (HAVING) (4) minScore (WHERE)
+  // (1) typeClause IN? (2) sectionFilter LIKE? (3) loc.district/municipality? (4) minElections (HAVING) (5) minScore (WHERE)
   const params: unknown[] = [];
+  params.push(...typeParams);
   if (opts.sectionFilter) params.push(`%${opts.sectionFilter}%`);
   params.push(...loc.params);
   params.push(opts.minElections);

@@ -20,6 +20,8 @@ export interface PersistenceQuery {
   limit?: number;
   offset?: number;
   excludeSpecial?: boolean;
+  /** Per-type allowlist. Sent as `section_types=a,b,c`. */
+  sectionTypes?: string[];
   section?: string;
   district?: string;
   municipality?: string;
@@ -36,6 +38,9 @@ export function getPersistence(
     limit: q.limit,
     offset: q.offset,
     exclude_special: q.excludeSpecial ? "true" : undefined,
+    section_types: q.sectionTypes && q.sectionTypes.length > 0
+      ? q.sectionTypes.join(",")
+      : undefined,
     section: q.section,
     district: q.district,
     municipality: q.municipality,

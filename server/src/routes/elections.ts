@@ -42,6 +42,27 @@ import { getAggregatedBallot } from "../db/ballot.js";
 
 const elections = new Hono();
 
+const KNOWN_SECTION_TYPES = new Set([
+  "normal",
+  "hospital",
+  "prison",
+  "mobile",
+  "abroad",
+]);
+
+/** Parse `section_types=a,b,c` into a validated allowlist. Returns `undefined`
+ *  when the param is absent so callers fall back to `exclude_special` (the
+ *  older coarse toggle). An empty string or a list of only unknown types
+ *  collapses to `[]`, which matches zero rows — same behaviour as the picker
+ *  with everything unchecked. */
+function parseSectionTypesParam(raw: string | undefined): string[] | undefined {
+  if (raw === undefined) return undefined;
+  return raw
+    .split(",")
+    .map((t) => t.trim())
+    .filter((t) => KNOWN_SECTION_TYPES.has(t));
+}
+
 // ---------- list ----------
 
 elections.get("/", (c) => {
@@ -115,6 +136,7 @@ elections.get("/persistence", (c) => {
   const limit = Math.max(parseInt(c.req.query("limit") ?? "100", 10), 1);
   const offset = Math.max(parseInt(c.req.query("offset") ?? "0", 10), 0);
   const excludeSpecial = c.req.query("exclude_special") === "true";
+  const sectionTypes = parseSectionTypesParam(c.req.query("section_types"));
   const sectionFilter = c.req.query("section") || undefined;
   const district = c.req.query("district") || undefined;
   const municipality = c.req.query("municipality") || undefined;
@@ -127,6 +149,7 @@ elections.get("/persistence", (c) => {
     limit,
     offset,
     excludeSpecial,
+    sectionTypes,
     sectionFilter,
     district,
     municipality,
@@ -219,6 +242,7 @@ elections.get("/:id/anomalies", (c) => {
   const minViolations = parseInt(c.req.query("min_violations") ?? "0", 10);
   const sectionCode = c.req.query("section") || undefined;
   const excludeSpecial = c.req.query("exclude_special") === "true";
+  const sectionTypes = parseSectionTypesParam(c.req.query("section_types"));
   const methodology = c.req.query("methodology") || undefined;
 
   const geoFilter = resolveAnomalyGeoFilter({
@@ -241,6 +265,7 @@ elections.get("/:id/anomalies", (c) => {
     geoFilter,
     sectionCode,
     excludeSpecial,
+    sectionTypes,
   });
 
   const parsed = sections.map((s) => ({

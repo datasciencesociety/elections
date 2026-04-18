@@ -26,6 +26,9 @@ export interface AnomaliesQuery {
   offset?: number;
   minViolations?: number;
   excludeSpecial?: boolean;
+  /** Per-type allowlist. When set, `section_types=a,b,c` is sent and takes
+   *  precedence over `excludeSpecial` on the server. */
+  sectionTypes?: string[];
 }
 
 export function getAnomalies(q: AnomaliesQuery): Promise<AnomaliesResponse> {
@@ -46,5 +49,8 @@ export function getAnomalies(q: AnomaliesQuery): Promise<AnomaliesResponse> {
     section: q.section,
     min_violations: q.minViolations,
     exclude_special: q.excludeSpecial ? "true" : undefined,
+    section_types: q.sectionTypes && q.sectionTypes.length > 0
+      ? q.sectionTypes.join(",")
+      : undefined,
   });
 }

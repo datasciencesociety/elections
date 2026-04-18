@@ -91,6 +91,10 @@ export interface AnomalyOptions {
   geoFilter: { column: string; value: string } | null;
   sectionCode?: string;
   excludeSpecial: boolean;
+  /** Optional allowlist of section types. When set and non-empty, restricts
+   *  results to these types via `ss.section_type IN (...)`. Takes precedence
+   *  over `excludeSpecial`. */
+  sectionTypes?: string[];
 }
 
 export interface AnomalySection {
@@ -151,14 +155,22 @@ export function getAnomalies(
     ? ` AND ${opts.geoFilter.column} = ?`
     : "";
   const sectionClause = opts.sectionCode ? " AND ss.section_code LIKE ?" : "";
-  const typeClause = opts.excludeSpecial
-    ? " AND ss.section_type = 'normal'"
-    : "";
+  // sectionTypes is the precise per-type allowlist used by the UI.
+  // excludeSpecial is the older coarse toggle kept for MCP callers. If both
+  // are set, sectionTypes wins.
+  const typeClause =
+    opts.sectionTypes && opts.sectionTypes.length > 0
+      ? ` AND ss.section_type IN (${opts.sectionTypes.map(() => "?").join(",")})`
+      : opts.excludeSpecial
+        ? " AND ss.section_type = 'normal'"
+        : "";
 
   const baseParams: unknown[] = [opts.electionId, opts.minRisk];
   if (opts.minViolations > 0) baseParams.push(opts.minViolations);
   if (opts.geoFilter) baseParams.push(opts.geoFilter.value);
   if (opts.sectionCode) baseParams.push(`%${opts.sectionCode}%`);
+  if (opts.sectionTypes && opts.sectionTypes.length > 0)
+    baseParams.push(...opts.sectionTypes);
 
   // Location columns: sections can have per-election overrides in
   // s.address/s.lat/s.lng (e.g. a polling station was temporarily moved
