@@ -77,6 +77,7 @@ const TRANSLATIONS = {
     'btn.signal':        'Report Issue',
     'btn.call':          'Call',
     'btn.call.title':    'Contact Numbers',
+    'call.nodata':       'No contacts available',
   },
   bg: {
     'metric.luma':       'Яркост',
@@ -147,6 +148,7 @@ const TRANSLATIONS = {
     'btn.signal':        'Подай сигнал',
     'btn.call':          'Позвъни',
     'btn.call.title':    'Телефони за контакт',
+    'call.nodata':       'Няма налични контакти',
   },
 };
 

@@ -48,11 +48,27 @@ db.exec(`
     luma        REAL
   );
 
+  CREATE TABLE IF NOT EXISTS contacts (
+    id    INTEGER PRIMARY KEY AUTOINCREMENT,
+    name  TEXT NOT NULL,
+    phone TEXT,
+    role  TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS stream_contacts (
+    stream_id  INTEGER NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
+    contact_id INTEGER NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+    PRIMARY KEY (stream_id, contact_id)
+  );
+
   CREATE INDEX IF NOT EXISTS idx_reports_stream_ts  ON reports(stream_id, ts);
   CREATE INDEX IF NOT EXISTS idx_reports_session    ON reports(session_id);
   CREATE INDEX IF NOT EXISTS idx_streams_checked    ON streams(last_checked);
   CREATE INDEX IF NOT EXISTS idx_assignments_sess   ON assignments(session_id);
   CREATE INDEX IF NOT EXISTS idx_sessions_hb        ON sessions(last_heartbeat);
+  CREATE INDEX IF NOT EXISTS idx_stream_contacts_stream  ON stream_contacts(stream_id);
+  CREATE INDEX IF NOT EXISTS idx_stream_contacts_contact ON stream_contacts(contact_id);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_contacts_name_phone ON contacts(name, phone);
 `);
 
 // ── Migrate existing DB (add columns if missing) ─────────────────────────────
@@ -128,6 +144,38 @@ const stmt = {
   `),
   toggleStream:      db.prepare('UPDATE streams SET enabled = ? WHERE id = ?'),
   allStreams:        db.prepare('SELECT id, section, label, url, enabled, assigned_users FROM streams ORDER BY section'),
+  upsertContact:     db.prepare(`
+    INSERT INTO contacts (name, phone, role) VALUES (?, ?, ?)
+    ON CONFLICT(name, phone) DO UPDATE SET role = excluded.role
+    RETURNING id
+  `),
+  linkStreamContact: db.prepare('INSERT OR IGNORE INTO stream_contacts (stream_id, contact_id) VALUES (?, ?)'),
+  unlinkStreamContacts: db.prepare('DELETE FROM stream_contacts WHERE stream_id = ?'),
+  streamContacts:    db.prepare(`
+    SELECT c.id, c.name, c.phone, c.role
+    FROM contacts c
+    JOIN stream_contacts sc ON sc.contact_id = c.id
+    WHERE sc.stream_id = ?
+    ORDER BY c.name
+  `),
+  streamBySection:   db.prepare('SELECT id, url FROM streams WHERE section = ?'),
+  streamById:        db.prepare('SELECT id, url, label, section, assigned_users FROM streams WHERE id = ? AND enabled = 1'),
+  assignmentTaken:   db.prepare(`
+    SELECT 1 FROM assignments a
+    JOIN sessions se ON se.id = a.session_id AND se.last_heartbeat > ?
+    WHERE a.stream_id = ? AND a.session_id != ?
+  `),
+  deleteOneAssignment: db.prepare('DELETE FROM assignments WHERE session_id = ? AND stream_id = ?'),
+  availableStreams: db.prepare(`
+    SELECT s.id, s.section, s.label
+    FROM streams s
+    WHERE s.enabled = 1
+      AND s.id NOT IN (
+        SELECT a.stream_id FROM assignments a
+        JOIN sessions se ON se.id = a.session_id AND se.last_heartbeat > ?
+      )
+    ORDER BY s.section
+  `),
 };
 
 // node:sqlite has no .transaction() helper — wrap with manual BEGIN/COMMIT
@@ -168,8 +216,20 @@ function extractSection(url) {
   const m = url.match(/\/([0-9]{9})\//);  return m ? m[1] : null;
 }
 
+// Sync contacts for a stream: replace all links, upsert each contact row
+function txSyncContacts(streamId, contacts) {
+  if (!Array.isArray(contacts)) return;
+  stmt.unlinkStreamContacts.run(streamId);
+  for (const c of contacts) {
+    if (!c || !c.name) continue;
+    const row = stmt.upsertContact.get(c.name, c.phone || null, c.role || null);
+    stmt.linkStreamContact.run(streamId, row.id);
+  }
+}
+
 function txBulkUpload(streams) {
   return transaction(() => {
+    db.exec('DELETE FROM stream_contacts');
     db.exec('DELETE FROM reports');
     db.exec('DELETE FROM assignments');
     db.exec('DELETE FROM sessions');
@@ -177,6 +237,10 @@ function txBulkUpload(streams) {
     for (const s of streams) {
       const section = s.section || extractSection(s.url) || String(s.label);
       stmt.insertStream.run(section, s.url, String(s.label), s.assigned_users || null);
+      if (s.contacts) {
+        const row = stmt.streamBySection.get(section);
+        if (row) txSyncContacts(row.id, s.contacts);
+      }
     }
     return streams.length;
   });
@@ -187,10 +251,14 @@ function txUpsertStreams(streams) {
     let inserted = 0, updated = 0;
     for (const s of streams) {
       const section = s.section || extractSection(s.url) || String(s.label);
-      const existing = db.prepare('SELECT url FROM streams WHERE section = ?').get(section);
+      const existing = stmt.streamBySection.get(section);
       stmt.upsertStream.run(section, s.url, String(s.label), s.assigned_users || null);
       if (existing) { if (existing.url !== s.url) updated++; }
       else inserted++;
+      if (s.contacts) {
+        const row = existing || stmt.streamBySection.get(section);
+        if (row) txSyncContacts(row.id, s.contacts);
+      }
     }
     return { inserted, updated };
   });
@@ -215,7 +283,7 @@ function readBody(req) {
     let size = 0;
     req.on('data', chunk => {
       size += chunk.length;
-      if (size > 20 * 1024 * 1024) { reject(new Error('Body too large')); return; }
+      if (size > 20 * 1024 * 1024) { req.destroy(); reject(new Error('Body too large')); return; }
       chunks.push(chunk);
     });
     req.on('end', () => {
@@ -315,6 +383,10 @@ function missingAssignedStreams(existingIds, userId) {
   `).all(userId, ...existingIds);
 }
 
+function enrichWithContacts(streams) {
+  return streams.map(s => ({ ...s, contacts: stmt.streamContacts.all(s.id) }));
+}
+
 async function handleSession(req, res) {
   let body = {};
   try { body = await readBody(req); } catch {}
@@ -349,7 +421,7 @@ async function handleSession(req, res) {
       });
     }
 
-    json(res, 200, { session_id: body.session_id, streams, resumed: true });
+    json(res, 200, { session_id: body.session_id, streams: enrichWithContacts(streams), resumed: true });
     return;
   }
 
@@ -374,7 +446,7 @@ async function handleSession(req, res) {
 
   const sessionId = crypto.randomUUID();
   txCreateSession(sessionId, streams, body.user_id || null);
-  json(res, 200, { session_id: sessionId, streams });
+  json(res, 200, { session_id: sessionId, streams: enrichWithContacts(streams) });
 }
 
 async function handleHeartbeat(req, res) {
@@ -455,8 +527,56 @@ function handleStreamStats(req, res) {
 }
 
 function handleStreamsList(req, res) {
-  const streams = stmt.allStreams.all();
+  const streams = stmt.allStreams.all().map(s => ({
+    ...s,
+    contacts: stmt.streamContacts.all(s.id),
+  }));
   json(res, 200, { streams });
+}
+
+function handleAvailableStreams(req, res) {
+  const cutoff = Date.now() - 120_000;
+  const rows = stmt.availableStreams.all(cutoff);
+  json(res, 200, { streams: rows });
+}
+
+async function handleAddStreams(req, res) {
+  const body = await readBody(req);
+  const { session_id, stream_ids } = body;
+  if (!session_id || !Array.isArray(stream_ids) || stream_ids.length === 0) {
+    json(res, 400, { error: 'session_id and stream_ids[] required' }); return;
+  }
+  if (!stmt.sessionExists.get(session_id)) {
+    json(res, 404, { error: 'session not found' }); return;
+  }
+  const now = Date.now();
+  const cutoff = now - 120_000;
+  const added = [];
+  transaction(() => {
+    for (const sid of stream_ids) {
+      const stream = stmt.streamById.get(sid);
+      if (!stream) continue;
+      // Skip if already assigned to another active session
+      const taken = stmt.assignmentTaken.get(cutoff, stream.id, session_id);
+      if (taken) continue;
+      stmt.insertAssignment.run(session_id, stream.id, now);
+      added.push(enrichWithContacts([stream])[0]);
+    }
+  });
+  json(res, 200, { added });
+}
+
+async function handleRemoveStream(req, res) {
+  const body = await readBody(req);
+  const { session_id, stream_id } = body;
+  if (!session_id || typeof stream_id !== 'number') {
+    json(res, 400, { error: 'session_id and stream_id required' }); return;
+  }
+  if (!stmt.sessionExists.get(session_id)) {
+    json(res, 404, { error: 'session not found' }); return;
+  }
+  stmt.deleteOneAssignment.run(session_id, stream_id);
+  json(res, 200, { ok: true });
 }
 
 async function handleStreamToggle(req, res) {
@@ -473,6 +593,18 @@ async function handleStreamToggle(req, res) {
 
 const server = http.createServer(async (req, res) => {
   const url = req.url.split('?')[0];
+
+  // CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400',
+    });
+    res.end();
+    return;
+  }
 
   try {
     // Static pages
@@ -579,6 +711,15 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'POST' && url === '/api/streams/toggle') {
       await handleStreamToggle(req, res); return;
+    }
+    if (req.method === 'GET' && url === '/api/streams/available') {
+      handleAvailableStreams(req, res); return;
+    }
+    if (req.method === 'POST' && url === '/api/session/streams') {
+      await handleAddStreams(req, res); return;
+    }
+    if (req.method === 'DELETE' && url === '/api/session/streams') {
+      await handleRemoveStream(req, res); return;
     }
 
     res.writeHead(404); res.end();

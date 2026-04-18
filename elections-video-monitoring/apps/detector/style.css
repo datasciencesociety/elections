@@ -187,6 +187,7 @@ body.embedded-mode .video-overlay { display: block; }
 .phone-popup ul { list-style: none; font-size: 11px; color: var(--text-muted); }
 .phone-popup li { padding: 3px 0; }
 .phone-popup li a { color: #3b82f6; text-decoration: none; }
+.phone-popup li.no-contacts { color: #888; font-style: italic; }
 
 /* Metrics */
 .metrics-row {
