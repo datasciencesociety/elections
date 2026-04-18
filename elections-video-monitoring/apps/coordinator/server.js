@@ -74,12 +74,7 @@ try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_streams_section ON streams(
 
 const stmt = {
   insertSession:     db.prepare('INSERT INTO sessions VALUES (?, ?, ?)'),
-  pickStreams:       db.prepare(`
-    SELECT id, url, label, section FROM streams
-    WHERE enabled = 1
-    ORDER BY last_checked IS NOT NULL, last_checked ASC
-    LIMIT 16
-  `),
+  // pickStreams is dynamic — see pickStreamsForSession()
   insertAssignment:  db.prepare('INSERT OR REPLACE INTO assignments VALUES (?, ?, ?)'),
   heartbeat:         db.prepare('UPDATE sessions SET last_heartbeat = ? WHERE id = ?'),
   deadSessions:      db.prepare('SELECT id FROM sessions WHERE last_heartbeat < ?'),
@@ -288,9 +283,43 @@ function handleProxy(req, res) {
 
 // ── Route handlers ────────────────────────────────────────────────────────────
 
+// Pick 16 streams for a new volunteer, preferring streams not already assigned
+// to any currently-active session.  Falls back to least-recently-checked when
+// there are fewer unassigned streams than needed.
+function pickStreamsForSession(activeCutoff, limit = 16) {
+  // Streams assigned to alive sessions
+  const unassigned = db.prepare(`
+    SELECT s.id, s.url, s.label, s.section FROM streams s
+    WHERE s.enabled = 1
+      AND s.id NOT IN (
+        SELECT a.stream_id FROM assignments a
+        JOIN sessions se ON se.id = a.session_id
+        WHERE se.last_heartbeat > ?
+      )
+    ORDER BY s.last_checked IS NOT NULL, s.last_checked ASC, RANDOM()
+    LIMIT ?
+  `).all(activeCutoff, limit);
+
+  if (unassigned.length >= limit) return unassigned;
+
+  // Not enough unassigned — pad with least-recently-checked assigned streams
+  const exclude = unassigned.map(s => s.id);
+  const placeholders = exclude.length ? exclude.map(() => '?').join(',') : 'NULL';
+  const extra = db.prepare(`
+    SELECT s.id, s.url, s.label, s.section FROM streams s
+    WHERE s.enabled = 1
+      AND s.id NOT IN (${placeholders})
+    ORDER BY s.last_checked IS NOT NULL, s.last_checked ASC, RANDOM()
+    LIMIT ?
+  `).all(...exclude, limit - unassigned.length);
+
+  return [...unassigned, ...extra];
+}
+
 async function handleSession(req, res) {
   const sessionId = crypto.randomUUID();
-  const streams = stmt.pickStreams.all();
+  const activeCutoff = Date.now() - 120_000;
+  const streams = pickStreamsForSession(activeCutoff);
   txCreateSession(sessionId, streams);
   json(res, 200, { session_id: sessionId, streams });
 }
