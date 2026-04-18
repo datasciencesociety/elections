@@ -317,9 +317,14 @@ function pickStreamsForSession(activeCutoff, limit = 16) {
 }
 
 async function handleSession(req, res) {
+  let body = {};
+  try { body = await readBody(req); } catch {}
+  const requested = Number(body.count);
+  const count = (Number.isInteger(requested) && requested >= 4 && requested <= 40 && requested % 4 === 0)
+    ? requested : 16;
   const sessionId = crypto.randomUUID();
   const activeCutoff = Date.now() - 120_000;
-  const streams = pickStreamsForSession(activeCutoff);
+  const streams = pickStreamsForSession(activeCutoff, count);
   txCreateSession(sessionId, streams);
   json(res, 200, { session_id: sessionId, streams });
 }
