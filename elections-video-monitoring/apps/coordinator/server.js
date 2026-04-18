@@ -396,30 +396,27 @@ async function handleSession(req, res) {
     stmt.heartbeat.run(Date.now(), body.session_id);
     const userId = body.user_id || null;
 
-    // Recompute the correct stream list (same logic as fresh session)
-    let streams = userId ? db.prepare(`
-      SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
-      WHERE s.enabled = 1
-        AND s.assigned_users IS NOT NULL
-        AND (',' || s.assigned_users || ',') LIKE ('%,' || ? || ',%')
-      ORDER BY s.section ASC
-    `).all(userId) : [];
-
-    if (streams.length === 0) {
-      // No assigned streams — keep whatever the session already had
-      streams = db.prepare(`
+    // Ensure pre-assigned streams are in the session, but keep manually-added ones too
+    if (userId) {
+      const preAssigned = db.prepare(`
         SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
-        JOIN assignments a ON a.stream_id = s.id
-        WHERE a.session_id = ?
-      `).all(body.session_id);
-    } else {
-      // Replace session assignments to match exactly the assigned set
+        WHERE s.enabled = 1
+          AND s.assigned_users IS NOT NULL
+          AND (',' || s.assigned_users || ',') LIKE ('%,' || ? || ',%')
+        ORDER BY s.section ASC
+      `).all(userId);
       const now = Date.now();
-      transaction(() => {
-        db.prepare('DELETE FROM assignments WHERE session_id = ?').run(body.session_id);
-        for (const s of streams) stmt.insertAssignment.run(body.session_id, s.id, now);
-      });
+      for (const s of preAssigned) {
+        stmt.insertAssignment.run(body.session_id, s.id, now); // INSERT OR REPLACE — safe if already exists
+      }
     }
+
+    // Return all streams currently assigned to this session
+    let streams = db.prepare(`
+      SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
+      JOIN assignments a ON a.stream_id = s.id
+      WHERE a.session_id = ?
+    `).all(body.session_id);
 
     json(res, 200, { session_id: body.session_id, streams: enrichWithContacts(streams), resumed: true });
     return;

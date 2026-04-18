@@ -461,8 +461,8 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
   to   { transform: scaleY(1); }
 }
 
-/* ── Feature 6: Hide card label ──────────────────────────────────────────── */
-.card-label { display: none; }
+/* ── Feature 6: Hide metrics, show label ────────────────────────────────── */
+.card-metrics { display: none; }
 
 /* ── Help link ───────────────────────────────────────────────────────────── */
 .header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
@@ -761,6 +761,8 @@ function setupStream(stream) {
         body: JSON.stringify({ session_id: SESSION_ID, stream_id: state.id }),
       });
     } catch (_) {}
+    // Close inspect panel if this stream was focused
+    if (card.classList.contains('selected')) closeInspect();
     // Tear down
     state.video.pause();
     state.video.src = '';
