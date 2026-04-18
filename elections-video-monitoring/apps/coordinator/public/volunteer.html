@@ -299,8 +299,19 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
 
 .card-metrics { font-size: 12px; color: var(--text-metrics); }
 
-.stream-card { cursor: pointer; }
+.stream-card { cursor: pointer; position: relative; }
 .stream-card:hover { border-color: #3b82f6 !important; }
+
+.card-star {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 14px;
+  height: 14px;
+  color: #facc15;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.7));
+  pointer-events: none;
+}
 
 /* ── Overlay ──────────────────────────────────────────────────────────────── */
 #overlay {
@@ -346,20 +357,6 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
     <span id="stream-count"></span>
     <span id="last-report-label"></span>
   </div>
-  <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
-    <span data-i18n="streams.label">Streams:</span>
-    <select id="stream-count-select" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:12px;cursor:pointer;">
-      <option value="4">4</option>
-      <option value="8">8</option>
-      <option value="12">12</option>
-      <option value="4" selected>4</option>
-      <option value="8">8</option>
-      <option value="12">12</option>
-      <option value="16">16</option>
-      <option value="20">20</option>
-      <option value="24">24</option>
-    </select>
-  </label>
   <button id="lang-toggle" style="font-size:11px;padding:3px 8px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;flex-shrink:0;">EN</button>
 </header>
 
@@ -395,6 +392,10 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
 
 <!-- Hourglass symbol — defined once, reused via <use href="#hg"> -->
 <svg style="display:none" aria-hidden="true">
+  <symbol id="star" viewBox="0 0 16 16">
+    <path d="M8 1l1.85 3.75L14 5.65l-3 2.92.71 4.13L8 10.75l-3.71 1.95.71-4.13-3-2.92 4.15-.9z"
+          fill="currentColor"/>
+  </symbol>
   <symbol id="hg" viewBox="0 0 10 16">
     <!-- frame: two triangles sharing a neck at (5,8) -->
     <path d="M1 1.5 L9 1.5 L5 8 L9 14.5 L1 14.5 L5 8 Z"
@@ -424,7 +425,6 @@ const REPORT_INTERVAL_MS = 30_000;
 const HEARTBEAT_INTERVAL_MS = 60_000;
 const CANVAS_W = 320, CANVAS_H = 180;
 const LS_SESSION_KEY = 'volunteer_session_id';
-const LS_STREAMS_KEY  = 'volunteer_stream_ids';
 const LS_USER_ID_KEY  = 'volunteer_user_id';
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -438,28 +438,17 @@ let autoplayBlocked = false;
 let _lastResumed = false;
 let intervals = [];
 
-// ── Count selector ───────────────────────────────────────────────────────────
-document.getElementById('stream-count-select').addEventListener('change', () => {
-  localStorage.removeItem(LS_SESSION_KEY); // new count = new session
-  localStorage.removeItem(LS_STREAMS_KEY);
-  reinitSession();
-});
-
 // ── Session init ──────────────────────────────────────────────────────────────
 async function init() {
   let data;
   try {
-    const requestedCount = parseInt(document.getElementById('stream-count-select').value, 10);
-    const savedId      = localStorage.getItem(LS_SESSION_KEY);
-    const savedStreams  = JSON.parse(localStorage.getItem(LS_STREAMS_KEY) || 'null');
+    const savedId = localStorage.getItem(LS_SESSION_KEY);
     const res = await fetch('/api/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        count: requestedCount,
-        ...(savedId      ? { session_id: savedId }      : {}),
-        ...(savedStreams  ? { stream_ids: savedStreams } : {}),
-        ...(USER_ID      ? { user_id: USER_ID }         : {}),
+        ...(savedId ? { session_id: savedId } : {}),
+        ...(USER_ID ? { user_id: USER_ID }   : {}),
       }),
     });
     data = await res.json();
@@ -478,7 +467,6 @@ async function init() {
     localStorage.setItem(LS_USER_ID_KEY, USER_ID);
   }
   localStorage.setItem(LS_SESSION_KEY, SESSION_ID);
-  localStorage.setItem(LS_STREAMS_KEY, JSON.stringify(data.streams.map(s => s.id)));
   document.getElementById('session-label').textContent =
     t(data.resumed ? 'session.resumed' : 'session.new') + ' ' + SESSION_ID.slice(0, 8) + ' · #' + USER_ID;
 
@@ -518,6 +506,11 @@ document.getElementById('start-btn').addEventListener('click', () => {
 });
 
 // ── Stream setup ──────────────────────────────────────────────────────────────
+function isAssignedToMe(stream) {
+  if (!stream.assigned_users || !USER_ID) return false;
+  return (',' + stream.assigned_users + ',').includes(',' + USER_ID + ',');
+}
+
 function setupStream(stream) {
   // Route through proxy. PROXY_BASE is injected by the server (see server.js);
   // defaults to coordinator's own /proxy if not set.
@@ -558,6 +551,8 @@ function setupStream(stream) {
   };
   streamStates.push(state);
 
+  const assigned = isAssignedToMe(stream);
+
   // Build card
   const card = document.createElement('div');
   card.className = 'stream-card';
@@ -565,6 +560,7 @@ function setupStream(stream) {
   card.innerHTML = `
     <div class="card-metrics"></div>
     <canvas class="card-thumb" width="192" height="108"></canvas>
+    ${assigned ? '<svg class="card-star" aria-label="assigned"><use href="#star"/></svg>' : ''}
     <div class="card-label" title="${escHtml(stream.label)}">${escHtml(stream.label)}</div>
     <div class="card-status-row">
       <div class="card-status">
@@ -787,7 +783,7 @@ document.addEventListener('visibilitychange', () => {
 
 // Soft reinit: keeps stream IDs in localStorage so the same sections are reclaimed
 function reinitSession() {
-  localStorage.removeItem(LS_SESSION_KEY); // session gone, but keep LS_STREAMS_KEY
+  localStorage.removeItem(LS_SESSION_KEY);
   SESSION_ID = null;
   releaseAll();
   streamStates = [];

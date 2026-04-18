@@ -259,7 +259,7 @@ function pickStreamsForSession(activeCutoff, limit = 16, userId = null) {
   let prioritized = [];
   if (userId) {
     prioritized = db.prepare(`
-      SELECT s.id, s.url, s.label, s.section FROM streams s
+      SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
       WHERE s.enabled = 1
         AND s.id NOT IN (${activeSub})
         AND s.assigned_users IS NOT NULL
@@ -275,7 +275,7 @@ function pickStreamsForSession(activeCutoff, limit = 16, userId = null) {
   const excl1 = prioritized.map(s => s.id);
   const ph1 = excl1.length ? excl1.map(() => '?').join(',') : 'NULL';
   const unassigned = db.prepare(`
-    SELECT s.id, s.url, s.label, s.section FROM streams s
+    SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
     WHERE s.enabled = 1
       AND s.id NOT IN (${activeSub})
       AND s.id NOT IN (${ph1})
@@ -290,7 +290,7 @@ function pickStreamsForSession(activeCutoff, limit = 16, userId = null) {
   const excl2 = picked.map(s => s.id);
   const ph2 = excl2.length ? excl2.map(() => '?').join(',') : 'NULL';
   const extra = db.prepare(`
-    SELECT s.id, s.url, s.label, s.section FROM streams s
+    SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
     WHERE s.enabled = 1
       AND s.id NOT IN (${ph2})
     ORDER BY s.last_checked IS NOT NULL, s.last_checked ASC, RANDOM()
@@ -302,6 +302,19 @@ function pickStreamsForSession(activeCutoff, limit = 16, userId = null) {
 
 const SESSION_TTL = parseInt(process.env.SESSION_TTL_MS, 10) || 8 * 60 * 60 * 1000; // 8 h default
 
+// Returns assigned-to-user streams not already present in existingIds.
+function missingAssignedStreams(existingIds, userId) {
+  if (!userId) return [];
+  const ph = existingIds.length ? existingIds.map(() => '?').join(',') : 'NULL';
+  return db.prepare(`
+    SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
+    WHERE s.enabled = 1
+      AND s.assigned_users IS NOT NULL
+      AND (',' || s.assigned_users || ',') LIKE ('%,' || ? || ',%')
+      AND s.id NOT IN (${ph})
+  `).all(userId, ...existingIds);
+}
+
 async function handleSession(req, res) {
   let body = {};
   try { body = await readBody(req); } catch {}
@@ -309,32 +322,54 @@ async function handleSession(req, res) {
   // Resume existing session if the client sends a known session_id
   if (body.session_id && stmt.sessionExists.get(body.session_id)) {
     stmt.heartbeat.run(Date.now(), body.session_id);
-    const streams = db.prepare(`
-      SELECT s.id, s.url, s.label, s.section FROM streams s
-      JOIN assignments a ON a.stream_id = s.id
-      WHERE a.session_id = ?
-    `).all(body.session_id);
+    const userId = body.user_id || null;
+
+    // Recompute the correct stream list (same logic as fresh session)
+    let streams = userId ? db.prepare(`
+      SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
+      WHERE s.enabled = 1
+        AND s.assigned_users IS NOT NULL
+        AND (',' || s.assigned_users || ',') LIKE ('%,' || ? || ',%')
+      ORDER BY s.section ASC
+    `).all(userId) : [];
+
+    if (streams.length === 0) {
+      // No assigned streams — keep whatever the session already had
+      streams = db.prepare(`
+        SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
+        JOIN assignments a ON a.stream_id = s.id
+        WHERE a.session_id = ?
+      `).all(body.session_id);
+    } else {
+      // Replace session assignments to match exactly the assigned set
+      const now = Date.now();
+      transaction(() => {
+        db.prepare('DELETE FROM assignments WHERE session_id = ?').run(body.session_id);
+        for (const s of streams) stmt.insertAssignment.run(body.session_id, s.id, now);
+      });
+    }
+
     json(res, 200, { session_id: body.session_id, streams, resumed: true });
     return;
   }
 
-  const requested = Number(body.count);
-  const count = (Number.isInteger(requested) && requested >= 4 && requested <= 40 && requested % 4 === 0)
-    ? requested : 4;
+  const userId = body.user_id || null;
 
-  // If the client knows which streams it was watching, reassign those exact ones
-  let streams;
-  if (Array.isArray(body.stream_ids) && body.stream_ids.length > 0) {
-    const ids = body.stream_ids.map(Number).filter(Number.isInteger);
-    if (ids.length > 0) {
-      const placeholders = ids.map(() => '?').join(',');
-      streams = db.prepare(
-        `SELECT id, url, label, section FROM streams WHERE id IN (${placeholders}) AND enabled = 1`
-      ).all(...ids);
-    }
-  }
-  if (!streams || streams.length === 0) {
-    streams = pickStreamsForSession(Date.now() - SESSION_TTL, count, body.user_id || null);
+  // All sections pre-assigned to this user; if none, pick 2 random enabled streams
+  let streams = userId ? db.prepare(`
+    SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
+    WHERE s.enabled = 1
+      AND s.assigned_users IS NOT NULL
+      AND (',' || s.assigned_users || ',') LIKE ('%,' || ? || ',%')
+    ORDER BY s.section ASC
+  `).all(userId) : [];
+
+  if (streams.length === 0) {
+    streams = db.prepare(`
+      SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
+      WHERE s.enabled = 1
+      ORDER BY RANDOM() LIMIT 2
+    `).all();
   }
 
   const sessionId = crypto.randomUUID();
