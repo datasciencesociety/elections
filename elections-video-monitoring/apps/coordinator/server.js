@@ -54,6 +54,8 @@ db.exec(`
     username      TEXT PRIMARY KEY,
     password_hash TEXT NOT NULL,
     role          TEXT NOT NULL CHECK(role IN ('admin', 'volunteer'))
+  );
+
   CREATE TABLE IF NOT EXISTS contacts (
     id    INTEGER PRIMARY KEY AUTOINCREMENT,
     name  TEXT NOT NULL,
