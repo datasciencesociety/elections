@@ -189,6 +189,120 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
   #overlay button { padding: 12px 28px; font-size: 15px; }
 }
 
+/* ── Add section button ──────────────────────────────────────────────────── */
+#add-section-btn {
+  display: block;
+  width: calc(100% - 24px);
+  margin: 0 12px 12px;
+  padding: 8px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: center;
+}
+#add-section-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+
+/* ── Section picker modal ────────────────────────────────────────────────── */
+#section-modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+#section-modal-overlay.open { display: flex; }
+
+#section-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: min(420px, 90vw);
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#section-modal-header {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+#section-modal-header h3 { font-size: 14px; font-weight: 600; }
+#section-modal-close { background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; }
+#section-filter {
+  width: 100%;
+  padding: 8px 14px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+}
+#section-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+.section-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.section-item:hover { background: var(--surface2); }
+.section-item input[type="checkbox"] { flex-shrink: 0; }
+.section-item .section-id { font-weight: 600; color: var(--text); }
+.section-item .section-label { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.section-empty { padding: 20px 14px; text-align: center; color: var(--text-muted); font-size: 12px; }
+#section-modal-footer {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#section-modal-footer span { font-size: 11px; color: var(--text-muted); }
+#section-add-btn {
+  padding: 6px 16px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+#section-add-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* ── Remove button on cards ──────────────────────────────────────────────── */
+.card-remove {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px; height: 18px;
+  background: rgba(0,0,0,0.6);
+  border: none;
+  border-radius: 50%;
+  color: #f87171;
+  font-size: 13px;
+  line-height: 18px;
+  text-align: center;
+  cursor: pointer;
+  display: none;
+  padding: 0;
+}
+.stream-card.manual .card-remove { display: block; }
+.card-remove:hover { background: rgba(220,38,38,0.8); color: #fff; }
+
 /* ── Inspect pane ─────────────────────────────────────────────────────────── */
 #inspect-panel {
   flex: 1;
@@ -346,6 +460,41 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
   from { transform: scaleY(0); }
   to   { transform: scaleY(1); }
 }
+
+/* ── Feature 6: Hide metrics, show label ────────────────────────────────── */
+.card-metrics { display: none; }
+
+/* ── Help link ───────────────────────────────────────────────────────────── */
+.header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+#help-link {
+  font-size: 11px; padding: 3px 8px;
+  background: var(--surface2); color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: 4px;
+  text-decoration: none; cursor: pointer;
+}
+#help-link:hover { color: var(--text); }
+
+/* ── Inspect content wrapper ─────────────────────────────────────────────── */
+#inspect-content {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ── Maximize mode (mobile + landscape phones) ──────────────────────────── */
+@media (max-width: 700px), (pointer: coarse) and (max-height: 600px) {
+  body.maximized #inspect-panel {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    height: 100vh; height: 100dvh;
+    width: 100vw;
+    z-index: 200;
+    transform: none;
+  }
+  body.maximized #sheet-header { display: none; }
+}
 </style>
 </head>
 <body>
@@ -357,12 +506,31 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
     <span id="stream-count"></span>
     <span id="last-report-label"></span>
   </div>
-  <button id="lang-toggle" style="font-size:11px;padding:3px 8px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;flex-shrink:0;">EN</button>
+  <div class="header-actions">
+    <a id="help-link" href="/help" data-i18n="help.link">Help</a>
+    <button id="lang-toggle" style="font-size:11px;padding:3px 8px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">EN</button>
+  </div>
 </header>
 
 <div id="main-layout">
   <div id="stream-panel">
     <div id="stream-grid"><p id="loading-msg" data-i18n="loading.connecting">Connecting to coordinator…</p></div>
+    <button id="add-section-btn" data-i18n="add.section" style="display:none">+ Add section</button>
+  </div>
+
+  <div id="section-modal-overlay">
+    <div id="section-modal">
+      <div id="section-modal-header">
+        <h3 data-i18n="modal.title">Available Sections</h3>
+        <button id="section-modal-close">×</button>
+      </div>
+      <input type="text" id="section-filter" data-i18n-placeholder="modal.filter" placeholder="Filter sections…">
+      <div id="section-list"></div>
+      <div id="section-modal-footer">
+        <span id="section-selected-count"></span>
+        <button id="section-add-btn" disabled data-i18n="modal.add">Add selected</button>
+      </div>
+    </div>
   </div>
 
   <div id="inspect-panel">
@@ -370,12 +538,14 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
       <div id="sheet-label"></div>
       <button id="sheet-close" aria-label="Close">×</button>
     </div>
-    <div id="inspect-placeholder" data-i18n="inspect.placeholder">← select a stream to inspect</div>
-    <div id="inspect-loading" style="display:none">
-      <div class="iframe-spinner"></div>
-      <div id="inspect-loading-label"></div>
+    <div id="inspect-content">
+      <div id="inspect-placeholder" data-i18n="inspect.placeholder">← select a stream to inspect</div>
+      <div id="inspect-loading" style="display:none">
+        <div class="iframe-spinner"></div>
+        <div id="inspect-loading-label"></div>
+      </div>
+      <iframe id="inspect-frame" allow="autoplay"></iframe>
     </div>
-    <iframe id="inspect-frame" allow="autoplay"></iframe>
   </div>
 </div>
 
@@ -426,6 +596,7 @@ const HEARTBEAT_INTERVAL_MS = 60_000;
 const CANVAS_W = 320, CANVAS_H = 180;
 const LS_SESSION_KEY = 'volunteer_session_id';
 const LS_USER_ID_KEY  = 'volunteer_user_id';
+const LS_MANUAL_KEY   = 'volunteer_manual_streams';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let SESSION_ID = null;
@@ -473,12 +644,16 @@ async function init() {
   const grid = document.getElementById('stream-grid');
   grid.innerHTML = '';
 
+  const manualIds = new Set(JSON.parse(localStorage.getItem(LS_MANUAL_KEY) || '[]'));
   for (const stream of data.streams) {
+    if (manualIds.has(stream.id)) stream._manual = true;
     setupStream(stream);
   }
 
   document.getElementById('stream-count').textContent =
     tf('monitoring.count', { n: streamStates.length });
+
+  document.getElementById('add-section-btn').style.display = '';
 
   // Try autoplay
   const playPromises = streamStates.map(s => s.video.play().catch(() => null));
@@ -532,10 +707,13 @@ function setupStream(stream) {
   canvas.height = CANVAS_H;
   document.getElementById('canvas-container').appendChild(canvas);
 
+  const isManual = !!stream._manual;
   const state = {
     id: stream.id,
     url: stream.url,
     label: stream.label,
+    contacts: stream.contacts || [],
+    manual: isManual,
     video,
     canvas,
     ctx: canvas.getContext('2d', { willReadFrequently: true }),
@@ -555,9 +733,10 @@ function setupStream(stream) {
 
   // Build card
   const card = document.createElement('div');
-  card.className = 'stream-card';
+  card.className = 'stream-card' + (isManual ? ' manual' : '');
   card.dataset.streamId = stream.id;
   card.innerHTML = `
+    <button class="card-remove" title="${t('remove.section')}">×</button>
     <div class="card-metrics"></div>
     <canvas class="card-thumb" width="192" height="108"></canvas>
     ${assigned ? '<svg class="card-star" aria-label="assigned"><use href="#star"/></svg>' : ''}
@@ -570,6 +749,35 @@ function setupStream(stream) {
       </div>
     </div>
   `;
+
+  // Remove button handler (only works for manually-added streams)
+  card.querySelector('.card-remove').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (!state.manual) return;
+    try {
+      await fetch('/api/session/streams', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: SESSION_ID, stream_id: state.id }),
+      });
+    } catch (_) {}
+    // Close inspect panel if this stream was focused
+    if (card.classList.contains('selected')) closeInspect();
+    // Tear down
+    state.video.pause();
+    state.video.src = '';
+    state.video.load();
+    state.video.remove();
+    state.canvas.remove();
+    card.remove();
+    streamStates = streamStates.filter(s => s !== state);
+    // Remove from localStorage manual list
+    const saved = new Set(JSON.parse(localStorage.getItem(LS_MANUAL_KEY) || '[]'));
+    saved.delete(state.id);
+    localStorage.setItem(LS_MANUAL_KEY, JSON.stringify([...saved]));
+    document.getElementById('stream-count').textContent =
+      tf('monitoring.count', { n: streamStates.length });
+  });
   state.thumbCanvas = card.querySelector('.card-thumb');
   state.thumbCtx    = state.thumbCanvas.getContext('2d', { willReadFrequently: true });
 
@@ -596,7 +804,7 @@ function setupStream(stream) {
 
   card.addEventListener('click', function () {
     const t = Math.floor(state.video.currentTime) || 0;
-    const url = `${DETECTOR_URL}?url=${encodeURIComponent(stream.url)}&t=${t}`;
+    const url = `${DETECTOR_URL}?url=${encodeURIComponent(stream.url)}&t=${t}&audio=1`;
 
     document.querySelectorAll('.stream-card').forEach(c => c.classList.remove('selected'));
     card.classList.add('selected');
@@ -611,9 +819,11 @@ function setupStream(stream) {
     frame.onload = () => {
       loading.style.display = 'none';
       frame.style.display = 'block';
+      if (frame.contentWindow && state.contacts && state.contacts.length) {
+        frame.contentWindow.postMessage({ type: 'contacts', contacts: state.contacts }, '*');
+      }
     };
     frame.src = url;
-
     document.getElementById('sheet-label').textContent = stream.label;
     document.getElementById('inspect-panel').classList.add('sheet-open');
   });
@@ -704,7 +914,8 @@ function updateCard(state) {
   if (!card) return;
 
   const wasSelected = card.classList.contains('selected');
-  card.className = `stream-card ${state.status}${wasSelected ? ' selected' : ''}`;
+  const wasManual = card.classList.contains('manual');
+  card.className = `stream-card ${state.status}${wasSelected ? ' selected' : ''}${wasManual ? ' manual' : ''}`;
 
   const dotClass = {
     initializing: 'dot-init',
@@ -842,16 +1053,170 @@ function escHtml(s) {
 }
 
 // ── Bottom-sheet inspect (mobile) ─────────────────────────────────────────
-document.getElementById('sheet-close').addEventListener('click', () => {
+function closeInspect() {
+  if (screen.orientation && screen.orientation.unlock) {
+    try { screen.orientation.unlock(); } catch (_) {}
+  }
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  document.body.classList.remove('maximized');
+  const frame = document.getElementById('inspect-frame');
+  if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'maximize', value: false }, '*');
   document.getElementById('inspect-panel').classList.remove('sheet-open');
   document.querySelectorAll('.stream-card').forEach(c => c.classList.remove('selected'));
-  const frame = document.getElementById('inspect-frame');
   frame.onload = null;
   frame.src = '';
   frame.style.display = 'none';
   document.getElementById('inspect-loading').style.display = 'none';
   document.getElementById('inspect-placeholder').style.display = '';
+}
+document.getElementById('sheet-close').addEventListener('click', closeInspect);
+
+// ── Maximize toggle (driven by detector iframe via postMessage) ───────────
+let _maximizing = false;
+function toggleMaximize() {
+  if (_maximizing) return;
+  _maximizing = true;
+  try {
+    const isMax = document.body.classList.contains('maximized');
+    const frame = document.getElementById('inspect-frame');
+    if (isMax) {
+      if (screen.orientation && screen.orientation.unlock) {
+        try { screen.orientation.unlock(); } catch (_) {}
+      }
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      document.body.classList.remove('maximized');
+      if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'maximize', value: false }, '*');
+    } else {
+      const isMobile = window.matchMedia('(max-width: 700px), (pointer: coarse) and (max-height: 600px)').matches;
+      if (isMobile && document.getElementById('inspect-panel').requestFullscreen) {
+        document.getElementById('inspect-panel').requestFullscreen().then(() => {
+          if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(() => {});
+          }
+        }).catch(() => {});
+      }
+      document.body.classList.add('maximized');
+      if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'maximize', value: true }, '*');
+    }
+  } finally {
+    setTimeout(() => { _maximizing = false; }, 100);
+  }
+}
+window.addEventListener('message', (e) => {
+  if (e.origin !== window.location.origin) return;
+  if (e.data && e.data.type === 'toggle-maximize') toggleMaximize();
 });
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && document.body.classList.contains('maximized')) {
+    if (screen.orientation && screen.orientation.unlock) {
+      try { screen.orientation.unlock(); } catch (_) {}
+    }
+    document.body.classList.remove('maximized');
+    const frame = document.getElementById('inspect-frame');
+    if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'maximize', value: false }, '*');
+  }
+});
+
+// ── Section picker modal ──────────────────────────────────────────────────
+(function () {
+  const overlay  = document.getElementById('section-modal-overlay');
+  const list     = document.getElementById('section-list');
+  const filter   = document.getElementById('section-filter');
+  const addBtn   = document.getElementById('section-add-btn');
+  const countEl  = document.getElementById('section-selected-count');
+  let available = [];
+  let selected = new Set();
+
+  function renderList(query) {
+    const q = (query || '').toLowerCase();
+    const filtered = q ? available.filter(s =>
+      s.section.includes(q) || s.label.toLowerCase().includes(q)
+    ) : available;
+    list.innerHTML = '';
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="section-empty">${t('modal.empty')}</div>`;
+      return;
+    }
+    for (const s of filtered) {
+      const item = document.createElement('label');
+      item.className = 'section-item';
+      item.innerHTML = `
+        <input type="checkbox" value="${s.id}" ${selected.has(s.id) ? 'checked' : ''}>
+        <span class="section-id">${escHtml(s.section)}</span>
+        <span class="section-label">${escHtml(s.label)}</span>
+      `;
+      item.querySelector('input').addEventListener('change', (e) => {
+        if (e.target.checked) selected.add(s.id); else selected.delete(s.id);
+        updateCount();
+      });
+      list.appendChild(item);
+    }
+  }
+
+  function updateCount() {
+    const n = selected.size;
+    countEl.textContent = n ? tf('modal.selected', { n }) : '';
+    addBtn.disabled = n === 0;
+  }
+
+  async function openModal() {
+    selected.clear();
+    filter.value = '';
+    list.innerHTML = `<div class="section-empty">${t('modal.loading')}</div>`;
+    overlay.classList.add('open');
+    try {
+      const res = await fetch('/api/streams/available');
+      const data = await res.json();
+      // Exclude streams already in our session
+      const myIds = new Set(streamStates.map(s => s.id));
+      available = data.streams.filter(s => !myIds.has(s.id));
+    } catch (e) {
+      available = [];
+    }
+    renderList();
+    updateCount();
+    filter.focus();
+  }
+
+  function closeModal() {
+    overlay.classList.remove('open');
+  }
+
+  document.getElementById('add-section-btn').addEventListener('click', openModal);
+  document.getElementById('section-modal-close').addEventListener('click', closeModal);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+
+  filter.addEventListener('input', () => renderList(filter.value));
+
+  addBtn.addEventListener('click', async () => {
+    if (selected.size === 0) return;
+    addBtn.disabled = true;
+    addBtn.textContent = '…';
+    try {
+      const res = await fetch('/api/session/streams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: SESSION_ID, stream_ids: [...selected] }),
+      });
+      const data = await res.json();
+      const savedManual = new Set(JSON.parse(localStorage.getItem(LS_MANUAL_KEY) || '[]'));
+      for (const stream of data.added) {
+        stream._manual = true;
+        savedManual.add(stream.id);
+        setupStream(stream);
+        // Auto-play the new stream
+        const newState = streamStates[streamStates.length - 1];
+        newState.video.play().catch(() => {});
+      }
+      localStorage.setItem(LS_MANUAL_KEY, JSON.stringify([...savedManual]));
+      document.getElementById('stream-count').textContent =
+        tf('monitoring.count', { n: streamStates.length });
+    } catch (e) { /* silent */ }
+    addBtn.textContent = t('modal.add');
+    addBtn.disabled = false;
+    closeModal();
+  });
+})();
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 document.getElementById('lang-toggle').addEventListener('click', () => {
@@ -866,6 +1231,9 @@ function onLangChange() {
       tf('monitoring.count', { n: streamStates.length });
   }
   for (const state of streamStates) updateCard(state);
+  // Sync language to detector iframe
+  const frame = document.getElementById('inspect-frame');
+  if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'set-lang', lang: _lang }, '*');
 }
 
 applyTranslations();

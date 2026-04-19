@@ -51,13 +51,6 @@ footer {
   padding: 1rem;
 }
 
-/* URL bar above video */
-.preview-url-row {
-  display: flex;
-  gap: .5rem;
-  margin-bottom: .75rem;
-}
-
 #stream-url {
   flex: 1;
   min-width: 220px;
@@ -121,7 +114,7 @@ button:disabled { opacity: .4; cursor: not-allowed; }
   flex-direction: column;
   gap: .5rem;
 }
-.preview-url-row { display: flex; gap: .4rem; align-items: center; }
+.preview-url-row { display: flex; gap: .5rem; align-items: center; margin-bottom: .75rem; }
 .btn-open-url {
   background: var(--blue);
   color: #fff;
@@ -133,13 +126,68 @@ button:disabled { opacity: .4; cursor: not-allowed; }
   cursor: pointer;
   line-height: 1;
 }
+.video-container {
+  position: relative;
+}
 #video {
   border-radius: 6px;
   background: #000;
   aspect-ratio: 16/9;
   width: 100%;
+  display: block;
 }
 #canvas { display: none; }
+
+/* Video overlay buttons (shown only when embedded via audio=1) */
+.video-overlay { display: none; }
+body.embedded-mode .video-overlay { display: block; }
+.vid-btn {
+  position: absolute;
+  z-index: 10;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.vid-btn:hover { opacity: 0.9; }
+.maximize-btn {
+  top: 8px; right: 8px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 16px;
+  width: 28px; height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.maximize-btn:hover { background: rgba(0,0,0,0.75); }
+.signal-btn { top: 8px; left: 8px; background: #dc2626; color: #fff; text-decoration: none; }
+.call-btn   { top: 8px; right: 48px; background: #2563eb; color: #fff; }
+
+.phone-popup {
+  display: none;
+  position: absolute;
+  top: 36px; right: 48px;
+  z-index: 20;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  min-width: 200px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+.phone-popup.open { display: block; }
+.phone-popup h4 { font-size: 12px; margin-bottom: 6px; color: var(--text); }
+.phone-popup ul { list-style: none; font-size: 11px; color: var(--text-muted); }
+.phone-popup li { padding: 3px 0; }
+.phone-popup li a { color: #3b82f6; text-decoration: none; }
+.phone-popup li.no-contacts { color: #888; font-style: italic; }
 
 /* Metrics */
 .metrics-row {
@@ -202,6 +250,23 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 }
 .checkbox-label { flex-direction: row !important; align-items: center; gap: .4rem; color: var(--text) !important; flex-wrap: wrap; }
 .checkbox-label input[type="checkbox"] { width: auto; }
+
+/* Collapsible sections */
+.collapsible-section summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: .9rem;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .4rem 0;
+  color: var(--text);
+}
+.collapsible-section summary::before { content: '▶'; font-size: .7rem; transition: transform .2s; }
+.collapsible-section[open] summary::before { transform: rotate(90deg); }
+.collapsible-section summary::-webkit-details-marker { display: none; }
 
 /* Alert Log */
 .log-header {
@@ -269,6 +334,52 @@ button:disabled { opacity: .4; cursor: not-allowed; }
 @media (max-width: 500px) {
   body.in-iframe footer { display: none; }
   body.in-iframe main { padding: .5rem; gap: .5rem; }
+}
+
+/* ── Maximized mode (triggered by parent volunteer page) ──────────────── */
+body.maximized {
+  height: 100vh; height: 100dvh;
+  overflow: hidden;
+}
+body.maximized .collapsible-section,
+body.maximized #config-panel,
+body.maximized .preview-url-row,
+body.maximized footer { display: none !important; }
+body.maximized main {
+  flex: 1;
+  max-width: none;
+  padding: .5rem;
+  min-height: 0;
+  overflow: hidden;
+}
+body.maximized .preview-section {
+  flex: 1;
+  min-height: 0;
+  padding: .5rem;
+}
+body.maximized .video-container {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+body.maximized #video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Compact status in maximized mobile + landscape phones */
+@media (max-width: 700px), (pointer: coarse) and (max-height: 600px) {
+  body.maximized #status-panel {
+    padding: .3rem .5rem;
+    gap: .3rem;
+    border-width: 1px;
+    border-radius: 6px;
+  }
+  body.maximized .status-icon { font-size: .9rem; }
+  body.maximized .status-text { font-size: .75rem; }
+  body.maximized .status-sub  { font-size: .65rem; max-width: 180px; }
+  body.maximized main { padding: .25rem; gap: .25rem; }
 }
 
 @media (prefers-color-scheme: light) {
