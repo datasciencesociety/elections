@@ -704,26 +704,38 @@ function isAssignedToMe(stream) {
   return (',' + stream.assigned_users + ',').includes(',' + USER_ID + ',');
 }
 
+// Proxy is considered absent when the server didn't inject a real URL. In
+// that case every card boots straight into iframe fallback — no <video>
+// attempts, no 30-60s wait for video.error to fire. Runtime proxy failures
+// still fall through the video.error path below.
+const NO_PROXY = !(typeof window !== 'undefined' && typeof window.PROXY_BASE === 'string' && window.PROXY_BASE.length > 0);
+
+function iframeThumb(streamUrl) {
+  return `<iframe class="card-frame" allow="autoplay" src="${escHtml(`${DETECTOR_URL}?url=${encodeURIComponent(streamUrl)}&card=1&direct=1`)}"></iframe>`;
+}
+
 function setupStream(stream) {
-  // Route through proxy. PROXY_BASE is injected by the server (see server.js);
-  // defaults to coordinator's own /proxy if not set.
-  const _proxyBase = (typeof window !== 'undefined' && window.PROXY_BASE) || (location.origin + '/proxy');
-  const _u = new URL(stream.url);
-  const proxiedUrl = _proxyBase + '/' + _u.hostname + _u.pathname + _u.search;
+  let video = null, canvas = null, ctx = null;
 
-  const video = document.createElement('video');
-  video.muted = true;
-  video.autoplay = true;
-  video.playsInline = true;
-  video.preload = 'auto';
-  video.crossOrigin = 'anonymous';
-  video.src = proxiedUrl;
-  document.getElementById('video-container').appendChild(video);
+  if (!NO_PROXY) {
+    const _u = new URL(stream.url);
+    const proxiedUrl = window.PROXY_BASE + '/' + _u.hostname + _u.pathname + _u.search;
 
-  const canvas = document.createElement('canvas');
-  canvas.width = CANVAS_W;
-  canvas.height = CANVAS_H;
-  document.getElementById('canvas-container').appendChild(canvas);
+    video = document.createElement('video');
+    video.muted = true;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    video.crossOrigin = 'anonymous';
+    video.src = proxiedUrl;
+    document.getElementById('video-container').appendChild(video);
+
+    canvas = document.createElement('canvas');
+    canvas.width = CANVAS_W;
+    canvas.height = CANVAS_H;
+    document.getElementById('canvas-container').appendChild(canvas);
+    ctx = canvas.getContext('2d', { willReadFrequently: true });
+  }
 
   const isManual = !!stream._manual;
   const state = {
@@ -735,8 +747,8 @@ function setupStream(stream) {
     manual: isManual,
     video,
     canvas,
-    ctx: canvas.getContext('2d', { willReadFrequently: true }),
-    fallback: false,
+    ctx,
+    fallback: NO_PROXY,
     lastFrameData: null,
     lastChangeTime: null,
     coverStartTime: null,
@@ -749,13 +761,16 @@ function setupStream(stream) {
   };
   streamStates.push(state);
 
-  // Proxy down for this section → swap the <video>+canvas for a direct
-  // iframe to the detector. The detector skips the proxy (direct=1) and
-  // plays from the user's own IP; signal/call buttons stay reachable
-  // through inspect panel.
-  video.addEventListener('error', () => promoteToFallback(state));
+  // Runtime fallback: if the proxied <video> errors, swap for the same iframe
+  // mode. Handles a live proxy going down mid-session.
+  if (video) {
+    video.addEventListener('error', () => promoteToFallback(state));
+  }
 
   const assigned = isAssignedToMe(stream);
+  const thumbMarkup = NO_PROXY
+    ? iframeThumb(stream.url)
+    : `<canvas class="card-thumb" width="192" height="108"></canvas>`;
 
   // Build card
   const card = document.createElement('div');
@@ -764,7 +779,7 @@ function setupStream(stream) {
   card.innerHTML = `
     <button class="card-remove" title="${t('remove.section')}">×</button>
     <div class="card-metrics"></div>
-    <canvas class="card-thumb" width="192" height="108"></canvas>
+    ${thumbMarkup}
     ${assigned ? '<svg class="card-star" aria-label="assigned"><use href="#star"/></svg>' : ''}
     <div class="card-label" title="${escHtml(stream.label)}">${escHtml(stream.label)}</div>
     <div class="card-status-row">
@@ -803,29 +818,34 @@ function setupStream(stream) {
     document.getElementById('stream-count').textContent =
       tf('monitoring.count', { n: streamStates.length });
   });
-  state.thumbCanvas = card.querySelector('.card-thumb');
-  state.thumbCtx    = state.thumbCanvas.getContext('2d', { willReadFrequently: true });
+  if (!NO_PROXY) {
+    state.thumbCanvas = card.querySelector('.card-thumb');
+    state.thumbCtx    = state.thumbCanvas.getContext('2d', { willReadFrequently: true });
 
-  // Draw placeholder until first real video frame arrives
-  (function(ctx, w, h) {
-    ctx.fillStyle = '#111';
-    ctx.fillRect(0, 0, w, h);
-    const cx = w / 2, cy = h / 2 - 6;
-    // Camera body
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(cx - 22, cy - 12, 44, 26);
-    // Lens
-    ctx.beginPath();
-    ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-    ctx.stroke();
-    // Label
-    ctx.fillStyle = '#555';
-    ctx.font = '10px system-ui';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText('waiting for stream…', cx, cy + 20);
-  })(state.thumbCtx, 192, 108);
+    // Draw placeholder until first real video frame arrives
+    (function(ctx, w, h) {
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, w, h);
+      const cx = w / 2, cy = h / 2 - 6;
+      // Camera body
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(cx - 22, cy - 12, 44, 26);
+      // Lens
+      ctx.beginPath();
+      ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+      ctx.stroke();
+      // Label
+      ctx.fillStyle = '#555';
+      ctx.font = '10px system-ui';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText('waiting for stream…', cx, cy + 20);
+    })(state.thumbCtx, 192, 108);
+  } else {
+    // Seed status from last-seen metrics so the iframe card isn't blank-statused.
+    applyMetricsToCard(state);
+  }
 
   card.addEventListener('click', function () {
     const t = state.video ? (Math.floor(state.video.currentTime) || 0) : 0;
@@ -1298,9 +1318,9 @@ document.addEventListener('fullscreenchange', () => {
         stream._manual = true;
         savedManual.add(stream.id);
         setupStream(stream);
-        // Auto-play the new stream
+        // Auto-play the new stream (skipped for fallback cards — their iframe autoplays on its own)
         const newState = streamStates[streamStates.length - 1];
-        newState.video.play().catch(() => {});
+        if (newState.video) newState.video.play().catch(() => {});
       }
       localStorage.setItem(LS_MANUAL_KEY, JSON.stringify([...savedManual]));
       document.getElementById('stream-count').textContent =

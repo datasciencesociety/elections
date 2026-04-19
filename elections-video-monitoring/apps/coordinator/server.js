@@ -617,14 +617,10 @@ const server = http.createServer(async (req, res) => {
     // Static pages
     if (req.method === 'GET' && url === '/') {
       // Inject PROXY_BASE so the client knows where to send video requests.
-      // PROXY_URL env var must be set (e.g. http://localhost:8788).
-      const proxyBase = process.env.PROXY_URL;
-      if (!proxyBase) {
-        res.writeHead(500);
-        res.end('Server misconfiguration: PROXY_URL env var is not set. Start the proxy app and set PROXY_URL.');
-        return;
-      }
-      const proxyScript = `<script>window.PROXY_BASE = '${proxyBase}';</script>`;
+      // Empty/unset → client boots every card straight into iframe fallback
+      // (user's own IP hits evideo directly, metrics from karta endpoint).
+      const proxyBase = process.env.PROXY_URL || '';
+      const proxyScript = `<script>window.PROXY_BASE = ${JSON.stringify(proxyBase)};</script>`;
       fs.readFile(path.join(__dirname, 'public', 'volunteer.html'), 'utf8', (err, html) => {
         if (err) { res.writeHead(404); res.end('Not found'); return; }
         const injected = html.replace('</head>', proxyScript + '\n</head>');
