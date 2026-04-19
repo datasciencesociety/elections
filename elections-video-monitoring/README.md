@@ -96,6 +96,62 @@ pnpm seed apps/scraper/priority.json
 pnpm seed apps/scraper/full.json
 ```
 
+## Authentication & User Management
+
+The coordinator uses a SQLite-backed user store with bcrypt-hashed passwords. There are two roles: `admin` (full access) and `volunteer` (monitoring only).
+
+### First-time setup
+
+On first startup with an empty database, the coordinator creates a seed admin account from environment variables:
+
+```sh
+ADMIN_USER=myadmin ADMIN_PASS=mysecretpass pnpm dev
+```
+
+After the first admin is created, these env vars are no longer required — the system authenticates entirely against the database.
+
+### Adding users from the admin panel
+
+Log in at `/admin` and scroll to the "User Management" section. From there you can:
+
+- Add a single user with username, password (min 8 chars), and role
+- Bulk-import users by pasting or uploading a JSON file
+- View all users and delete accounts (you can't delete your own)
+
+### Bulk import format
+
+Prepare a JSON array — one object per user:
+
+```json
+[
+  { "username": "vol1", "password": "pass1234", "role": "volunteer" },
+  { "username": "vol2", "password": "securepass", "role": "volunteer" },
+  { "username": "admin2", "password": "adminpass1", "role": "admin" }
+]
+```
+
+Upload it via the admin panel's "Bulk Upload Users" area, or POST directly:
+
+```sh
+curl -b session=<admin-cookie> \
+  -H 'Content-Type: application/json' \
+  -d @users.json \
+  http://localhost:3000/api/users/bulk
+```
+
+Duplicates are skipped (not rejected). The response tells you how many were created and which were skipped.
+
+### User management API
+
+All endpoints require an admin session cookie.
+
+| Method | Endpoint | Description |
+| ------ | -------- | ----------- |
+| `POST` | `/api/users` | Add a single user (`{ username, password, role }`) |
+| `POST` | `/api/users/bulk` | Bulk-add users (JSON array) |
+| `GET` | `/api/users` | List all users (username + role, no passwords) |
+| `DELETE` | `/api/users/:username` | Remove a user |
+
 ## Root scripts
 
 | Command | Description |

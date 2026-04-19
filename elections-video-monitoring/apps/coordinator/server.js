@@ -4,6 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { DatabaseSync } = require('node:sqlite');
+const { initUserStore, authenticate, hashPassword, addUser, removeUser, listUsers, validateUserInput, createSessionCookie, buildSetCookie, buildClearCookie } = require('./auth');
+const { authMiddleware } = require('./middleware');
 
 // ── DB ────────────────────────────────────────────────────────────────────────
 
@@ -46,6 +48,12 @@ db.exec(`
     cover_ratio REAL,
     frozen_sec  REAL,
     luma        REAL
+  );
+
+  CREATE TABLE IF NOT EXISTS users (
+    username      TEXT PRIMARY KEY,
+    password_hash TEXT NOT NULL,
+    role          TEXT NOT NULL CHECK(role IN ('admin', 'volunteer'))
   );
 
   CREATE INDEX IF NOT EXISTS idx_reports_stream_ts  ON reports(stream_id, ts);
@@ -475,6 +483,8 @@ const server = http.createServer(async (req, res) => {
   const url = req.url.split('?')[0];
 
   try {
+    // Auth middleware — redirects or rejects unauthorized requests
+    if (authMiddleware(req, res)) return;
     // Static pages
     if (req.method === 'GET' && url === '/') {
       // Inject PROXY_BASE so the client knows where to send video requests.
@@ -544,6 +554,146 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Auth routes
+    if (req.method === 'GET' && url === '/login') {
+      serveFile(res, path.join(__dirname, 'public', 'login.html'), 'text/html; charset=utf-8');
+      return;
+    }
+    if (req.method === 'POST' && url === '/api/login') {
+      let body;
+      try {
+        body = await readBody(req);
+      } catch (e) {
+        json(res, 400, { error: 'Invalid request body' });
+        return;
+      }
+      const { username, password } = body;
+      if (!username || !password) {
+        json(res, 400, { error: 'Username and password required' });
+        return;
+      }
+      const result = authenticate(db, username, password);
+      if (!result) {
+        json(res, 401, { error: 'Invalid credentials' });
+        return;
+      }
+      const cookie = createSessionCookie(username, result.role);
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Set-Cookie': buildSetCookie(cookie),
+      });
+      res.end(JSON.stringify({ role: result.role }));
+      return;
+    }
+    if (req.method === 'POST' && url === '/api/logout') {
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Set-Cookie': buildClearCookie(),
+      });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    // User management
+    if (req.method === 'POST' && url === '/api/users/bulk') {
+      let body;
+      try {
+        body = await readBody(req);
+      } catch (e) {
+        json(res, 400, { error: 'Invalid request body' });
+        return;
+      }
+      if (!Array.isArray(body)) {
+        json(res, 400, { error: 'Expected JSON array' });
+        return;
+      }
+      let created = 0;
+      const skipped = [];
+      const insertStmt = db.prepare('INSERT OR IGNORE INTO users (username, password_hash, role) VALUES (?, ?, ?)');
+      db.exec('BEGIN');
+      try {
+        for (const entry of body) {
+          const invalid = validateUserInput(entry.username, entry.password, entry.role);
+          if (invalid) {
+            skipped.push(entry.username != null ? String(entry.username) : '(invalid)');
+            continue;
+          }
+          const hash = hashPassword(entry.password);
+          const result = insertStmt.run(entry.username, hash, entry.role);
+          if (result.changes > 0) {
+            created++;
+          } else {
+            skipped.push(entry.username);
+          }
+        }
+        db.exec('COMMIT');
+      } catch (e) {
+        db.exec('ROLLBACK');
+        throw e;
+      }
+      if (skipped.length > 0) {
+        json(res, 200, { ok: true, created, skipped });
+      } else {
+        json(res, 201, { ok: true, created });
+      }
+      return;
+    }
+
+    if (req.method === 'POST' && url === '/api/users') {
+      let body;
+      try {
+        body = await readBody(req);
+      } catch (e) {
+        json(res, 400, { error: 'Invalid request body' });
+        return;
+      }
+      const { username, password, role } = body;
+      const invalid = validateUserInput(username, password, role);
+      if (invalid) {
+        json(res, 400, invalid);
+        return;
+      }
+      const hash = hashPassword(password);
+      try {
+        addUser(db, username, hash, role);
+      } catch (e) {
+        if (e.message && e.message.includes('UNIQUE')) {
+          json(res, 409, { error: 'Username already exists' });
+          return;
+        }
+        throw e;
+      }
+      json(res, 201, { ok: true, username, role });
+      return;
+    }
+
+    if (req.method === 'DELETE' && url.startsWith('/api/users/')) {
+      const targetUsername = decodeURIComponent(url.split('/')[3]);
+      if (targetUsername === req.user.username) {
+        json(res, 400, { error: 'Cannot delete own account' });
+        return;
+      }
+      const deleted = removeUser(db, targetUsername);
+      if (!deleted) {
+        json(res, 404, { error: 'User not found' });
+        return;
+      }
+      json(res, 200, { ok: true });
+      return;
+    }
+
+    if (req.method === 'GET' && url === '/api/users') {
+      const users = listUsers(db);
+      json(res, 200, users);
+      return;
+    }
+
+    // CORS proxy
+    if (url.startsWith('/proxy/')) {
+      handleProxy(req, res);
+      return;
+    }
+
     // API
     if (req.method === 'POST' && url === '/api/session') {
       await handleSession(req, res); return;
@@ -585,4 +735,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+initUserStore(db);
 server.listen(PORT, () => console.log(`Election monitor: http://localhost:${PORT}`));

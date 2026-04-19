@@ -118,6 +118,51 @@ button {
 #sections-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 #sections-count { font-size: 11px; color: #666; }
 
+/* User management */
+#user-mgmt-msg { font-size: 12px; padding: 4px 0; min-height: 20px; }
+#user-mgmt-msg.ok  { color: #22c55e; }
+#user-mgmt-msg.err { color: #ef4444; }
+
+#add-user-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+#add-user-form label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: #888; }
+#add-user-form input, #add-user-form select {
+  background: #111; border: 1px solid #333; color: #e0e0e0;
+  padding: 7px 10px; font-size: 12px; border-radius: 4px;
+}
+#add-user-form input { min-width: 140px; }
+#add-user-form select { min-width: 110px; }
+#btn-add-user { background: #2563eb; color: #fff; align-self: flex-end; }
+#btn-add-user:hover { background: #1d4ed8; }
+
+#bulk-upload-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; margin-top: 14px; }
+textarea#bulk-users-json {
+  flex: 1; min-width: 260px; height: 80px;
+  background: #111; border: 1px solid #333; color: #e0e0e0;
+  padding: 8px; font-family: monospace; font-size: 11px; resize: vertical;
+  border-radius: 4px;
+}
+#bulk-upload-controls { display: flex; flex-direction: column; gap: 6px; min-width: 140px; }
+#btn-bulk-upload { background: #2563eb; color: #fff; }
+#btn-bulk-upload:hover { background: #1d4ed8; }
+#btn-bulk-file-pick { background: #374151; color: #e0e0e0; }
+#btn-bulk-file-pick:hover { background: #4b5563; }
+#bulk-file-input { display: none; }
+#bulk-upload-msg { font-size: 12px; padding: 4px 0; min-height: 20px; }
+#bulk-upload-msg.ok  { color: #22c55e; }
+#bulk-upload-msg.err { color: #ef4444; }
+
+.users-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 14px; }
+.users-table th {
+  text-align: left; padding: 6px 10px;
+  border-bottom: 1px solid #2a2a2a; color: #888; font-weight: 500; font-size: 11px;
+}
+.users-table td { padding: 8px 10px; border-bottom: 1px solid #1f1f1f; vertical-align: middle; }
+.users-table tr:last-child td { border-bottom: none; }
+.users-table tr:hover td { background: #1f1f1f; }
+.btn-delete-user { background: #7f1d1d; color: #fca5a5; font-size: 11px; padding: 3px 10px; }
+.btn-delete-user:hover { background: #991b1b; }
+#no-users { color: #555; font-size: 13px; padding: 8px 0; }
+
 /* ── Mobile responsive ────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   header { padding: 10px 12px; flex-direction: column; align-items: flex-start; gap: 4px; }
@@ -159,6 +204,24 @@ button {
     margin-bottom: 2px;
   }
   .url-cell { max-width: 100%; white-space: normal; word-break: break-all; }
+
+  #add-user-form { flex-direction: column; align-items: stretch; }
+  #add-user-form input, #add-user-form select { min-width: 0; width: 100%; }
+  #bulk-upload-row { flex-direction: column; }
+  textarea#bulk-users-json { min-width: 0; width: 100%; }
+
+  .users-table thead { display: none; }
+  .users-table, .users-table tbody, .users-table tr, .users-table td { display: block; width: 100%; }
+  .users-table tr {
+    background: #111; border: 1px solid #2a2a2a; border-radius: 6px;
+    padding: 10px; margin-bottom: 8px;
+  }
+  .users-table tr:hover td { background: transparent; }
+  .users-table td { padding: 3px 0; border-bottom: none; font-size: 12px; }
+  .users-table td::before {
+    content: attr(data-label); font-size: 10px; color: #888;
+    text-transform: uppercase; display: block; margin-bottom: 2px;
+  }
 }
 </style>
 </head>
@@ -240,6 +303,48 @@ button {
         <tbody id="flagged-body"></tbody>
       </table>
     </div>
+  </section>
+
+  <!-- User Management -->
+  <section>
+    <h2>User Management</h2>
+
+    <!-- Add User form -->
+    <form id="add-user-form" autocomplete="off">
+      <label>Username <input type="text" id="new-username" required></label>
+      <label>Password <input type="password" id="new-password" required minlength="8"></label>
+      <label>Role
+        <select id="new-role">
+          <option value="admin">admin</option>
+          <option value="volunteer" selected>volunteer</option>
+        </select>
+      </label>
+      <button type="submit" id="btn-add-user">Add User</button>
+    </form>
+    <div id="user-mgmt-msg"></div>
+
+    <!-- Bulk Upload Users -->
+    <p style="font-size:12px;color:#666;margin-top:14px;margin-bottom:6px">
+      Bulk upload — JSON array: <code style="color:#9ca3af">[{"username":"vol1","password":"pass1234","role":"volunteer"}, …]</code>
+    </p>
+    <div id="bulk-upload-row">
+      <textarea id="bulk-users-json" placeholder='[{"username":"vol1","password":"pass1234","role":"volunteer"}]'></textarea>
+      <div id="bulk-upload-controls">
+        <button id="btn-bulk-file-pick">Choose file</button>
+        <input type="file" id="bulk-file-input" accept=".json,.txt">
+        <button id="btn-bulk-upload">Upload Users</button>
+        <div id="bulk-upload-msg"></div>
+      </div>
+    </div>
+
+    <!-- Users table -->
+    <p id="no-users" style="display:none">No users found</p>
+    <table class="users-table" id="users-table" style="display:none">
+      <thead>
+        <tr><th>Username</th><th>Role</th><th></th></tr>
+      </thead>
+      <tbody id="users-body"></tbody>
+    </table>
   </section>
 
 </main>
@@ -474,6 +579,137 @@ function refreshAll() { refreshStats(); refreshFlagged(); }
 setInterval(refreshAll, 15_000);
 refreshAll();
 refreshSections();
+
+// ── User Management ───────────────────────────────────────────────────────────
+const userMgmtMsg = document.getElementById('user-mgmt-msg');
+function showUserMsg(text, type) {
+  userMgmtMsg.textContent = text;
+  userMgmtMsg.className = type;
+}
+
+// Add single user
+document.getElementById('add-user-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = document.getElementById('new-username').value.trim();
+  const password = document.getElementById('new-password').value;
+  const role = document.getElementById('new-role').value;
+  if (!username) { showUserMsg('Username is required', 'err'); return; }
+  if (password.length < 8) { showUserMsg('Password must be at least 8 characters', 'err'); return; }
+  try {
+    const res = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, role }),
+    });
+    const result = await res.json();
+    if (!res.ok) { showUserMsg(result.error || 'Error adding user', 'err'); return; }
+    showUserMsg(`User "${result.username}" created as ${result.role}`, 'ok');
+    document.getElementById('new-username').value = '';
+    document.getElementById('new-password').value = '';
+    refreshUsers();
+  } catch (err) {
+    showUserMsg('Network error: ' + err.message, 'err');
+  }
+});
+
+// Bulk upload
+const bulkMsg = document.getElementById('bulk-upload-msg');
+function showBulkMsg(text, type) {
+  bulkMsg.textContent = text;
+  bulkMsg.className = type;
+}
+
+document.getElementById('btn-bulk-file-pick').addEventListener('click', () => {
+  document.getElementById('bulk-file-input').click();
+});
+document.getElementById('bulk-file-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    document.getElementById('bulk-users-json').value = ev.target.result;
+    e.target.value = '';
+    document.getElementById('btn-bulk-upload').click();
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById('btn-bulk-upload').addEventListener('click', async () => {
+  const raw = document.getElementById('bulk-users-json').value.trim();
+  if (!raw) { showBulkMsg('Paste or load JSON first', 'err'); return; }
+  let data;
+  try { data = JSON.parse(raw); }
+  catch (e) { showBulkMsg('Invalid JSON: ' + e.message, 'err'); return; }
+  if (!Array.isArray(data)) { showBulkMsg('Expected a JSON array', 'err'); return; }
+
+  showBulkMsg('Uploading…', '');
+  try {
+    const res = await fetch('/api/users/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (!res.ok) { showBulkMsg(result.error || 'Error', 'err'); return; }
+    let msg = `${result.created} user(s) created`;
+    if (result.skipped && result.skipped.length > 0) {
+      msg += `, ${result.skipped.length} skipped (${result.skipped.join(', ')})`;
+    }
+    showBulkMsg(msg, 'ok');
+    document.getElementById('bulk-users-json').value = '';
+    refreshUsers();
+  } catch (err) {
+    showBulkMsg('Network error: ' + err.message, 'err');
+  }
+});
+
+// Users table
+async function refreshUsers() {
+  try {
+    const res = await fetch('/api/users');
+    if (!res.ok) return;
+    const users = await res.json();
+    const noUsers = document.getElementById('no-users');
+    const table = document.getElementById('users-table');
+    const tbody = document.getElementById('users-body');
+    if (users.length === 0) {
+      noUsers.style.display = '';
+      table.style.display = 'none';
+      return;
+    }
+    noUsers.style.display = 'none';
+    table.style.display = '';
+    tbody.innerHTML = '';
+    for (const u of users) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td data-label="Username">${escHtml(u.username)}</td>
+        <td data-label="Role">${escHtml(u.role)}</td>
+        <td><button class="btn-delete-user" data-username="${escHtml(u.username)}">Delete</button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+  } catch {}
+}
+
+document.getElementById('users-table').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.btn-delete-user');
+  if (!btn) return;
+  const username = btn.dataset.username;
+  if (!confirm(`Delete user "${username}"?`)) return;
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/users/' + encodeURIComponent(username), { method: 'DELETE' });
+    const result = await res.json();
+    if (!res.ok) { showUserMsg(result.error || 'Error deleting user', 'err'); return; }
+    showUserMsg(`User "${username}" deleted`, 'ok');
+    refreshUsers();
+  } catch (err) {
+    showUserMsg('Network error: ' + err.message, 'err');
+  } finally { btn.disabled = false; }
+});
+
+refreshUsers();
 </script>
 </body>
 </html>
