@@ -3,7 +3,9 @@ import type { LiveAddress } from "@/lib/api/live-sections.js";
 import type { LiveMetrics } from "@/lib/api/live-metrics.js";
 import { LiveVideoCard } from "./live-video-card.js";
 
-const CARD_HEIGHT_ESTIMATE_PX = 420;
+/** Rough card height: ~44 px header + ~203 px video at 360 px wide
+ *  (16:9) + ~52 px footer link row + borders/padding. */
+const CARD_HEIGHT_ESTIMATE_PX = 310;
 const VERTICAL_CHROME_PX = 120;
 /** Keep this much viewport reserved for the map before the panel
  *  eats it — prevents the page from horizontally scrolling. */
@@ -45,7 +47,7 @@ export function LiveVideoPanel({
         } as CSSProperties
       }
     >
-      <div className="grid gap-3 md:h-full md:auto-cols-[360px] md:grid-flow-col md:[grid-template-rows:repeat(var(--panel-rows),minmax(0,1fr))]">
+      <div className="grid gap-3 md:auto-cols-[360px] md:grid-flow-col md:[grid-template-rows:repeat(var(--panel-rows),min-content)]">
         {watchCodes.map((code) => (
           <LiveVideoCard
             key={code}

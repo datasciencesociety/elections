@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
-import { X, ExternalLink, ChartBar } from "lucide-react";
+import { X, ChartBar } from "lucide-react";
 import type { LiveAddress } from "@/lib/api/live-sections.js";
 import type { LiveSectionMetric } from "@/lib/api/live-metrics.js";
 import { cn } from "@/lib/utils";
@@ -48,8 +48,6 @@ export function LiveVideoCard({
     prevToneRef.current = tone;
   }, [tone]);
 
-  const reportedAgo = metric?.reported_at ? secondsAgo(metric.reported_at) : null;
-
   return (
     <article
       className={cn(
@@ -90,34 +88,16 @@ export function LiveVideoCard({
         />
       </div>
 
-      <div className="flex flex-col gap-2 px-3 py-2">
-        {reportedAgo != null && (
-          <p className="text-3xs uppercase tracking-eyebrow text-muted-foreground">
-            обновено преди {reportedAgo} сек.
-          </p>
-        )}
-        <div className="flex flex-wrap gap-2">
-          <Link
-            to={`/section/${sectionCode}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
-          >
-            <ChartBar size={12} />
-            Минали резултати
-          </Link>
-          {streamUrl && (
-            <a
-              href={streamUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
-            >
-              <ExternalLink size={12} />
-              Отвори стрийма
-            </a>
-          )}
-        </div>
+      <div className="px-3 py-1.5">
+        <Link
+          to={`/section/${sectionCode}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
+        >
+          <ChartBar size={12} />
+          Минали резултати
+        </Link>
       </div>
     </article>
   );
@@ -208,6 +188,3 @@ function resolveStatus(
   return metric.status;
 }
 
-function secondsAgo(ts: number): number {
-  return Math.max(0, Math.round((Date.now() - ts) / 1000));
-}
