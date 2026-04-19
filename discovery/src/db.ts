@@ -84,11 +84,20 @@ export const stmt = {
   assignPut: db.prepare(
     "INSERT OR REPLACE INTO assignments (section_id, box_ip, assigned_at) VALUES (?, ?, ?)"
   ),
+  assignDelete: db.prepare("DELETE FROM assignments WHERE section_id = ?"),
   assignForBox: db.prepare(
     `SELECT s.id, s.url, s.label FROM assignments a
      JOIN sections s ON s.id = a.section_id
      WHERE a.box_ip = ?
      ORDER BY s.id`
+  ),
+  // Sections whose last metric is older than the staleness threshold.
+  // The JOIN filters out assignments whose section has never reported —
+  // those are still warming up and deserve a grace period.
+  assignStaleSections: db.prepare(
+    `SELECT a.section_id FROM assignments a
+     JOIN metrics m ON m.section_id = a.section_id
+     WHERE m.reported_at < ?`
   ),
   assignCountByBox: db.prepare(
     `SELECT b.ip, b.capacity, b.draining, COUNT(a.section_id) AS load
