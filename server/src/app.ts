@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import elections from "./routes/elections.js";
 import geography from "./routes/geography.js";
 import parties from "./routes/parties.js";
@@ -6,6 +7,10 @@ import { handleMcpRequest } from "./mcp/handler.js";
 import og from "./og/route.js";
 
 const app = new Hono();
+
+// Public, read-only data — allow any origin so the SPA can be embedded or
+// served from other hosts (izborenmonitor.com root, local dev, etc.).
+app.use("/api/*", cors({ origin: "*", allowMethods: ["GET", "OPTIONS"] }));
 
 // All API data is static between deploys. Cache aggressively:
 // - browsers cache 1 hour (max-age)

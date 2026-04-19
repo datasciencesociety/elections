@@ -12,7 +12,7 @@
  * touching UI code.
  */
 
-const BASE = "/api";
+const BASE = import.meta.env.VITE_API_BASE ?? "/api";
 
 class ApiError extends Error {
   constructor(public status: number, message: string) {
