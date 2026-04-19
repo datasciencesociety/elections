@@ -370,13 +370,18 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
 .stream-card.error   { border-color: var(--card-err-border); background: var(--card-err-bg); }
 .stream-card.selected { outline: 2px solid #3b82f6; outline-offset: -1px; }
 
-.card-thumb {
+.card-thumb,
+.card-frame {
   width: 100%;
   aspect-ratio: 16/9;
   border-radius: 3px;
   background: #000;
   display: block;
 }
+/* Fallback iframes let clicks pass through so the parent card still opens
+ * the inspect panel. card-mode hides all iframe chrome so there's nothing
+ * to miss by swallowing pointer events. */
+.card-frame { border: 0; pointer-events: none; }
 
 .card-label {
   font-size: 11px;
@@ -599,6 +604,14 @@ const LS_SESSION_KEY = 'volunteer_session_id';
 const LS_USER_ID_KEY  = 'volunteer_user_id';
 const LS_MANUAL_KEY   = 'volunteer_manual_streams';
 
+// ── Fallback metrics (when the HLS proxy is unreachable for a section) ───────
+// Public, CORS *, gzipped JSON keyed by zero-padded 9-digit section code.
+// Unreachable endpoint or missing section → card keeps the iframe without
+// overlay status; we never go dark because of it.
+const METRICS_URL = 'https://karta.izborenmonitor.com/video/metrics';
+const METRICS_POLL_INTERVAL_MS = 5_000;
+let metricsBySection = {};
+
 // ── State ─────────────────────────────────────────────────────────────────────
 let SESSION_ID = null;
 // TODO: replace USER_ID with a real user ID provided by the auth layer at login.
@@ -656,8 +669,10 @@ async function init() {
 
   document.getElementById('add-section-btn').style.display = '';
 
-  // Try autoplay
-  const playPromises = streamStates.map(s => s.video.play().catch(() => null));
+  // Try autoplay — fallback cards autoplay inside their iframes on their own.
+  const playPromises = streamStates
+    .filter(s => s.video)
+    .map(s => s.video.play().catch(() => null));
   const results = await Promise.allSettled(playPromises);
   const anyBlocked = results.some(r => r.status === 'rejected');
   if (anyBlocked) {
@@ -671,12 +686,14 @@ async function init() {
     setInterval(checkAllStreams, CHECK_INTERVAL_MS),
     setInterval(updateThumbnails, 1_000),
     setInterval(sendReport, REPORT_INTERVAL_MS),
-    setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS)
+    setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS),
+    setInterval(pollMetrics, METRICS_POLL_INTERVAL_MS)
   );
+  pollMetrics(); // seed immediately so fallback cards don't wait 5s for status
 }
 
 document.getElementById('start-btn').addEventListener('click', () => {
-  streamStates.forEach(s => s.video.play().catch(() => {}));
+  streamStates.forEach(s => { if (s.video) s.video.play().catch(() => {}); });
   document.getElementById('overlay').classList.add('hidden');
   autoplayBlocked = false;
 });
@@ -711,6 +728,7 @@ function setupStream(stream) {
   const isManual = !!stream._manual;
   const state = {
     id: stream.id,
+    section: stream.section,
     url: stream.url,
     label: stream.label,
     contacts: stream.contacts || [],
@@ -718,6 +736,7 @@ function setupStream(stream) {
     video,
     canvas,
     ctx: canvas.getContext('2d', { willReadFrequently: true }),
+    fallback: false,
     lastFrameData: null,
     lastChangeTime: null,
     coverStartTime: null,
@@ -729,6 +748,12 @@ function setupStream(stream) {
     recStart: parseRecordingStart(stream.url),
   };
   streamStates.push(state);
+
+  // Proxy down for this section → swap the <video>+canvas for a direct
+  // iframe to the detector. The detector skips the proxy (direct=1) and
+  // plays from the user's own IP; signal/call buttons stay reachable
+  // through inspect panel.
+  video.addEventListener('error', () => promoteToFallback(state));
 
   const assigned = isAssignedToMe(stream);
 
@@ -764,12 +789,11 @@ function setupStream(stream) {
     } catch (_) {}
     // Close inspect panel if this stream was focused
     if (card.classList.contains('selected')) closeInspect();
-    // Tear down
-    state.video.pause();
-    state.video.src = '';
-    state.video.load();
-    state.video.remove();
-    state.canvas.remove();
+    // Tear down (video/canvas absent for fallback cards)
+    if (state.video) {
+      try { state.video.pause(); state.video.src = ''; state.video.load(); state.video.remove(); } catch (_) {}
+    }
+    if (state.canvas) state.canvas.remove();
     card.remove();
     streamStates = streamStates.filter(s => s !== state);
     // Remove from localStorage manual list
@@ -804,8 +828,9 @@ function setupStream(stream) {
   })(state.thumbCtx, 192, 108);
 
   card.addEventListener('click', function () {
-    const t = Math.floor(state.video.currentTime) || 0;
-    const url = `${DETECTOR_URL}?url=${encodeURIComponent(stream.url)}&t=${t}&audio=1`;
+    const t = state.video ? (Math.floor(state.video.currentTime) || 0) : 0;
+    const direct = state.fallback ? '&direct=1' : '';
+    const url = `${DETECTOR_URL}?url=${encodeURIComponent(stream.url)}&t=${t}&audio=1${direct}`;
 
     document.querySelectorAll('.stream-card').forEach(c => c.classList.remove('selected'));
     card.classList.add('selected');
@@ -835,17 +860,75 @@ function setupStream(stream) {
 // ── Thumbnails ────────────────────────────────────────────────────────────────
 function updateThumbnails() {
   for (const state of streamStates) {
-    if (state.video.readyState < 2 || !state.thumbCtx) continue;
+    if (state.fallback || !state.video || !state.thumbCtx) continue;
+    if (state.video.readyState < 2) continue;
     try {
       state.thumbCtx.drawImage(state.video, 0, 0, 192, 108);
     } catch (e) { /* ignore taint or decode errors */ }
   }
 }
 
+// ── Fallback (iframe) ────────────────────────────────────────────────────────
+// On proxied <video> error, tear down the analysis pipeline for this card and
+// replace its thumb with an iframe pointing at the detector in card-mode with
+// direct=1 (bypasses proxy, plays from the user's own IP).
+function promoteToFallback(state) {
+  if (state.fallback) return;
+  try { state.video.pause(); state.video.src = ''; state.video.load(); state.video.remove(); } catch (_) {}
+  if (state.canvas) state.canvas.remove();
+  state.video = null;
+  state.canvas = null;
+  state.ctx = null;
+  state.thumbCanvas = null;
+  state.thumbCtx = null;
+  state.fallback = true;
+
+  const card = document.querySelector(`[data-stream-id="${state.id}"]`);
+  if (!card) return;
+  const thumb = card.querySelector('.card-thumb, .card-frame');
+  if (thumb) {
+    const frame = document.createElement('iframe');
+    frame.className = 'card-frame';
+    frame.allow = 'autoplay';
+    frame.src = `${DETECTOR_URL}?url=${encodeURIComponent(state.url)}&card=1&direct=1`;
+    thumb.replaceWith(frame);
+  }
+  applyMetricsToCard(state);
+}
+
+async function pollMetrics() {
+  let data = null;
+  try {
+    const res = await fetch(METRICS_URL, { cache: 'no-store' });
+    if (res.ok) data = await res.json();
+  } catch (_) { /* offline metrics is fine — iframes keep playing */ }
+  metricsBySection = data && typeof data === 'object' ? data : {};
+  for (const s of streamStates) if (s.fallback) applyMetricsToCard(s);
+}
+
+function applyMetricsToCard(state) {
+  const m = metricsBySection[state.section];
+  if (!m) {
+    state.status = 'unknown';
+    state.luma = 0;
+    state.coverRatio = 0;
+    state.frozenSec = 0;
+  } else {
+    state.status = m.status || 'unknown';
+    state.luma = Number(m.luma) || 0;
+    state.coverRatio = Number(m.cover_ratio) || 0;
+    state.frozenSec = Number(m.frozen_sec) || 0;
+  }
+  updateCard(state);
+}
+
 // ── Detection ─────────────────────────────────────────────────────────────────
 function checkAllStreams() {
   const now = Date.now();
-  for (const state of streamStates) checkStream(state, now);
+  for (const state of streamStates) {
+    if (state.fallback) continue; // iframe cards → status comes from pollMetrics
+    checkStream(state, now);
+  }
 }
 
 function checkStream(state, now) {
@@ -926,6 +1009,7 @@ function updateCard(state) {
     frozen:   'dot-frozen',
     dark:     'dot-dark',
     error:    'dot-error',
+    unknown:  'dot-init',
   }[state.status] || 'dot-init';
 
   const statusLabel = {
@@ -936,6 +1020,7 @@ function updateCard(state) {
     frozen:   t('status.frozen'),
     dark:     t('status.dark'),
     error:    t('status.error'),
+    unknown:  t('status.unknown'),
   }[state.status] || state.status;
 
   card.querySelector('.status-dot').className = `status-dot ${dotClass}`;
@@ -949,7 +1034,10 @@ function updateCard(state) {
 // ── Reporting ─────────────────────────────────────────────────────────────────
 async function sendReport() {
   if (!SESSION_ID) return;
-  const results = streamStates.map(s => ({
+  // Skip fallback cards — their status is just echoing karta's /video/metrics.
+  // Reporting it back would double-count karta-side observations and flood the
+  // admin's flagged list with 'unknown' when the metrics endpoint is unreachable.
+  const results = streamStates.filter(s => !s.fallback).map(s => ({
     stream_id: s.id,
     status: s.status,
     cover_ratio: s.coverRatio,
@@ -1016,12 +1104,16 @@ function releaseAll() {
   frame.src = '';
   for (const s of streamStates) {
     try {
-      s.video.pause();
-      // Set src to '' then load() to abort the network fetch.
-      s.video.src = '';
-      s.video.load();
+      if (s.video) {
+        s.video.pause();
+        // Set src to '' then load() to abort the network fetch.
+        s.video.src = '';
+        s.video.load();
+      }
     } catch (e) { /* ignore */ }
   }
+  // Fallback iframes hold their own <video> — drop their src too.
+  document.querySelectorAll('.card-frame').forEach(f => { try { f.src = ''; } catch (_) {} });
 }
 // beforeunload fires synchronously before navigation — more reliable than
 // pagehide alone in Edge (which may defer pagehide via bfcache).
@@ -1037,6 +1129,7 @@ document.addEventListener('visibilitychange', () => {
     if (hiddenAt && Date.now() - hiddenAt > 5 * 60_000) {
       // Reset diff state to avoid false freeze alerts after long background
       for (const s of streamStates) {
+        if (s.fallback) continue;
         s.lastFrameData = null;
         s.lastChangeTime = null;
         s.coverStartTime = null;

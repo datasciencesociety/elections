@@ -382,6 +382,42 @@ body.maximized #video {
   body.maximized main { padding: .25rem; gap: .25rem; }
 }
 
+/* ── Card mode: detector embedded as a tiny iframe in the volunteer grid
+ * Strip everything except the <video>. Parent card handles click-to-inspect.
+ * Set by ?card=1 from the volunteer fallback path. */
+body.card-mode {
+  background: #000;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+body.card-mode main {
+  padding: 0;
+  gap: 0;
+  max-width: none;
+  height: 100%;
+}
+body.card-mode footer,
+body.card-mode #status-panel,
+body.card-mode details,
+body.card-mode .preview-url-row,
+body.card-mode .video-overlay,
+body.card-mode #canvas { display: none !important; }
+body.card-mode .preview-section {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  height: 100%;
+}
+body.card-mode .video-container { height: 100%; }
+body.card-mode #video {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  aspect-ratio: auto;
+  object-fit: cover;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     --bg: #f1f5f9;

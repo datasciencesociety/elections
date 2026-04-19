@@ -5,6 +5,12 @@
 // Default targets the standalone proxy app on its local dev port.
 const PROXY_BASE = (typeof window !== 'undefined' && window.PROXY_BASE) || 'http://localhost:8788';
 
+// Volunteer page's iframe fallback sets ?direct=1 to skip the CORS proxy
+// (proxy is down or unavailable — user hits evideo directly from their own IP).
+// Pixel analysis is disabled in this mode since the canvas will be tainted.
+const DIRECT_MODE = typeof location !== 'undefined'
+  && new URLSearchParams(location.search).get('direct') === '1';
+
 // ── DOM refs ───────────────────────────────────────────────────────────────
 const elUrl          = document.getElementById('stream-url');
 const btnStart       = document.getElementById('btn-start');
@@ -299,13 +305,18 @@ function startMonitoring() {
 function loadStream(url) {
   // Route all external (non-same-origin) video URLs through the CORS proxy
   // so canvas.getImageData() is not blocked by cross-origin restrictions.
-  try {
-    const parsed = new URL(url);
-    if (parsed.hostname !== location.hostname) {
-      url = PROXY_BASE + '/' + parsed.hostname + parsed.pathname + parsed.search;
+  // In DIRECT_MODE (volunteer iframe fallback), skip the proxy — we accept
+  // a tainted canvas because the proxy is down and we just need the video
+  // to play from the user's own IP.
+  if (!DIRECT_MODE) {
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname !== location.hostname) {
+        url = PROXY_BASE + '/' + parsed.hostname + parsed.pathname + parsed.search;
+      }
+    } catch (_) {
+      // Relative or invalid URL — pass through unchanged
     }
-  } catch (_) {
-    // Relative or invalid URL — pass through unchanged
   }
 
   const isHls = url.includes('.m3u8') || url.includes('hls');
@@ -456,6 +467,18 @@ elUrl.addEventListener('keydown', e => { if (e.key === 'Enter') startMonitoring(
   const urlParam = params.get('url');
   const tParam   = params.get('t');
   const audioParam = params.get('audio');
+  const cardParam  = params.get('card');
+
+  if (DIRECT_MODE) {
+    // No proxy → no CORS headers → crossorigin="anonymous" makes the video
+    // refuse to load. Strip it; accept that the canvas becomes tainted.
+    video.removeAttribute('crossorigin');
+  }
+  if (cardParam === '1') {
+    // Compact card embed (volunteer grid fallback): no chrome, just <video>.
+    document.body.classList.add('card-mode');
+  }
+
   if (audioParam === '1') {
     video.muted = false;
     document.body.classList.add('embedded-mode');
