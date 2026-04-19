@@ -7,6 +7,10 @@
     "test": "playwright test"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.2"
+    "@playwright/test": "^1.58.2",
+    "fast-check": "^3.23.2"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3"
   }
 }

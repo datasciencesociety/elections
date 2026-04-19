@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Election Monitor — Login</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, sans-serif;
+  background: #0d0d0d;
+  color: #e0e0e0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-card {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 32px;
+  width: 100%;
+  max-width: 380px;
+  margin: 16px;
+}
+
+.login-card h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.login-card p {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 24px;
+}
+
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  padding: 10px 12px;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 14px;
+  font-family: system-ui, sans-serif;
+  margin-bottom: 16px;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+button[type="submit"] {
+  width: 100%;
+  padding: 10px 16px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: system-ui, sans-serif;
+}
+
+button[type="submit"]:hover {
+  background: #1d4ed8;
+}
+
+button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#error-msg {
+  background: #7f1d1d;
+  color: #fca5a5;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  display: none;
+}
+</style>
+</head>
+<body>
+
+<div class="login-card">
+  <h1>Election Stream Monitor</h1>
+  <p>Sign in to continue</p>
+
+  <div id="error-msg"></div>
+
+  <form id="login-form">
+    <label for="username">Username</label>
+    <input type="text" id="username" name="username" autocomplete="username" required>
+
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" autocomplete="current-password" required>
+
+    <button type="submit" id="submit-btn">Sign in</button>
+  </form>
+</div>
+
+<script>
+const form = document.getElementById('login-form');
+const errorMsg = document.getElementById('error-msg');
+const submitBtn = document.getElementById('submit-btn');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  errorMsg.style.display = 'none';
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Signing in…';
+
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      window.location.href = data.role === 'admin' ? '/admin' : '/';
+    } else {
+      const data = await res.json();
+      errorMsg.textContent = data.error || 'Login failed';
+      errorMsg.style.display = 'block';
+    }
+  } catch (err) {
+    errorMsg.textContent = 'Network error. Please try again.';
+    errorMsg.style.display = 'block';
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Sign in';
+  }
+});
+</script>
+</body>
+</html>
