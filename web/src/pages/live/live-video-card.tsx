@@ -104,7 +104,6 @@ export function LiveVideoCard({
 }
 
 function VideoArea({
-  sectionCode,
   streamUrl,
 }: {
   sectionCode: string;
@@ -112,14 +111,19 @@ function VideoArea({
   streamUrl: string | undefined;
 }) {
   if (streamUrl) {
+    // Native <video> rather than <iframe>: archive.evideo.bg sends a
+    // frame-ancestors CSP that blocks iframe embedding, but the MP4
+    // itself is fetchable from <video>. No CORS needed for playback.
     return (
-      <iframe
+      <video
         key={streamUrl}
         src={streamUrl}
-        title={`Стрийм ${sectionCode}`}
-        loading="lazy"
-        allow="autoplay; fullscreen; picture-in-picture"
-        className="h-full w-full border-0"
+        controls
+        autoPlay
+        muted
+        playsInline
+        preload="metadata"
+        className="h-full w-full bg-black"
       />
     );
   }
