@@ -21,6 +21,7 @@ import { LiveSectionPopup } from "./live-section-popup.js";
 import { LiveHoverTooltip } from "./live-hover-tooltip.js";
 import { LiveVideoPanel } from "./live-video-panel.js";
 import { LiveStatusBadge } from "./live-status-badge.js";
+import { LiveSignalList } from "./live-signal-list.js";
 
 const MOBILE_BREAKPOINT = 768;
 
@@ -51,6 +52,7 @@ export default function Live() {
   const [watchCodes, setWatchCodes] = useState<string[]>([]);
   const [popupAddressId, setPopupAddressId] = useState<string | null>(null);
   const [hoverAddressId, setHoverAddressId] = useState<string | null>(null);
+  const [signalListOpen, setSignalListOpen] = useState(false);
   const mapRef = useRef<MapLibreGL.Map | null>(null);
 
   const realStreamBySection = useMemo(() => {
@@ -196,9 +198,15 @@ export default function Live() {
                 <span className="text-foreground">
                   {stats.live.toLocaleString("bg-BG")}
                 </span>{" "}
-                на живо · <span className="text-score-high">
+                на живо ·{" "}
+                <button
+                  type="button"
+                  onClick={() => setSignalListOpen((v) => !v)}
+                  className="cursor-pointer text-score-high underline-offset-2 hover:underline"
+                  title="Покажи кои секции са сигнализирали"
+                >
                   {stats.flagged.toLocaleString("bg-BG")}
-                </span>{" "}
+                </button>{" "}
                 сигнали /{" "}
                 <span className="text-foreground">
                   {stats.total.toLocaleString("bg-BG")}
@@ -213,6 +221,20 @@ export default function Live() {
             <LiveStatusBadge status="no_camera" />
           </div>
         </div>
+
+        {signalListOpen && (
+          <LiveSignalList
+            addresses={addresses}
+            metrics={metrics}
+            liveCodes={liveCodes}
+            addressBySectionCode={addressBySectionCode}
+            onPick={(id) => {
+              setSignalListOpen(false);
+              handleOpenPopup(id);
+            }}
+            onClose={() => setSignalListOpen(false)}
+          />
+        )}
 
         <LibreMap
           center={BULGARIA_CENTER}
