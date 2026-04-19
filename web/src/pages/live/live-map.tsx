@@ -5,33 +5,21 @@ import type { LiveAddress } from "@/lib/api/live-sections.js";
 import type { LiveMetrics } from "@/lib/api/live-metrics.js";
 
 const SOURCE_ID = "live-addresses";
-const DISC_LAYER = "live-addresses-disc";
-const GLYPH_LAYER = "live-addresses-glyph";
+const DOT_LAYER = "live-addresses-dot";
 const BLINK_LAYER = "live-addresses-blink";
-const DISC_ICON = "live-disc";
-const GLYPH_ICON = "live-camera";
-
-const DISC_SVG = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <circle cx="32" cy="32" r="28" fill="white"/>
-</svg>`.trim();
-
-const GLYPH_SVG = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64">
-  <path fill="white" d="M15 8v-.5a2.5 2.5 0 0 0-2.5-2.5h-7A2.5 2.5 0 0 0 3 7.5v9A2.5 2.5 0 0 0 5.5 19h7a2.5 2.5 0 0 0 2.5-2.5V16l3.7 2.78a1 1 0 0 0 1.6-.8V6.02a1 1 0 0 0-1.6-.8L15 8z"/>
-</svg>`.trim();
 
 /**
- * One camera marker per polling address. A school with 10 rooms is one
- * pin, coloured by the worst-case status of its 10 sections:
- *   - red   → any section is covered / dark / frozen (blinks)
- *   - green → any section is ok or has a live stream
- *   - grey  → no section at this address has any signal
+ * One coloured dot per polling address. Circle layer, not SDF icons —
+ * rasterizing ~7k camera glyphs through canvas + symbol placement is
+ * several seconds of CPU, and the symbol layer occasionally silent-fails
+ * when MapLibre can't read the image blob. Dots are boring but reliable:
+ * the paint pipeline handles 10k+ circles in a single GL draw call.
  *
- * Aggregating at the address keeps MapLibre from stacking identical icons
- * on the same coordinate — the previous per-section layer rendered 11k
- * dots into ~6.9k unique points, which was both slow and visually
- * indistinguishable from silence.
+ * Tones:
+ *   - red   → any section at this address is covered / dark / frozen
+ *             (blinks via a second circle layer with animated opacity)
+ *   - green → any section is ok or has a live stream
+ *   - grey  → no signal yet
  */
 export function LiveMapLayer({
   addresses,
@@ -52,164 +40,93 @@ export function LiveMapLayer({
     if (!map || !isLoaded) return;
     if (map.getSource(SOURCE_ID)) return;
 
-    let cancelled = false;
     let blinkHandle: ReturnType<typeof setInterval> | null = null;
     let blinkOn = true;
 
-    const cleanup = () => {
-      cancelled = true;
-      if (blinkHandle) clearInterval(blinkHandle);
-      try {
-        if (map.getLayer(BLINK_LAYER)) map.removeLayer(BLINK_LAYER);
-        if (map.getLayer(GLYPH_LAYER)) map.removeLayer(GLYPH_LAYER);
-        if (map.getLayer(DISC_LAYER)) map.removeLayer(DISC_LAYER);
-        if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
-        if (map.hasImage(DISC_ICON)) map.removeImage(DISC_ICON);
-        if (map.hasImage(GLYPH_ICON)) map.removeImage(GLYPH_ICON);
-      } catch {
-        /* style already destroyed */
-      }
-    };
+    map.addSource(SOURCE_ID, {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] },
+    });
 
-    Promise.all([loadSdfImage(DISC_SVG), loadSdfImage(GLYPH_SVG)]).then(
-      ([discData, glyphData]) => {
-        if (cancelled || !map || !discData || !glyphData) return;
-        if (!map.hasImage(DISC_ICON)) map.addImage(DISC_ICON, discData, { sdf: true });
-        if (!map.hasImage(GLYPH_ICON)) map.addImage(GLYPH_ICON, glyphData, { sdf: true });
-
-        if (!map.getSource(SOURCE_ID)) {
-          map.addSource(SOURCE_ID, {
-            type: "geojson",
-            data: { type: "FeatureCollection", features: [] },
-          });
-        }
-
-        if (!map.getLayer(DISC_LAYER)) {
-          map.addLayer({
-            id: DISC_LAYER,
-            type: "symbol",
-            source: SOURCE_ID,
-            layout: {
-              "icon-image": DISC_ICON,
-              "icon-allow-overlap": true,
-              "icon-ignore-placement": true,
-              "icon-size": [
-                "interpolate",
-                ["linear"],
-                ["zoom"],
-                6, 0.18,
-                9, 0.3,
-                12, 0.45,
-                15, 0.65,
-              ],
-              "symbol-sort-key": [
-                "match",
-                ["get", "tone"],
-                "red", 0,
-                "green", 1,
-                2,
-              ],
-            },
-            paint: {
-              "icon-color": [
-                "match",
-                ["get", "tone"],
-                "green", "#10b981",
-                "red", "#ce463c",
-                "#9ca3af",
-              ],
-              "icon-opacity": [
-                "match",
-                ["get", "tone"],
-                "grey", 0.7,
-                1,
-              ],
-              "icon-halo-color": "rgba(255,255,255,0.95)",
-              "icon-halo-width": 1,
-            },
-          });
-        }
-
-        if (!map.getLayer(GLYPH_LAYER)) {
-          map.addLayer({
-            id: GLYPH_LAYER,
-            type: "symbol",
-            source: SOURCE_ID,
-            minzoom: 8,
-            layout: {
-              "icon-image": GLYPH_ICON,
-              "icon-allow-overlap": true,
-              "icon-ignore-placement": true,
-              "icon-size": [
-                "interpolate",
-                ["linear"],
-                ["zoom"],
-                8, 0.18,
-                12, 0.32,
-                15, 0.45,
-              ],
-              "symbol-sort-key": [
-                "match",
-                ["get", "tone"],
-                "red", 0,
-                "green", 1,
-                2,
-              ],
-            },
-            paint: {
-              "icon-color": "#ffffff",
-              "icon-opacity": [
-                "match",
-                ["get", "tone"],
-                "grey", 0.85,
-                1,
-              ],
-            },
-          });
-        }
-
-        if (!map.getLayer(BLINK_LAYER)) {
-          map.addLayer(
-            {
-              id: BLINK_LAYER,
-              type: "symbol",
-              source: SOURCE_ID,
-              filter: ["==", ["get", "tone"], "red"],
-              layout: {
-                "icon-image": DISC_ICON,
-                "icon-allow-overlap": true,
-                "icon-ignore-placement": true,
-                "icon-size": [
-                  "interpolate",
-                  ["linear"],
-                  ["zoom"],
-                  6, 0.32,
-                  9, 0.52,
-                  12, 0.85,
-                  15, 1.2,
-                ],
-              },
-              paint: {
-                "icon-color": "#ce463c",
-                "icon-opacity": 0.45,
-              },
-            },
-            DISC_LAYER,
-          );
-        }
-
-        blinkHandle = setInterval(() => {
-          if (!map.getLayer(BLINK_LAYER)) return;
-          blinkOn = !blinkOn;
-          map.setPaintProperty(BLINK_LAYER, "icon-opacity", blinkOn ? 0.45 : 0);
-        }, 650);
+    map.addLayer({
+      id: DOT_LAYER,
+      type: "circle",
+      source: SOURCE_ID,
+      layout: {
+        "circle-sort-key": [
+          "match",
+          ["get", "tone"],
+          "red", 2,
+          "green", 1,
+          0,
+        ],
       },
+      paint: {
+        "circle-radius": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          6, ["match", ["get", "tone"], "grey", 1.5, 3],
+          9, ["match", ["get", "tone"], "grey", 2.5, 5],
+          12, ["match", ["get", "tone"], "grey", 4, 8],
+          15, ["match", ["get", "tone"], "grey", 6, 12],
+        ],
+        "circle-color": [
+          "match",
+          ["get", "tone"],
+          "green", "#10b981",
+          "red", "#ce463c",
+          "#9ca3af",
+        ],
+        "circle-opacity": [
+          "match",
+          ["get", "tone"],
+          "grey", 0.55,
+          0.95,
+        ],
+        "circle-stroke-width": [
+          "match",
+          ["get", "tone"],
+          "grey", 0,
+          1,
+        ],
+        "circle-stroke-color": "rgba(255,255,255,0.9)",
+      },
+    });
+
+    // Red blink — a halo circle under the red dots, opacity toggled on a
+    // timer. Keeping it a separate layer means only red features animate.
+    map.addLayer(
+      {
+        id: BLINK_LAYER,
+        type: "circle",
+        source: SOURCE_ID,
+        filter: ["==", ["get", "tone"], "red"],
+        paint: {
+          "circle-radius": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            6, 6,
+            9, 10,
+            12, 16,
+            15, 22,
+          ],
+          "circle-color": "#ce463c",
+          "circle-opacity": 0.4,
+        },
+      },
+      DOT_LAYER,
     );
 
+    blinkHandle = setInterval(() => {
+      if (!map.getLayer(BLINK_LAYER)) return;
+      blinkOn = !blinkOn;
+      map.setPaintProperty(BLINK_LAYER, "circle-opacity", blinkOn ? 0.4 : 0);
+    }, 650);
+
     const handleClick = (e: MapLibreGL.MapMouseEvent) => {
-      const layers = [BLINK_LAYER, DISC_LAYER, GLYPH_LAYER].filter((id) =>
-        map.getLayer(id),
-      );
+      const layers = [BLINK_LAYER, DOT_LAYER].filter((id) => map.getLayer(id));
       if (layers.length === 0) return;
       const features = map.queryRenderedFeatures(e.point, { layers });
       if (!features.length) return;
@@ -223,19 +140,26 @@ export function LiveMapLayer({
       map.getCanvas().style.cursor = "";
     };
 
-    for (const id of [DISC_LAYER, GLYPH_LAYER, BLINK_LAYER]) {
+    for (const id of [DOT_LAYER, BLINK_LAYER]) {
       map.on("click", id, handleClick);
       map.on("mouseenter", id, handleEnter);
       map.on("mouseleave", id, handleLeave);
     }
 
     return () => {
-      for (const id of [DISC_LAYER, GLYPH_LAYER, BLINK_LAYER]) {
+      if (blinkHandle) clearInterval(blinkHandle);
+      for (const id of [DOT_LAYER, BLINK_LAYER]) {
         map.off("click", id, handleClick);
         map.off("mouseenter", id, handleEnter);
         map.off("mouseleave", id, handleLeave);
       }
-      cleanup();
+      try {
+        if (map.getLayer(BLINK_LAYER)) map.removeLayer(BLINK_LAYER);
+        if (map.getLayer(DOT_LAYER)) map.removeLayer(DOT_LAYER);
+        if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
+      } catch {
+        /* style already destroyed */
+      }
     };
   }, [map, isLoaded]);
 
@@ -264,11 +188,6 @@ export function LiveMapLayer({
   return null;
 }
 
-/**
- * Worst-case aggregate: if any section at this address has a problem, the
- * pin is red. Green wins over grey. Grey only when nothing at all is
- * known.
- */
 export function addressTone(
   address: LiveAddress,
   metrics: LiveMetrics | undefined,
@@ -286,37 +205,4 @@ export function addressTone(
     if (liveCodes.has(code)) anyGreen = true;
   }
   return anyGreen ? "green" : "grey";
-}
-
-/**
- * Rasterize an inline SVG to raw RGBA pixel data. MapLibre's SDF pipeline
- * has rejected HTMLImageElements in some browsers ("could not read blob
- * argument to createImageBitmap") — passing `{ width, height, data }`
- * from a canvas avoids that path entirely and is always safe.
- */
-function loadSdfImage(svg: string): Promise<ImageData | null> {
-  return new Promise((resolve) => {
-    const size = 64;
-    const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-    const img = new Image();
-    img.onload = () => {
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          resolve(null);
-          return;
-        }
-        ctx.clearRect(0, 0, size, size);
-        ctx.drawImage(img, 0, 0, size, size);
-        resolve(ctx.getImageData(0, 0, size, size));
-      } catch {
-        resolve(null);
-      }
-    };
-    img.onerror = () => resolve(null);
-    img.src = url;
-  });
 }
