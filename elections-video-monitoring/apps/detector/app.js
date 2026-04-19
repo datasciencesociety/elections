@@ -481,6 +481,34 @@ elUrl.addEventListener('keydown', e => { if (e.key === 'Enter') startMonitoring(
         phonePopup.classList.remove('open');
       }
     });
+
+    // Listen for contacts from parent (volunteer page)
+    window.addEventListener('message', (e) => {
+      if (!e.data || e.data.type !== 'contacts') return;
+      const contacts = e.data.contacts || [];
+      const ul = phonePopup.querySelector('ul');
+      if (!ul) return;
+      ul.innerHTML = '';
+      if (contacts.length === 0) {
+        const li = document.createElement('li');
+        li.className = 'no-contacts';
+        li.setAttribute('data-i18n', 'call.nodata');
+        li.textContent = typeof t === 'function' ? t('call.nodata') : 'Няма налични контакти';
+        ul.appendChild(li);
+        return;
+      }
+      for (const c of contacts) {
+        const li = document.createElement('li');
+        let text = c.name || '';
+        if (c.role) text += ` (${c.role})`;
+        if (c.phone) {
+          li.innerHTML = `${text}: <a href="tel:${c.phone}">${c.phone}</a>`;
+        } else {
+          li.textContent = text;
+        }
+        ul.appendChild(li);
+      }
+    });
   }
   if (urlParam) {
     elUrl.value = urlParam;
