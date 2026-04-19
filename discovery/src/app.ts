@@ -23,11 +23,11 @@ app.get("/metrics", (c) => {
   if (!blob) return c.text("warming up", 503);
   if (c.req.header("if-none-match") === blob.etag) {
     c.header("ETag", blob.etag);
-    c.header("Cache-Control", "public, max-age=2, s-maxage=2");
+    c.header("Cache-Control", "public, max-age=5, s-maxage=5");
     return c.body(null, 304);
   }
   c.header("ETag", blob.etag);
-  c.header("Cache-Control", "public, max-age=2, s-maxage=2");
+  c.header("Cache-Control", "public, max-age=5, s-maxage=5");
   c.header("Content-Type", "application/json; charset=utf-8");
   const acceptsGz = (c.req.header("accept-encoding") || "").includes("gzip");
   if (acceptsGz) {
@@ -63,8 +63,11 @@ app.post("/register", requireBearer, async (c) => {
   // Fill the new box's capacity immediately rather than waiting for the GC
   // tick — avoids idle time on freshly-registered boxes.
   const { assigned } = assignUnassigned();
-  console.log(`[register] ${ip} capacity=${capacity} immediate=${assigned}`);
-  return c.json({ ok: true, assigned, capacity });
+  // Return the actual work list so the caller can start immediately —
+  // saves a round trip to /assignments/my on startup.
+  const sections = stmt.assignForBox.all(ip);
+  console.log(`[register] ${ip} capacity=${capacity} immediate=${assigned} total=${sections.length}`);
+  return c.json({ ok: true, assigned, capacity, sections });
 });
 
 app.post("/heartbeat", requireBearer, async (c) => {
