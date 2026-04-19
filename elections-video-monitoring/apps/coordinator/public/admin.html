@@ -234,7 +234,10 @@ textarea#bulk-users-json {
     <span><span data-i18n="meta.flagged">Flagged streams:</span> <strong id="flag-count">–</strong></span>
     <span><span data-i18n="meta.updated">Updated:</span> <strong id="last-updated">–</strong></span>
   </div>
-  <button id="lang-toggle" style="font-size:11px;padding:3px 8px;background:#1f2937;color:#9ca3af;border:1px solid #374151;border-radius:4px;cursor:pointer;flex-shrink:0;">EN</button>
+  <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+    <button id="lang-toggle" style="font-size:11px;padding:3px 8px;background:#1f2937;color:#9ca3af;border:1px solid #374151;border-radius:4px;cursor:pointer;">EN</button>
+    <button id="btn-logout" style="font-size:11px;padding:3px 8px;background:#7f1d1d;color:#fca5a5;border:1px solid #991b1b;border-radius:4px;cursor:pointer;">Logout</button>
+  </div>
 </header>
 
 <main>
@@ -566,6 +569,11 @@ async function refreshFlagged() {
 // ── Boot ──────────────────────────────────────────────────────────────────────
 document.getElementById('lang-toggle').addEventListener('click', () => {
   setLang(_lang === 'bg' ? 'en' : 'bg');
+});
+
+document.getElementById('btn-logout').addEventListener('click', async () => {
+  await fetch('/api/logout', { method: 'POST' });
+  window.location.href = '/login';
 });
 
 function onLangChange() {
