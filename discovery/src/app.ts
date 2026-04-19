@@ -56,21 +56,19 @@ app.get("/assignments/my", (c) => {
 // ── Mutating routes (Bearer secret) ────────────────────────────────────────
 app.post("/register", requireBearer, async (c) => {
   const body = await c.req.json().catch(() => ({}));
-  const ip = String(body.ip || "").trim();
+  const ip = c.var.apiUser; // identifier from split key
   const capacity = Number(body.capacity) || 30;
-  if (!ip) return c.json({ error: "ip required" }, 400);
   const now = Date.now();
   stmt.boxUpsert.run(ip, capacity, now, now);
   // Fill the new box's capacity immediately rather than waiting for the GC
   // tick — avoids idle time on freshly-registered boxes.
   const { assigned } = assignUnassigned();
+  console.log(`[register] ${ip} capacity=${capacity} immediate=${assigned}`);
   return c.json({ ok: true, assigned, capacity });
 });
 
 app.post("/heartbeat", requireBearer, async (c) => {
-  const body = await c.req.json().catch(() => ({}));
-  const ip = String(body.ip || "").trim();
-  if (!ip) return c.json({ error: "ip required" }, 400);
+  const ip = c.var.apiUser;
   const result = stmt.boxTouch.run(Date.now(), ip);
   if (result.changes === 0) {
     // Box was GC'd (probably long silence). Tell it to re-register.
@@ -81,14 +79,15 @@ app.post("/heartbeat", requireBearer, async (c) => {
 
 app.post("/deregister", requireBearer, async (c) => {
   const body = await c.req.json().catch(() => ({}));
-  const ip = String(body.ip || "").trim();
+  const ip = c.var.apiUser;
   const drain = body.drain !== false; // default: graceful drain
-  if (!ip) return c.json({ error: "ip required" }, 400);
   if (drain) {
     stmt.boxDrain.run(ip);
+    console.log(`[deregister] ${ip} draining`);
   } else {
     stmt.boxDelete.run(ip);
     const { assigned } = assignUnassigned();
+    console.log(`[deregister] ${ip} hard-removed, reassigned=${assigned}`);
     return c.json({ ok: true, reassigned: assigned });
   }
   return c.json({ ok: true, draining: true });
@@ -98,6 +97,7 @@ app.post("/metrics", requireBearer, async (c) => {
   const body = (await c.req.json().catch(() => null)) as { results?: Array<Partial<MetricRow>> } | null;
   if (!body || !Array.isArray(body.results)) return c.json({ error: "results[] required" }, 400);
   const now = Date.now();
+  const apiUser = c.var.apiUser;
   const rows: MetricRow[] = body.results.map((r) => ({
     section_id: String(r.section_id),
     status: String(r.status || "unknown"),
@@ -106,7 +106,9 @@ app.post("/metrics", requireBearer, async (c) => {
     cover_ratio: typeof r.cover_ratio === "number" ? r.cover_ratio : null,
     frozen_sec: typeof r.frozen_sec === "number" ? r.frozen_sec : null,
     snapshot_url: r.snapshot_url ? String(r.snapshot_url) : null,
-    box_ip: r.box_ip ? String(r.box_ip) : null,
+    // All rows in the batch come from the same caller — tag with the
+    // identifier from their API key rather than trusting body.box_ip.
+    box_ip: apiUser,
     reported_at: now,
   }));
   writeMetricsBatch(rows);
