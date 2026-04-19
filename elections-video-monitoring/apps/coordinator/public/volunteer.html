@@ -601,7 +601,6 @@ const REPORT_INTERVAL_MS = 30_000;
 const HEARTBEAT_INTERVAL_MS = 60_000;
 const CANVAS_W = 320, CANVAS_H = 180;
 const LS_SESSION_KEY = 'volunteer_session_id';
-const LS_USER_ID_KEY  = 'volunteer_user_id';
 const LS_MANUAL_KEY   = 'volunteer_manual_streams';
 
 // ── Fallback metrics (when the HLS proxy is unreachable for a section) ───────
@@ -614,10 +613,7 @@ let metricsBySection = {};
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let SESSION_ID = null;
-// TODO: replace USER_ID with a real user ID provided by the auth layer at login.
-// For now we derive a stable stub from the first session ID and persist it in
-// localStorage so it survives session resets (e.g. stream-count change).
-let USER_ID    = localStorage.getItem(LS_USER_ID_KEY) || null;
+let USER_ID    = (typeof window.CURRENT_USER === 'string' && window.CURRENT_USER) ? window.CURRENT_USER : null;
 let streamStates = [];
 let autoplayBlocked = false;
 let _lastResumed = false;
@@ -645,15 +641,9 @@ async function init() {
 
   SESSION_ID = data.session_id;
   _lastResumed = data.resumed;
-  // Derive stub user ID from last 6 chars of the first session ID; persist so it
-  // stays the same if the session is reset.  Replace with real auth user ID later.
-  if (!USER_ID) {
-    USER_ID = SESSION_ID.slice(-6);
-    localStorage.setItem(LS_USER_ID_KEY, USER_ID);
-  }
   localStorage.setItem(LS_SESSION_KEY, SESSION_ID);
   document.getElementById('session-label').textContent =
-    t(data.resumed ? 'session.resumed' : 'session.new') + ' ' + SESSION_ID.slice(0, 8) + ' · #' + USER_ID;
+    t(data.resumed ? 'session.resumed' : 'session.new') + ' ' + SESSION_ID.slice(0, 8) + ' · ' + USER_ID;
 
   const grid = document.getElementById('stream-grid');
   grid.innerHTML = '';
@@ -1345,7 +1335,7 @@ document.getElementById('btn-logout').addEventListener('click', async () => {
 function onLangChange() {
   if (SESSION_ID) {
     document.getElementById('session-label').textContent =
-      t(_lastResumed ? 'session.resumed' : 'session.new') + ' ' + SESSION_ID.slice(0, 8) + ' · #' + USER_ID;
+      t(_lastResumed ? 'session.resumed' : 'session.new') + ' ' + SESSION_ID.slice(0, 8) + ' · ' + USER_ID;
     document.getElementById('stream-count').textContent =
       tf('monitoring.count', { n: streamStates.length });
   }

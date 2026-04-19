@@ -620,7 +620,7 @@ const server = http.createServer(async (req, res) => {
       // Empty/unset → client boots every card straight into iframe fallback
       // (user's own IP hits evideo directly, metrics from karta endpoint).
       const proxyBase = process.env.PROXY_URL || '';
-      const proxyScript = `<script>window.PROXY_BASE = ${JSON.stringify(proxyBase)};</script>`;
+      const proxyScript = `<script>window.PROXY_BASE = ${JSON.stringify(proxyBase)}; window.CURRENT_USER = ${JSON.stringify(req.user.username)};</script>`;
       fs.readFile(path.join(__dirname, 'public', 'volunteer.html'), 'utf8', (err, html) => {
         if (err) { res.writeHead(404); res.end('Not found'); return; }
         const injected = html.replace('</head>', proxyScript + '\n</head>');
