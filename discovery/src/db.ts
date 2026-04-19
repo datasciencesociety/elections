@@ -74,6 +74,7 @@ export const stmt = {
      ON CONFLICT(id) DO UPDATE SET url = excluded.url, label = excluded.label`
   ),
   sectionCount: db.prepare("SELECT COUNT(*) AS n FROM sections"),
+  sectionsAll: db.prepare("SELECT id, url, label FROM sections ORDER BY id"),
   sectionsUnassigned: db.prepare(
     `SELECT s.id, s.url, s.label FROM sections s
      LEFT JOIN assignments a ON a.section_id = s.id

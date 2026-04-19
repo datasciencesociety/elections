@@ -44,6 +44,16 @@ app.get("/boxes", (c) => {
   return c.json({ boxes: rows, updated_at: Date.now() });
 });
 
+// Full section list (id + evideo URL + label). Stable for minutes —
+// 60s edge cache is plenty. Clients fetch this once on load, then poll
+// /metrics every 5s for live statuses.
+app.get("/sections", (c) => {
+  const rows = stmt.sectionsAll.all();
+  c.header("Cache-Control", "public, max-age=60, s-maxage=60");
+  c.header("Content-Type", "application/json; charset=utf-8");
+  return c.json({ sections: rows, count: rows.length, updated_at: Date.now() });
+});
+
 // For analyzer boxes to discover their work list.
 app.get("/assignments/my", (c) => {
   const ip = c.req.query("ip");
