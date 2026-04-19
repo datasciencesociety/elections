@@ -105,7 +105,6 @@ export function LiveVideoCard({
 
 function VideoArea({
   sectionCode,
-  metric,
   streamUrl,
 }: {
   sectionCode: string;
@@ -125,10 +124,10 @@ function VideoArea({
     );
   }
 
-  if (metric?.snapshot_url) {
-    return <SnapshotImage url={metric.snapshot_url} reportedAt={metric.reported_at} />;
-  }
-
+  // Snapshot URLs from the coordinator are http://<box-ip>/… which the
+  // browser blocks as mixed content on our https site. Rather than leak
+  // that warning, we always show the waiting message when there's no
+  // playable stream URL.
   const beforeCutoff = Date.now() < Date.parse(STREAM_START_ISO);
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-6 text-center">
@@ -159,25 +158,6 @@ function VideoArea({
 }
 
 const STREAM_START_ISO = "2026-04-19T20:00:00+03:00";
-
-function SnapshotImage({ url, reportedAt }: { url: string; reportedAt?: number }) {
-  const [nonce, setNonce] = useState(() => reportedAt ?? Date.now());
-  useEffect(() => {
-    if (reportedAt) setNonce(reportedAt);
-  }, [reportedAt]);
-  useEffect(() => {
-    const t = setInterval(() => setNonce(Date.now()), 60_000);
-    return () => clearInterval(t);
-  }, []);
-  const sep = url.includes("?") ? "&" : "?";
-  return (
-    <img
-      src={`${url}${sep}t=${nonce}`}
-      alt="Последен кадър"
-      className="h-full w-full object-contain"
-    />
-  );
-}
 
 function resolveStatus(
   metric: LiveSectionMetric | undefined,

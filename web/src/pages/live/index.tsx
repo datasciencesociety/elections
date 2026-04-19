@@ -15,7 +15,7 @@ import {
   BULGARIA_CENTER,
   BULGARIA_ZOOM,
 } from "@/pages/anomaly-map/map/constants.js";
-import { LiveMapLayer } from "./live-map.js";
+import { LiveMapLayer, addressTone } from "./live-map.js";
 import { LiveSearch } from "./live-search.js";
 import { LiveSectionPopup } from "./live-section-popup.js";
 import { LiveHoverTooltip } from "./live-hover-tooltip.js";
@@ -143,27 +143,20 @@ export default function Live() {
       ? addressById.get(hoverAddressId) ?? null
       : null;
 
+  // Count marker tones so the header numbers agree with the map: "на живо"
+  // = green dots, "сигнали" = red dots. Previously this counted raw metric
+  // entries, which included sections that don't appear on our map (e.g.
+  // coordinator tests), producing phantom сигнали with no red pin.
   const stats = useMemo(() => {
     let live = 0;
     let flagged = 0;
-    for (const code of liveCodes) {
-      const status = metrics?.[code]?.status;
-      if (status === "covered" || status === "dark" || status === "frozen") {
-        flagged++;
-      } else {
-        live++;
-      }
-    }
-    if (metrics) {
-      for (const [code, m] of Object.entries(metrics)) {
-        if (liveCodes.has(code)) continue;
-        if (m.status === "covered" || m.status === "dark" || m.status === "frozen") {
-          flagged++;
-        }
-      }
+    for (const a of addresses) {
+      const t = addressTone(a, metrics, liveCodes);
+      if (t === "red") flagged++;
+      else if (t === "green") live++;
     }
     return { live, flagged, total: addresses.length };
-  }, [metrics, liveCodes, addresses.length]);
+  }, [metrics, liveCodes, addresses]);
 
   return (
     <div className="flex h-full flex-col md:flex-row">
