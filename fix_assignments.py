@@ -12,11 +12,18 @@ Usage:
   streams_json: scraper output with {section, url, label} entries
   v3_output:    defaults to combined-v3-seed.json
 
-Actions:
-  - Patches assigned_users for all matching sections in seed_json
-  - Adds sections that are in CSV+streams but missing from seed to v3
-  - Writes patched seed_json in-place
-  - Writes v3_output with all entries (patched v2 + new sections)
+Logic:
+  Pass 1 — for every section in the CSV that already exists in seed_json,
+  overwrite its assigned_users with the CSV value. This corrects sections
+  that were seeded without assignments (the 552 "(none)" mismatches).
+
+  Pass 2 — for CSV sections absent from seed_json, look up their URL in
+  streams_json. If found, build a full {section, url, label, assigned_users}
+  entry and collect it for v3. If no URL exists in streams either, log a
+  warning and skip — there is nothing to seed without a URL.
+
+  Output — seed_json is written back in-place (v2 patched). v3_output is
+  the union of patched v2 + newly resolved sections, sorted by section ID.
 """
 
 import csv
