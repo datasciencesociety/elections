@@ -509,6 +509,7 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
   <div class="header-actions">
     <a id="help-link" href="/help" data-i18n="help.link">Help</a>
     <button id="lang-toggle" style="font-size:11px;padding:3px 8px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">EN</button>
+    <button id="btn-logout" style="font-size:11px;padding:3px 8px;background:#7f1d1d;color:#fca5a5;border:1px solid #991b1b;border-radius:4px;cursor:pointer;">Logout</button>
   </div>
 </header>
 
@@ -1221,6 +1222,11 @@ document.addEventListener('fullscreenchange', () => {
 // ── Boot ──────────────────────────────────────────────────────────────────────
 document.getElementById('lang-toggle').addEventListener('click', () => {
   setLang(_lang === 'bg' ? 'en' : 'bg');
+});
+
+document.getElementById('btn-logout').addEventListener('click', async () => {
+  await fetch('/api/logout', { method: 'POST' });
+  window.location.href = '/login';
 });
 
 function onLangChange() {

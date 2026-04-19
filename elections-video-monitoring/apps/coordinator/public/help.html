@@ -69,6 +69,7 @@ main iframe {
   <div class="header-actions">
     <a href="/" data-i18n="help.back">← Back to Monitor</a>
     <button id="lang-toggle">EN</button>
+    <button id="btn-logout" style="background:#7f1d1d;color:#fca5a5;border:1px solid #991b1b;">Logout</button>
   </div>
 </header>
 
@@ -80,6 +81,10 @@ main iframe {
 applyTranslations();
 document.getElementById('lang-toggle').addEventListener('click', () => {
   setLang(_lang === 'bg' ? 'en' : 'bg');
+});
+document.getElementById('btn-logout').addEventListener('click', async () => {
+  await fetch('/api/logout', { method: 'POST' });
+  window.location.href = '/login';
 });
 </script>
 </body>
