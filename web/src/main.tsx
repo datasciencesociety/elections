@@ -16,6 +16,7 @@ import Landing from "./pages/landing.js";
 import { BrowseAbroad, BrowseDistrict } from "./pages/browse.js";
 import ExplorerHelp from "./pages/explorer-help.js";
 import DesignSystem from "./pages/design-system.js";
+import Live from "./pages/live/index.js";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,8 +63,10 @@ createRoot(document.getElementById("root")!).render(
         <AnalyticsTracker />
         <Routes>
           <Route element={<Layout />}>
-            {/* Landing */}
-            <Route path="/" element={<Landing />} />
+            {/* Election day (2026-04-19): land on the live-camera page.
+                Restore `<Landing />` after tonight. */}
+            <Route path="/" element={<Navigate to="/live" replace />} />
+            <Route path="/explore" element={<Landing />} />
 
             {/* Browse drill-down */}
             <Route path="/browse/district/:id" element={<BrowseDistrict />} />
@@ -78,6 +81,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/help/coordinates" element={<MissingCoordinates />} />
             <Route path="/help/explorer" element={<ExplorerHelp />} />
             <Route path="/design-system" element={<DesignSystem />} />
+            <Route path="/live" element={<Live />} />
             {/* Redirect old risk URL to combined sections page */}
             <Route path="/:electionId/risk" element={<RedirectToSections />} />
           </Route>
