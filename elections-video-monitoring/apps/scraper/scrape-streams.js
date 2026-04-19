@@ -97,13 +97,12 @@ async function scrapeOik(page, oikUrl, oikLabel) {
     rawHtml = await page.content();
   }
 
-  // Extract servers map
+  // Extract servers map (old format only; new format embeds full URLs directly)
+  let servers = {};
   const serversMatch = rawHtml.match(/var servers\s*=\s*(\{[^}]+\})/);
-  if (!serversMatch) {
-    log(`  Warning: no servers map found on ${oikUrl}`);
-    return [];
+  if (serversMatch) {
+    try { servers = JSON.parse(serversMatch[1]); } catch {}
   }
-  const servers = JSON.parse(serversMatch[1]);
 
   // Extract each section
   const streams = [];
@@ -122,10 +121,25 @@ async function scrapeOik(page, oikUrl, oikLabel) {
     const location  = nameMatch ? nameMatch[1].trim() : '';
     const label     = `${oikLabel} / ${sik}${location ? ' ' + location : ''}`;
 
-    // Extract all data-vid buttons
-    const btnRe = /data-tour="(\d+)"[^>]*data-vid='([^']+)'/g;
+    // New format: data-vid='["https://..."]' — plain URL array, no data-tour
+    const newBtnRe = /data-vid='([^']+)'/g;
     let bm;
-    while ((bm = btnRe.exec(inner)) !== null) {
+    let pushed = false;
+    while ((bm = newBtnRe.exec(inner)) !== null) {
+      let vid;
+      try { vid = JSON.parse(bm[1]); } catch { continue; }
+      if (Array.isArray(vid) && vid.length > 0 && typeof vid[0] === 'string' && vid[0].startsWith('http')) {
+        // tourFilter doesn't apply — no tour metadata in this format
+        streams.push({ section: sik, url: vid[0], label });
+        pushed = true;
+        break;
+      }
+    }
+    if (pushed) continue;
+
+    // Old format: data-tour="N" data-vid='{"d":[...],"r":[...]}' with servers map
+    const oldBtnRe = /data-tour="(\d+)"[^>]*data-vid='([^']+)'/g;
+    while ((bm = oldBtnRe.exec(inner)) !== null) {
       const tour   = bm[1];
       if (tourFilter && tour !== tourFilter) continue;
 
