@@ -73,6 +73,10 @@ const TRANSLATIONS = {
     'notif.frozen.body': 'No movement detected for {s}s',
     'notif.unavailable': '❌ Stream Unavailable',
     'notif.ended':       '🚨 Stream Ended',
+    // Overlay buttons
+    'btn.signal':        'Report Issue',
+    'btn.call':          'Call',
+    'btn.call.title':    'Contact Numbers',
   },
   bg: {
     'metric.luma':       'Яркост',
@@ -140,6 +144,9 @@ const TRANSLATIONS = {
     'notif.frozen.body': 'Не е открито движение за {s}с',
     'notif.unavailable': '❌ Видеото е недостъпен',
     'notif.ended':       '🚨 Видеото завърши',
+    'btn.signal':        'Подай сигнал',
+    'btn.call':          'Позвъни',
+    'btn.call.title':    'Телефони за контакт',
   },
 };
 

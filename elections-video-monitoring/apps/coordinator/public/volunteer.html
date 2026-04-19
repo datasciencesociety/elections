@@ -346,6 +346,41 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
   from { transform: scaleY(0); }
   to   { transform: scaleY(1); }
 }
+
+/* ── Feature 6: Hide card label ──────────────────────────────────────────── */
+.card-label { display: none; }
+
+/* ── Help link ───────────────────────────────────────────────────────────── */
+.header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+#help-link {
+  font-size: 11px; padding: 3px 8px;
+  background: var(--surface2); color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: 4px;
+  text-decoration: none; cursor: pointer;
+}
+#help-link:hover { color: var(--text); }
+
+/* ── Inspect content wrapper ─────────────────────────────────────────────── */
+#inspect-content {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ── Maximize mode (mobile + landscape phones) ──────────────────────────── */
+@media (max-width: 700px), (pointer: coarse) and (max-height: 600px) {
+  body.maximized #inspect-panel {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    height: 100vh; height: 100dvh;
+    width: 100vw;
+    z-index: 200;
+    transform: none;
+  }
+  body.maximized #sheet-header { display: none; }
+}
 </style>
 </head>
 <body>
@@ -357,7 +392,10 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
     <span id="stream-count"></span>
     <span id="last-report-label"></span>
   </div>
-  <button id="lang-toggle" style="font-size:11px;padding:3px 8px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;flex-shrink:0;">EN</button>
+  <div class="header-actions">
+    <a id="help-link" href="/help" data-i18n="help.link">Help</a>
+    <button id="lang-toggle" style="font-size:11px;padding:3px 8px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">EN</button>
+  </div>
 </header>
 
 <div id="main-layout">
@@ -370,12 +408,14 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
       <div id="sheet-label"></div>
       <button id="sheet-close" aria-label="Close">×</button>
     </div>
-    <div id="inspect-placeholder" data-i18n="inspect.placeholder">← select a stream to inspect</div>
-    <div id="inspect-loading" style="display:none">
-      <div class="iframe-spinner"></div>
-      <div id="inspect-loading-label"></div>
+    <div id="inspect-content">
+      <div id="inspect-placeholder" data-i18n="inspect.placeholder">← select a stream to inspect</div>
+      <div id="inspect-loading" style="display:none">
+        <div class="iframe-spinner"></div>
+        <div id="inspect-loading-label"></div>
+      </div>
+      <iframe id="inspect-frame" allow="autoplay"></iframe>
     </div>
-    <iframe id="inspect-frame" allow="autoplay"></iframe>
   </div>
 </div>
 
@@ -596,7 +636,7 @@ function setupStream(stream) {
 
   card.addEventListener('click', function () {
     const t = Math.floor(state.video.currentTime) || 0;
-    const url = `${DETECTOR_URL}?url=${encodeURIComponent(stream.url)}&t=${t}`;
+    const url = `${DETECTOR_URL}?url=${encodeURIComponent(stream.url)}&t=${t}&audio=1`;
 
     document.querySelectorAll('.stream-card').forEach(c => c.classList.remove('selected'));
     card.classList.add('selected');
@@ -613,7 +653,6 @@ function setupStream(stream) {
       frame.style.display = 'block';
     };
     frame.src = url;
-
     document.getElementById('sheet-label').textContent = stream.label;
     document.getElementById('inspect-panel').classList.add('sheet-open');
   });
@@ -842,15 +881,68 @@ function escHtml(s) {
 }
 
 // ── Bottom-sheet inspect (mobile) ─────────────────────────────────────────
-document.getElementById('sheet-close').addEventListener('click', () => {
+function closeInspect() {
+  if (screen.orientation && screen.orientation.unlock) {
+    try { screen.orientation.unlock(); } catch (_) {}
+  }
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  document.body.classList.remove('maximized');
+  const frame = document.getElementById('inspect-frame');
+  if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'maximize', value: false }, '*');
   document.getElementById('inspect-panel').classList.remove('sheet-open');
   document.querySelectorAll('.stream-card').forEach(c => c.classList.remove('selected'));
-  const frame = document.getElementById('inspect-frame');
   frame.onload = null;
   frame.src = '';
   frame.style.display = 'none';
   document.getElementById('inspect-loading').style.display = 'none';
   document.getElementById('inspect-placeholder').style.display = '';
+}
+document.getElementById('sheet-close').addEventListener('click', closeInspect);
+
+// ── Maximize toggle (driven by detector iframe via postMessage) ───────────
+let _maximizing = false;
+function toggleMaximize() {
+  if (_maximizing) return;
+  _maximizing = true;
+  try {
+    const isMax = document.body.classList.contains('maximized');
+    const frame = document.getElementById('inspect-frame');
+    if (isMax) {
+      if (screen.orientation && screen.orientation.unlock) {
+        try { screen.orientation.unlock(); } catch (_) {}
+      }
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      document.body.classList.remove('maximized');
+      if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'maximize', value: false }, '*');
+    } else {
+      const isMobile = window.matchMedia('(max-width: 700px), (pointer: coarse) and (max-height: 600px)').matches;
+      if (isMobile && document.getElementById('inspect-panel').requestFullscreen) {
+        document.getElementById('inspect-panel').requestFullscreen().then(() => {
+          if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(() => {});
+          }
+        }).catch(() => {});
+      }
+      document.body.classList.add('maximized');
+      if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'maximize', value: true }, '*');
+    }
+  } finally {
+    setTimeout(() => { _maximizing = false; }, 100);
+  }
+}
+window.addEventListener('message', (e) => {
+  if (e.origin !== window.location.origin) return;
+  if (e.data && e.data.type === 'toggle-maximize') toggleMaximize();
+});
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && document.body.classList.contains('maximized')) {
+    if (screen.orientation && screen.orientation.unlock) {
+      try { screen.orientation.unlock(); } catch (_) {}
+    }
+    document.body.classList.remove('maximized');
+    const frame = document.getElementById('inspect-frame');
+    if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'maximize', value: false }, '*');
+  }
 });
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
@@ -866,6 +958,9 @@ function onLangChange() {
       tf('monitoring.count', { n: streamStates.length });
   }
   for (const state of streamStates) updateCard(state);
+  // Sync language to detector iframe
+  const frame = document.getElementById('inspect-frame');
+  if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'set-lang', lang: _lang }, '*');
 }
 
 applyTranslations();

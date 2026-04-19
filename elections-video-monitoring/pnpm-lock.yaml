@@ -20,6 +20,8 @@ importers:
 
   apps/detector: {}
 
+  apps/proxy: {}
+
   apps/scraper:
     devDependencies:
       '@playwright/test':

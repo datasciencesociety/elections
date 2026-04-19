@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-i18n="help.page.title">Help — Election Stream Monitor</title>
+<script src="i18n.js"></script>
+<style>
+:root {
+  --bg: #0d0d0d;
+  --surface: #1a1a1a;
+  --border: #2a2a2a;
+  --text: #e0e0e0;
+  --text-muted: #888;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f1f5f9;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --text-muted: #64748b;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+header h1 { font-size: 15px; font-weight: 600; }
+.header-actions { display: flex; align-items: center; gap: 6px; }
+.header-actions a, .header-actions button {
+  font-size: 11px; padding: 3px 8px;
+  background: var(--surface); color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: 4px;
+  text-decoration: none; cursor: pointer;
+}
+.header-actions a:hover, .header-actions button:hover { color: var(--text); }
+main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+main iframe {
+  flex: 1;
+  border: none;
+  width: 100%;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1 data-i18n="help.page.title">Help — Election Stream Monitor</h1>
+  <div class="header-actions">
+    <a href="/" data-i18n="help.back">← Back to Monitor</a>
+    <button id="lang-toggle">EN</button>
+  </div>
+</header>
+
+<main>
+  <iframe src="https://docs.google.com/document/d/1zD2Ku4wGWuQ76HAK9p3p-CuTSEu0irOTWPtMCS8d4Bg/preview" sandbox="allow-scripts allow-same-origin"></iframe>
+</main>
+
+<script>
+applyTranslations();
+document.getElementById('lang-toggle').addEventListener('click', () => {
+  setLang(_lang === 'bg' ? 'en' : 'bg');
+});
+</script>
+</body>
+</html>
