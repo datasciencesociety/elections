@@ -108,6 +108,14 @@ const stmt = {
   deleteSession:     db.prepare('DELETE FROM sessions WHERE id = ?'),
   deleteAssignments: db.prepare('DELETE FROM assignments WHERE session_id = ?'),
   sessionExists:     db.prepare('SELECT 1 FROM sessions WHERE id = ?'),
+  sessionForHb:      db.prepare('SELECT user_id FROM sessions WHERE id = ?'),
+  preAssignedForUser: db.prepare(`
+    SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
+    WHERE s.enabled = 1
+      AND s.assigned_users IS NOT NULL
+      AND (',' || s.assigned_users || ',') LIKE ('%,' || ? || ',%')
+    ORDER BY s.section ASC
+  `),
   insertReport:      db.prepare(`
     INSERT INTO reports (session_id, stream_id, ts, status, cover_ratio, frozen_sec, luma)
     VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -378,18 +386,6 @@ function pickStreamsForSession(activeCutoff, limit = 16, userId = null) {
 
 const SESSION_TTL = parseInt(process.env.SESSION_TTL_MS, 10) || 8 * 60 * 60 * 1000; // 8 h default
 
-// Returns assigned-to-user streams not already present in existingIds.
-function missingAssignedStreams(existingIds, userId) {
-  if (!userId) return [];
-  const ph = existingIds.length ? existingIds.map(() => '?').join(',') : 'NULL';
-  return db.prepare(`
-    SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
-    WHERE s.enabled = 1
-      AND s.assigned_users IS NOT NULL
-      AND (',' || s.assigned_users || ',') LIKE ('%,' || ? || ',%')
-      AND s.id NOT IN (${ph})
-  `).all(userId, ...existingIds);
-}
 
 function enrichWithContacts(streams) {
   return streams.map(s => ({ ...s, contacts: stmt.streamContacts.all(s.id) }));
@@ -459,7 +455,8 @@ async function handleHeartbeat(req, res) {
   const { session_id } = body;
   if (!session_id) { json(res, 400, { error: 'session_id required' }); return; }
 
-  if (!stmt.sessionExists.get(session_id)) {
+  const session = stmt.sessionForHb.get(session_id);
+  if (!session) {
     // Session expired or was never created — tell client to reinitialise
     json(res, 200, { ok: false, reinit: true });
     return;
@@ -469,7 +466,15 @@ async function handleHeartbeat(req, res) {
   stmt.heartbeat.run(now, session_id);
   const cleaned = txCleanDead(now - SESSION_TTL);
   if (cleaned > 0) console.log(`Cleaned ${cleaned} dead session(s)`);
-  json(res, 200, { ok: true });
+
+  const reply = { ok: true };
+  if (session.user_id) {
+    const preAssigned = stmt.preAssignedForUser.all(session.user_id);
+    for (const s of preAssigned) stmt.insertAssignment.run(session_id, s.id, now);
+    reply.assigned_streams = enrichWithContacts(preAssigned);
+  }
+
+  json(res, 200, reply);
 }
 
 async function handleReport(req, res) {

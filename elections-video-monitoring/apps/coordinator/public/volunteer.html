@@ -596,7 +596,8 @@ const DARK_THRESHOLD = 15;
 const MOTION_THRESHOLD = 5;
 const CHECK_INTERVAL_MS = 30_000;
 const REPORT_INTERVAL_MS = 30_000;
-const HEARTBEAT_INTERVAL_MS = 60_000;
+const HEARTBEAT_BASE_MS = 60_000;
+const HEARTBEAT_JITTER_MS = 30_000;
 const CANVAS_W = 320, CANVAS_H = 180;
 const LS_SESSION_KEY = 'volunteer_session_id';
 const LS_MANUAL_KEY   = 'volunteer_manual_streams';
@@ -616,6 +617,12 @@ let streamStates = [];
 let autoplayBlocked = false;
 let _lastResumed = false;
 let intervals = [];
+let _heartbeatTimer = null;
+
+function scheduleHeartbeat() {
+  clearTimeout(_heartbeatTimer);
+  _heartbeatTimer = setTimeout(sendHeartbeat, HEARTBEAT_BASE_MS + Math.random() * HEARTBEAT_JITTER_MS);
+}
 
 // ── Session init ──────────────────────────────────────────────────────────────
 async function init() {
@@ -674,9 +681,9 @@ async function init() {
     setInterval(checkAllStreams, CHECK_INTERVAL_MS),
     setInterval(updateThumbnails, 1_000),
     setInterval(sendReport, REPORT_INTERVAL_MS),
-    setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS),
     setInterval(pollMetrics, METRICS_POLL_INTERVAL_MS)
   );
+  scheduleHeartbeat();
   pollMetrics(); // seed immediately so fallback cards don't wait 5s for status
 }
 
@@ -788,19 +795,10 @@ function setupStream(stream) {
         body: JSON.stringify({ session_id: SESSION_ID, stream_id: state.id }),
       });
     } catch (_) {}
-    // Close inspect panel if this stream was focused
-    if (card.classList.contains('selected')) closeInspect();
-    // Tear down (video/canvas absent for fallback cards)
-    if (state.video) {
-      try { state.video.pause(); state.video.src = ''; state.video.load(); state.video.remove(); } catch (_) {}
-    }
-    if (state.canvas) state.canvas.remove();
-    card.remove();
-    streamStates = streamStates.filter(s => s !== state);
-    // Remove from localStorage manual list
     const saved = new Set(JSON.parse(localStorage.getItem(LS_MANUAL_KEY) || '[]'));
     saved.delete(state.id);
     localStorage.setItem(LS_MANUAL_KEY, JSON.stringify([...saved]));
+    teardownStream(state);
     document.getElementById('stream-count').textContent =
       tf('monitoring.count', { n: streamStates.length });
   });
@@ -860,7 +858,18 @@ function setupStream(stream) {
     document.getElementById('inspect-panel').classList.add('sheet-open');
   });
 
+  state.card = card;
   document.getElementById('stream-grid').appendChild(card);
+}
+
+function teardownStream(state) {
+  if (state.card?.classList.contains('selected')) closeInspect();
+  if (state.video) {
+    try { state.video.pause(); state.video.src = ''; state.video.load(); state.video.remove(); } catch (_) {}
+  }
+  if (state.canvas) state.canvas.remove();
+  state.card?.remove();
+  streamStates = streamStates.filter(s => s !== state);
 }
 
 // ── Thumbnails ────────────────────────────────────────────────────────────────
@@ -1082,14 +1091,43 @@ async function sendHeartbeat() {
     const data = await res.json().catch(() => ({}));
     if (data.reinit) { reinitSession(); return; }
     document.getElementById('vol-indicator').classList.add('active');
+    if (USER_ID && data.assigned_streams) {
+      const assignedIds = new Set(data.assigned_streams.map(s => s.id));
+      // Add new server-assigned streams
+      const currentIds = new Set(streamStates.map(s => s.id));
+      for (const stream of data.assigned_streams) {
+        if (currentIds.has(stream.id)) continue;
+        setupStream(stream);
+        const newState = streamStates[streamStates.length - 1];
+        if (newState?.video) newState.video.play().catch(() => {});
+      }
+      // Remove server-assigned streams that are no longer in the assignment
+      const toRemove = streamStates.filter(s => !s.manual && !assignedIds.has(s.id));
+      for (const s of toRemove) {
+        fetch('/api/session/streams', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: SESSION_ID, stream_id: s.id }),
+        }).catch(() => {});
+        teardownStream(s);
+      }
+      if (toRemove.length || data.assigned_streams.some(s => !currentIds.has(s.id))) {
+        document.getElementById('stream-count').textContent =
+          tf('monitoring.count', { n: streamStates.length });
+      }
+    }
   } catch (e) {
     document.getElementById('vol-indicator').classList.remove('active');
   }
+  scheduleHeartbeat();
 }
 
 // Recover immediately when the tab comes back to the foreground
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && SESSION_ID) sendHeartbeat();
+  if (document.visibilityState === 'visible' && SESSION_ID) {
+    clearTimeout(_heartbeatTimer);
+    sendHeartbeat();
+  }
 });
 
 // Soft reinit: keeps stream IDs in localStorage so the same sections are reclaimed

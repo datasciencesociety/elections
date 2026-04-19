@@ -22,6 +22,8 @@ module.exports = defineConfig({
     env: {
       PORT: '3001',
       DB_PATH: '/tmp/coordinator-test.db',
+      ADMIN_USER: 'testadmin',
+      ADMIN_PASS: 'testpass123',
     },
   },
   projects: [
