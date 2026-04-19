@@ -47,10 +47,29 @@ db.exec(`
     reported_at  INTEGER NOT NULL
   );
 
-  CREATE INDEX IF NOT EXISTS idx_assignments_box  ON assignments(box_ip);
-  CREATE INDEX IF NOT EXISTS idx_metrics_reported ON metrics(reported_at);
-  CREATE INDEX IF NOT EXISTS idx_boxes_draining   ON boxes(draining);
-  CREATE INDEX IF NOT EXISTS idx_boxes_heartbeat  ON boxes(last_heartbeat);
+  -- Append-only log of every metric report we accept. The metrics table
+  -- above keeps one row per section for fast /video/metrics serving;
+  -- this one keeps the full stream for post-election analysis. id is
+  -- the implicit sqlite rowid — no sqlite_sequence overhead.
+  CREATE TABLE IF NOT EXISTS metric_events (
+    id           INTEGER PRIMARY KEY,
+    section_id   TEXT NOT NULL,
+    status       TEXT NOT NULL,
+    luma         REAL,
+    motion_diff  REAL,
+    cover_ratio  REAL,
+    frozen_sec   REAL,
+    snapshot_url TEXT,
+    box_ip       TEXT,
+    reported_at  INTEGER NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_assignments_box   ON assignments(box_ip);
+  CREATE INDEX IF NOT EXISTS idx_metrics_reported  ON metrics(reported_at);
+  CREATE INDEX IF NOT EXISTS idx_boxes_draining    ON boxes(draining);
+  CREATE INDEX IF NOT EXISTS idx_boxes_heartbeat   ON boxes(last_heartbeat);
+  CREATE INDEX IF NOT EXISTS idx_me_reported       ON metric_events(reported_at);
+  CREATE INDEX IF NOT EXISTS idx_me_section_time   ON metric_events(section_id, reported_at);
 `);
 
 export const stmt = {
@@ -126,6 +145,12 @@ export const stmt = {
     `SELECT section_id, status, luma, motion_diff, cover_ratio, frozen_sec, snapshot_url, box_ip, reported_at
      FROM metrics`
   ),
+
+  // Append-only log write — fires alongside every upsert.
+  eventInsert: db.prepare(
+    `INSERT INTO metric_events (section_id, status, luma, motion_diff, cover_ratio, frozen_sec, snapshot_url, box_ip, reported_at)
+     VALUES (@section_id, @status, @luma, @motion_diff, @cover_ratio, @frozen_sec, @snapshot_url, @box_ip, @reported_at)`
+  ),
 };
 
 export interface MetricRow {
@@ -140,6 +165,19 @@ export interface MetricRow {
   reported_at: number;
 }
 
+// `metrics` gets one row per section (fast snapshot for /video/metrics);
+// `metric_events` gets every individual report appended for post-election
+// analysis. Both writes live in the same transaction so the snapshot and
+// the log can never disagree.
 export const writeMetricsBatch = db.transaction((rows: MetricRow[]) => {
-  for (const r of rows) stmt.metricUpsert.run(r);
+  for (const r of rows) {
+    stmt.metricUpsert.run(r);
+    stmt.eventInsert.run(r);
+  }
 });
+
+export const upsertSectionsBatch = db.transaction(
+  (rows: Array<{ id: string; url: string; label: string | null }>) => {
+    for (const r of rows) stmt.sectionUpsert.run(r.id, r.url, r.label);
+  }
+);
