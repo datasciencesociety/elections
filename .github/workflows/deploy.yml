@@ -22,7 +22,9 @@ jobs:
             pnpm install --frozen-lockfile
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }} pnpm --filter web build
             rm -rf /opt/elections/og-cache/*
-            rm -rf /var/cache/nginx/*
+            # Nginx cache dir is www-data-owned; use the exact path our
+            # NOPASSWD sudoers rule allows (see /etc/sudoers.d/elections).
+            sudo rm -rf /var/cache/nginx/elections/*
             sudo systemctl restart elections-api
             # Restart discovery only if the unit exists (installed once via
             # discovery/scripts/bootstrap.sh). Safe no-op on fresh clones.
