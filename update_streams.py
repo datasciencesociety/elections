@@ -33,16 +33,9 @@ import os
 import re
 import sys
 
-WATCH_DEFAULT = [
-    "011300023", "014000069", "014200024", "014400027", "014400028",
-    "014400029", "014400030", "062000027", "063500003", "063500012",
-    "130800026", "130800027", "130800028", "130800029", "130800059",
-    "131400011", "132000027", "132100024",
-]
-
-args       = [a for a in sys.argv[1:] if not a.startswith("--")]
-watch_arg  = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--watch=")), None)
-watch_list = watch_arg.split(",") if watch_arg else WATCH_DEFAULT
+args      = [a for a in sys.argv[1:] if not a.startswith("--")]
+watch_arg = next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--watch=")), None)
+# watch_list resolved after CSV is loaded (defaults to all CSV sections with a user)
 
 if len(args) < 3:
     print("Usage: python3 update_streams.py <new_scrape.json> <seed_json> <csv_file> [out]")
@@ -76,6 +69,12 @@ with open(CSV_FILE, encoding="utf-8") as f:
 
 scrape_index = {s["section"]: s for s in new_scrape}
 seed_index   = {e["section"]: e for e in seed}
+
+# Default watch list: CSV sections that have a user but no URL in the current seed
+watch_list = (
+    watch_arg.split(",") if watch_arg
+    else [s for s, u in csv_map.items() if u and s not in seed_index]
+)
 
 # Deep-copy seed so we can mutate
 import copy
