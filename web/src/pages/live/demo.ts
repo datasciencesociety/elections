@@ -1,4 +1,4 @@
-import type { LiveSection } from "@/lib/api/live-sections.js";
+import type { LiveAddress } from "@/lib/api/live-sections.js";
 import type {
   LiveMetrics,
   LiveSectionMetric,
@@ -12,16 +12,16 @@ import type {
  * frozen, unknown) on the map and in the video cards before the real
  * stream goes live.
  *
- * Picks sections by seeded index steps, so the set is stable across
- * re-renders but still scattered across Bulgaria. Abroad is not sampled
- * because it was filtered out of the static section list.
+ * We sample **sections** (not addresses) so that multi-room polling
+ * locations get a mix of states — the school in your neighbourhood can
+ * have one camera live and another covered, which is exactly the scenario
+ * the UI needs to handle. Indices are evenly-spaced so reds and greens are
+ * scattered across Bulgaria, not clumped into a single oblast.
  */
 
 const SAMPLE_VIDEO_URL =
   "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
-/** How many sections get each status in the demo. Tuned so reds are
- *  scattered enough to be obvious without drowning the map in alerts. */
 const DISTRIBUTION: { status: LiveStatus; count: number; hasStream: boolean }[] = [
   { status: "ok", count: 180, hasStream: true }, // "live" cards
   { status: "ok", count: 120, hasStream: false }, // working cam, no stream yet
@@ -36,22 +36,26 @@ export interface DemoResult {
   streamBySection: Map<string, string>;
 }
 
-export function buildDemo(sections: LiveSection[]): DemoResult {
+export function buildDemo(addresses: LiveAddress[]): DemoResult {
   const metrics: LiveMetrics = {};
   const streamBySection = new Map<string, string>();
-  if (sections.length === 0) return { metrics, streamBySection };
+  if (addresses.length === 0) return { metrics, streamBySection };
+
+  // Flatten to a section-code list so we pick sections, not addresses.
+  const codes: string[] = [];
+  for (const a of addresses) {
+    for (const c of a.section_codes) codes.push(c);
+  }
 
   const total = DISTRIBUTION.reduce((n, d) => n + d.count, 0);
-  // Evenly-spaced indices through the section list — spreads reds and
-  // greens across the map instead of clumping them into one oblast.
-  const picked = pickEvenly(sections, total);
+  const picked = pickEvenly(codes, total);
 
   let cursor = 0;
   const now = Date.now();
   for (const { status, count, hasStream } of DISTRIBUTION) {
     for (let i = 0; i < count; i++) {
-      const section = picked[cursor++];
-      if (!section) break;
+      const code = picked[cursor++];
+      if (!code) break;
       const metric: LiveSectionMetric = {
         status,
         reported_at: now - Math.floor(Math.random() * 60_000),
@@ -66,21 +70,21 @@ export function buildDemo(sections: LiveSection[]): DemoResult {
       } else if (status === "frozen") {
         metric.frozen_sec = 10 + Math.random() * 120;
       }
-      metrics[section.section_code] = metric;
-      if (hasStream) streamBySection.set(section.section_code, SAMPLE_VIDEO_URL);
+      metrics[code] = metric;
+      if (hasStream) streamBySection.set(code, SAMPLE_VIDEO_URL);
     }
   }
 
   return { metrics, streamBySection };
 }
 
-function pickEvenly(sections: LiveSection[], n: number): LiveSection[] {
-  if (n >= sections.length) return sections.slice();
-  const step = sections.length / n;
-  const out: LiveSection[] = [];
+function pickEvenly<T>(items: T[], n: number): T[] {
+  if (n >= items.length) return items.slice();
+  const step = items.length / n;
+  const out: T[] = [];
   for (let i = 0; i < n; i++) {
-    const idx = Math.min(sections.length - 1, Math.floor(i * step));
-    out.push(sections[idx]);
+    const idx = Math.min(items.length - 1, Math.floor(i * step));
+    out.push(items[idx]);
   }
   return out;
 }

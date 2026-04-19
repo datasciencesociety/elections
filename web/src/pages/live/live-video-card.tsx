@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
-import { X, ExternalLink, ChartBar } from "lucide-react";
-import type { LiveSection } from "@/lib/api/live-sections.js";
+import { X, ExternalLink, ChartBar, ChevronLeft } from "lucide-react";
+import type { LiveAddress } from "@/lib/api/live-sections.js";
 import type { LiveSectionMetric } from "@/lib/api/live-metrics.js";
 import { cn } from "@/lib/utils";
 import { LiveStatusBadge, statusTone, type UiStatus } from "./live-status-badge.js";
@@ -9,45 +9,53 @@ import { LiveNearbyChips } from "./live-nearby-chips.js";
 import type { LiveMetrics } from "@/lib/api/live-metrics.js";
 
 /**
- * One video/snapshot panel per opened section. The card keeps three things
- * visible at all times — where the section is, what its camera is showing,
- * and how people can drill deeper (full profile, CIK protocol link). The
- * player is best-effort: if the stream URL doesn't exist yet we render the
- * last JPEG snapshot, refreshed on every metrics tick.
+ * One card per opened polling address. Two view modes:
+ *   - Single section (either the address has one section, or the viewer
+ *     drilled in): shows the video / snapshot / waiting message plus a
+ *     back button to return to the picker.
+ *   - Picker: a compact list of every section at this address, each with
+ *     its own live status. Clicking a row switches to the single-section
+ *     view for that code.
  *
- * When the status flips to a red state we pulse the border once. No looping
- * animation — a single cue on a real event.
+ * The card always carries header (address, close), footer (past results
+ * link), and nearby chips — so election-day context is never one click
+ * away. Red-state transitions pulse the border once so observers notice.
  */
-export function LiveVideoCard({
-  section,
-  metric,
-  streamUrl,
-  latestElectionId,
-  allSections,
+export function LiveAddressCard({
+  address,
   metrics,
   streamBySection,
-  openCodes,
+  allAddresses,
+  openIds,
+  liveCodes,
   onOpen,
-  onOpenMany,
   onClose,
 }: {
-  section: LiveSection;
-  metric: LiveSectionMetric | undefined;
-  streamUrl: string | undefined;
-  latestElectionId: string | number | undefined;
-  allSections: LiveSection[];
+  address: LiveAddress;
   metrics: LiveMetrics | undefined;
   streamBySection: Map<string, string>;
-  openCodes: string[];
-  onOpen: (code: string) => void;
-  onOpenMany: (codes: string[]) => void;
+  allAddresses: LiveAddress[];
+  openIds: string[];
+  liveCodes: Set<string>;
+  onOpen: (addressId: string) => void;
   onClose: () => void;
 }) {
-  const uiStatus = resolveStatus(metric, streamUrl);
-  const tone = statusTone(uiStatus);
+  const single = address.section_codes.length === 1;
+  // Picker shows on multi-section addresses until the user picks a code.
+  const [activeCode, setActiveCode] = useState<string | null>(
+    single ? address.section_codes[0] : null,
+  );
+
+  const activeMetric = activeCode ? metrics?.[activeCode] : undefined;
+  const activeStream = activeCode ? streamBySection.get(activeCode) : undefined;
+  const uiStatus: UiStatus | null = activeCode
+    ? resolveStatus(activeMetric, activeStream)
+    : null;
+  const tone = uiStatus ? statusTone(uiStatus) : null;
+
+  // Pulse-once on any transition into a red state.
   const [flash, setFlash] = useState(false);
   const prevToneRef = useRef(tone);
-
   useEffect(() => {
     if (prevToneRef.current !== "red" && tone === "red") {
       setFlash(true);
@@ -57,7 +65,9 @@ export function LiveVideoCard({
     prevToneRef.current = tone;
   }, [tone]);
 
-  const reportedAgo = metric?.reported_at ? secondsAgo(metric.reported_at) : null;
+  const reportedAgo = activeMetric?.reported_at
+    ? secondsAgo(activeMetric.reported_at)
+    : null;
 
   return (
     <article
@@ -70,13 +80,32 @@ export function LiveVideoCard({
       <header className="flex items-start justify-between gap-2 border-b border-border px-3 py-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
+            {!single && activeCode && (
+              <button
+                type="button"
+                onClick={() => setActiveCode(null)}
+                className="inline-flex items-center gap-0.5 rounded text-2xs font-medium uppercase tracking-eyebrow text-muted-foreground transition-colors hover:text-foreground"
+                aria-label="Обратно към списъка със секции"
+              >
+                <ChevronLeft size={12} />
+                секции
+              </button>
+            )}
             <span className="font-mono text-xs font-semibold tabular-nums text-foreground">
-              {section.section_code}
+              {activeCode ?? address.section_codes[0]}
             </span>
-            <LiveStatusBadge status={uiStatus} />
+            {!single && (
+              <span className="rounded bg-muted px-1.5 py-0.5 text-3xs font-medium uppercase tracking-wide text-muted-foreground">
+                {address.section_codes.length} секции
+              </span>
+            )}
+            {uiStatus && <LiveStatusBadge status={uiStatus} />}
           </div>
-          <p className="mt-0.5 truncate text-xs text-muted-foreground" title={section.address}>
-            {section.address}
+          <p
+            className="mt-0.5 truncate text-xs text-muted-foreground"
+            title={address.address}
+          >
+            {address.address}
           </p>
         </div>
         <button
@@ -89,63 +118,107 @@ export function LiveVideoCard({
         </button>
       </header>
 
-      {/* Media */}
-      <div className="relative aspect-video w-full bg-black">
-        <VideoArea metric={metric} streamUrl={streamUrl} />
-      </div>
+      {/* Body: picker or video */}
+      {activeCode ? (
+        <>
+          <div className="relative aspect-video w-full bg-black">
+            <VideoArea metric={activeMetric} streamUrl={activeStream} />
+          </div>
 
-      {/* Meta + actions */}
-      <div className="flex flex-col gap-2 px-3 py-2">
-        {reportedAgo != null && (
-          <p className="text-3xs uppercase tracking-eyebrow text-muted-foreground">
-            обновено преди {reportedAgo} сек.
-          </p>
-        )}
-        <div className="flex flex-wrap gap-2">
-          {latestElectionId != null && (
-            <Link
-              to={`/section/${section.section_code}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
-            >
-              <ChartBar size={12} />
-              Минали резултати
-            </Link>
-          )}
-          {streamUrl && (
-            <a
-              href={streamUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
-            >
-              <ExternalLink size={12} />
-              Отвори стрийма
-            </a>
-          )}
-        </div>
-      </div>
+          <div className="flex flex-col gap-2 px-3 py-2">
+            {reportedAgo != null && (
+              <p className="text-3xs uppercase tracking-eyebrow text-muted-foreground">
+                обновено преди {reportedAgo} сек.
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <Link
+                to={`/section/${activeCode}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
+              >
+                <ChartBar size={12} />
+                Минали резултати
+              </Link>
+              {activeStream && (
+                <a
+                  href={activeStream}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
+                >
+                  <ExternalLink size={12} />
+                  Отвори стрийма
+                </a>
+              )}
+            </div>
+          </div>
+        </>
+      ) : (
+        <SectionPicker
+          address={address}
+          metrics={metrics}
+          streamBySection={streamBySection}
+          onPick={setActiveCode}
+        />
+      )}
 
       <LiveNearbyChips
-        target={section}
-        allSections={allSections}
+        target={address}
+        allAddresses={allAddresses}
         metrics={metrics}
-        streamBySection={streamBySection}
-        openCodes={openCodes}
+        liveCodes={liveCodes}
+        openIds={openIds}
         onOpen={onOpen}
-        onOpenMany={onOpenMany}
       />
     </article>
   );
 }
 
-/**
- * Cameras start publishing after the polling stations close at 20:00 Sofia
- * time. ISO-8601 with an explicit `+03:00` anchors the cutoff to Sofia EEST
- * regardless of where the viewer is.
- */
-const STREAM_START_ISO = "2026-04-19T20:00:00+03:00";
+function SectionPicker({
+  address,
+  metrics,
+  streamBySection,
+  onPick,
+}: {
+  address: LiveAddress;
+  metrics: LiveMetrics | undefined;
+  streamBySection: Map<string, string>;
+  onPick: (code: string) => void;
+}) {
+  return (
+    <div className="flex flex-col px-3 py-2">
+      <p className="text-3xs font-medium uppercase tracking-eyebrow text-muted-foreground">
+        {address.section_codes.length} секции на този адрес
+      </p>
+      <ul className="mt-2 divide-y divide-border/60 rounded-md border border-border">
+        {address.section_codes.map((code) => {
+          const status = resolveStatus(metrics?.[code], streamBySection.get(code));
+          return (
+            <li key={code}>
+              <button
+                type="button"
+                onClick={() => onPick(code)}
+                className="flex w-full items-center justify-between gap-3 px-2.5 py-1.5 text-left transition-colors hover:bg-secondary/50"
+              >
+                <span className="font-mono text-xs font-semibold tabular-nums text-foreground">
+                  {code}
+                </span>
+                <div className="flex items-center gap-2">
+                  <LiveStatusBadge status={status} />
+                  <span className="text-score-high text-2xs font-medium uppercase tracking-eyebrow">
+                    виж →
+                  </span>
+                </div>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
 
 function VideoArea({
   metric,
@@ -154,8 +227,6 @@ function VideoArea({
   metric: LiveSectionMetric | undefined;
   streamUrl: string | undefined;
 }) {
-  // Live stream takes priority. If it can't play, the browser shows the
-  // poster (snapshot) and we still get useful signal.
   if (streamUrl) {
     return (
       <video
@@ -175,8 +246,6 @@ function VideoArea({
     return <SnapshotImage url={metric.snapshot_url} reportedAt={metric.reported_at} />;
   }
 
-  // No stream and no snapshot — explain why, differentiated by whether
-  // the official broadcast window has opened yet.
   const beforeCutoff = Date.now() < Date.parse(STREAM_START_ISO);
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-6 text-center">
@@ -206,11 +275,8 @@ function VideoArea({
   );
 }
 
-/**
- * Refresh the snapshot once per polling window by bumping a cache-busting
- * query param tied to `reportedAt`. If the metrics payload didn't update the
- * timestamp we still pull once a minute as a safety net.
- */
+const STREAM_START_ISO = "2026-04-19T20:00:00+03:00";
+
 function SnapshotImage({ url, reportedAt }: { url: string; reportedAt?: number }) {
   const [nonce, setNonce] = useState(() => reportedAt ?? Date.now());
   useEffect(() => {

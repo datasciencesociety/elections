@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { getLiveSections, type LiveSection } from "../api/live-sections.js";
+import { getLiveAddresses, type LiveAddress } from "../api/live-sections.js";
 
 /**
- * Load the flattened CIK polling-section list once per session. The file is
+ * Load the per-address polling index once per session. The file is
  * static, so we mark it fresh forever and never refetch.
  */
-export function useLiveSections() {
-  return useQuery<LiveSection[]>({
-    queryKey: ["live-sections"],
-    queryFn: getLiveSections,
+export function useLiveAddresses() {
+  return useQuery<LiveAddress[]>({
+    queryKey: ["live-addresses"],
+    queryFn: getLiveAddresses,
     staleTime: Infinity,
     gcTime: Infinity,
   });

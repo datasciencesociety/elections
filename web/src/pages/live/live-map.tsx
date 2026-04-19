@@ -1,23 +1,16 @@
 import { useEffect, useRef } from "react";
 import type MapLibreGL from "maplibre-gl";
 import { useMap } from "@/components/ui/map";
-import type { LiveSection } from "@/lib/api/live-sections.js";
+import type { LiveAddress } from "@/lib/api/live-sections.js";
 import type { LiveMetrics } from "@/lib/api/live-metrics.js";
 
-const SOURCE_ID = "live-sections";
-const DISC_LAYER = "live-sections-disc";
-const GLYPH_LAYER = "live-sections-glyph";
-const BLINK_LAYER = "live-sections-blink";
+const SOURCE_ID = "live-addresses";
+const DISC_LAYER = "live-addresses-disc";
+const GLYPH_LAYER = "live-addresses-glyph";
+const BLINK_LAYER = "live-addresses-blink";
 const DISC_ICON = "live-disc";
 const GLYPH_ICON = "live-camera";
 
-/**
- * Two SDF masks are loaded instead of one because MapLibre's SDF pipeline
- * only tints a single silhouette. Stacking a coloured disc below a white
- * camera glyph gives us a two-tone "pin" with one tint per feature — and
- * lets the blink layer pulse only the disc, which reads better than
- * flashing the glyph.
- */
 const DISC_SVG = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
   <circle cx="32" cy="32" r="28" fill="white"/>
@@ -29,28 +22,27 @@ const GLYPH_SVG = `
 </svg>`.trim();
 
 /**
- * One camera marker per polling section, colour-coded by camera status.
- *   - green disc + white camera → "ok" / "live" stream is up
- *   - red disc + white camera   → "covered" / "dark" / "frozen" — blinks
- *   - grey disc + white camera  → no metrics, no stream yet
+ * One camera marker per polling address. A school with 10 rooms is one
+ * pin, coloured by the worst-case status of its 10 sections:
+ *   - red   → any section is covered / dark / frozen (blinks)
+ *   - green → any section is ok or has a live stream
+ *   - grey  → no section at this address has any signal
  *
- * The blink is a separate disc layer filtered to red tones. The green and
- * grey base stays stable — only the "something is wrong" markers animate.
- *
- * MapLibre only accepts a single zoom-based expression per property, so
- * `icon-size` interpolates on zoom at the top level and chooses per-tone
- * values inside each stop.
+ * Aggregating at the address keeps MapLibre from stacking identical icons
+ * on the same coordinate — the previous per-section layer rendered 11k
+ * dots into ~6.9k unique points, which was both slow and visually
+ * indistinguishable from silence.
  */
 export function LiveMapLayer({
-  sections,
+  addresses,
   metrics,
   liveCodes,
   onClick,
 }: {
-  sections: LiveSection[];
+  addresses: LiveAddress[];
   metrics: LiveMetrics | undefined;
   liveCodes: Set<string>;
-  onClick: (code: string) => void;
+  onClick: (addressId: string) => void;
 }) {
   const { map, isLoaded } = useMap();
   const onClickRef = useRef(onClick);
@@ -92,7 +84,6 @@ export function LiveMapLayer({
           });
         }
 
-        // Base disc — coloured by tone.
         if (!map.getLayer(DISC_LAYER)) {
           map.addLayer({
             id: DISC_LAYER,
@@ -102,10 +93,6 @@ export function LiveMapLayer({
               "icon-image": DISC_ICON,
               "icon-allow-overlap": true,
               "icon-ignore-placement": true,
-              // Grey discs match the live-disc size so the camera glyph
-              // has the same padding ring on every tone — grey is
-              // differentiated by colour and opacity, not by being
-              // smaller. Green/red stay the same.
               "icon-size": [
                 "interpolate",
                 ["linear"],
@@ -143,8 +130,6 @@ export function LiveMapLayer({
           });
         }
 
-        // White camera glyph on top. Hidden at very low zoom where the disc
-        // is already tiny — adding the glyph there just adds noise.
         if (!map.getLayer(GLYPH_LAYER)) {
           map.addLayer({
             id: GLYPH_LAYER,
@@ -183,8 +168,6 @@ export function LiveMapLayer({
           });
         }
 
-        // Red blink layer — a duplicated disc rendered larger under the red
-        // tones, opacity toggled on a timer for a pulse effect.
         if (!map.getLayer(BLINK_LAYER)) {
           map.addLayer(
             {
@@ -230,8 +213,8 @@ export function LiveMapLayer({
       if (layers.length === 0) return;
       const features = map.queryRenderedFeatures(e.point, { layers });
       if (!features.length) return;
-      const code = features[0].properties?.section_code as string | undefined;
-      if (code) onClickRef.current(code);
+      const id = features[0].properties?.id as string | undefined;
+      if (id) onClickRef.current(id);
     };
     const handleEnter = () => {
       map.getCanvas().style.cursor = "pointer";
@@ -256,52 +239,55 @@ export function LiveMapLayer({
     };
   }, [map, isLoaded]);
 
-  // Update feature data whenever metrics tick or the section list changes.
   useEffect(() => {
     if (!map || !isLoaded) return;
     const source = map.getSource(SOURCE_ID) as MapLibreGL.GeoJSONSource | undefined;
     if (!source) return;
 
-    const features = sections
-      .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lon))
-      .map((s) => ({
+    const features = addresses
+      .filter((a) => Number.isFinite(a.lat) && Number.isFinite(a.lon))
+      .map((a) => ({
         type: "Feature" as const,
         geometry: {
           type: "Point" as const,
-          coordinates: [s.lon, s.lat] as [number, number],
+          coordinates: [a.lon, a.lat] as [number, number],
         },
         properties: {
-          section_code: s.section_code,
-          tone: tone(s.section_code, metrics, liveCodes),
+          id: a.id,
+          tone: addressTone(a, metrics, liveCodes),
         },
       }));
 
     source.setData({ type: "FeatureCollection", features });
-  }, [map, isLoaded, sections, metrics, liveCodes]);
+  }, [map, isLoaded, addresses, metrics, liveCodes]);
 
   return null;
 }
 
-function tone(
-  code: string,
+/**
+ * Worst-case aggregate: if any section at this address has a problem, the
+ * pin is red. Green wins over grey. Grey only when nothing at all is
+ * known.
+ */
+export function addressTone(
+  address: LiveAddress,
   metrics: LiveMetrics | undefined,
   liveCodes: Set<string>,
 ): "green" | "red" | "grey" {
-  const m = metrics?.[code];
-  if (m) {
-    if (m.status === "ok") return "green";
-    if (m.status === "covered" || m.status === "dark" || m.status === "frozen")
-      return "red";
+  let anyGreen = false;
+  for (const code of address.section_codes) {
+    const m = metrics?.[code];
+    if (m) {
+      if (m.status === "covered" || m.status === "dark" || m.status === "frozen") {
+        return "red";
+      }
+      if (m.status === "ok") anyGreen = true;
+    }
+    if (liveCodes.has(code)) anyGreen = true;
   }
-  if (liveCodes.has(code)) return "green";
-  return "grey";
+  return anyGreen ? "green" : "grey";
 }
 
-/**
- * Rasterize an inline SVG to an HTMLImageElement suitable for
- * `map.addImage(..., { sdf: true })`. The shape must be white on
- * transparent so MapLibre builds the SDF from its alpha mask.
- */
 function loadSdfImage(svg: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;

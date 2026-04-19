@@ -2,13 +2,12 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import type MapLibreGL from "maplibre-gl";
 import { Map as LibreMap } from "@/components/ui/map";
-import { useLiveSections } from "@/lib/hooks/use-live-sections.js";
+import { useLiveAddresses } from "@/lib/hooks/use-live-sections.js";
 import {
   useLiveMetrics,
   useLiveStreamsDirectory,
 } from "@/lib/hooks/use-live-metrics.js";
-import { useElections } from "@/lib/hooks/use-elections.js";
-import type { LiveSection } from "@/lib/api/live-sections.js";
+import type { LiveAddress } from "@/lib/api/live-sections.js";
 import type { LiveStreamEntry } from "@/lib/api/live-metrics.js";
 import { buildDemo } from "./demo.js";
 
@@ -22,32 +21,30 @@ import { LiveVideoPanel } from "./live-video-panel.js";
 import { LiveStatusBadge } from "./live-status-badge.js";
 
 /**
- * Election-day live camera page. Public can find their polling section on
- * the map or search by address, then open the CIK livestream in a side
- * drawer. Multiple panels can be open at once — observers want to watch
- * several rooms in parallel.
+ * Election-day live camera page. Public can find their polling address on
+ * the map or search by address/section code, then open the CIK
+ * livestream in a side drawer. Multiple cards can be open at once — the
+ * drawer grows columns as needed.
  *
- * This page is intentionally temporary. After 2026-04-19 we either delete
- * it or date-gate it; no URL-state persistence for the open-panels list,
- * no deep linking, no history.
+ * This page is temporary: routed at `/` as the home for 2026-04-19.
+ * After tonight we either delete it or date-gate the redirect.
  *
  * Data flow:
- *   - Polling-section index → static JSON, loaded once (`useLiveSections`).
- *   - Per-section camera health → 5s poll of `/video/metrics`.
- *   - Active stream URLs → 5s poll of `/video/sections`. Source of truth
- *     for "can I play a stream right now".
+ *   - Polling-address index → static JSON, loaded once (useLiveAddresses).
+ *   - Per-section camera health → 5 s poll of /video/metrics.
+ *   - Active stream URLs → 5 s poll of /video/sections.
+ *   - ?demo=1 → replaces both with synthetic data so every state can be
+ *     previewed.
  */
 export default function Live() {
-  const { data: sections = [], isLoading: sectionsLoading } = useLiveSections();
+  const { data: addresses = [], isLoading: addressesLoading } = useLiveAddresses();
   const { data: liveMetrics } = useLiveMetrics();
   const { data: streamsDir } = useLiveStreamsDirectory();
-  const { data: elections = [] } = useElections();
-  const latestElectionId = elections[0]?.id;
 
   const [searchParams] = useSearchParams();
   const demoMode = searchParams.get("demo") === "1";
 
-  const [openCodes, setOpenCodes] = useState<string[]>([]);
+  const [openIds, setOpenIds] = useState<string[]>([]);
   const mapRef = useRef<MapLibreGL.Map | null>(null);
 
   const realStreamBySection = useMemo(() => {
@@ -63,12 +60,9 @@ export default function Live() {
     return m;
   }, [streamsDir]);
 
-  // Demo mode — `?demo=1` replaces /video/metrics and /video/sections with
-  // synthetic data covering every camera state. Re-computed only when the
-  // section list resolves, so the sample set is stable across clicks.
   const demo = useMemo(
-    () => (demoMode ? buildDemo(sections) : null),
-    [demoMode, sections],
+    () => (demoMode ? buildDemo(addresses) : null),
+    [demoMode, addresses],
   );
   const metrics = demo?.metrics ?? liveMetrics;
   const streamBySection = demo?.streamBySection ?? realStreamBySection;
@@ -78,57 +72,40 @@ export default function Live() {
     [streamBySection],
   );
 
-  const sectionByCode = useMemo(() => {
-    const m = new Map<string, LiveSection>();
-    for (const s of sections) m.set(s.section_code, s);
+  const addressById = useMemo(() => {
+    const m = new Map<string, LiveAddress>();
+    for (const a of addresses) m.set(a.id, a);
     return m;
-  }, [sections]);
+  }, [addresses]);
 
-  const openSections = openCodes
-    .map((c) => sectionByCode.get(c))
-    .filter((s): s is LiveSection => !!s);
+  const openAddresses = openIds
+    .map((id) => addressById.get(id))
+    .filter((a): a is LiveAddress => !!a);
 
   const handleOpen = useCallback(
-    (code: string) => {
-      const section = sectionByCode.get(code);
-      if (!section) return;
-      setOpenCodes((prev) =>
-        prev.includes(code) ? prev : [code, ...prev],
-      );
+    (id: string) => {
+      const address = addressById.get(id);
+      if (!address) return;
+      setOpenIds((prev) => (prev.includes(id) ? prev : [id, ...prev]));
       const map = mapRef.current;
-      if (map && Number.isFinite(section.lat) && Number.isFinite(section.lon)) {
-        // Zoom to neighborhood level (~12) not building level — the user
-        // usually wants to see the picked section *and* its neighbours, not
-        // a single pin filling the viewport.
+      if (
+        map &&
+        Number.isFinite(address.lat) &&
+        Number.isFinite(address.lon)
+      ) {
+        // Zoom to neighbourhood level so surrounding markers stay visible.
         map.easeTo({
-          center: [section.lon, section.lat],
+          center: [address.lon, address.lat],
           zoom: Math.max(map.getZoom(), 12),
           duration: 700,
         });
       }
     },
-    [sectionByCode],
-  );
-
-  const handleOpenMany = useCallback(
-    (codes: string[]) => {
-      setOpenCodes((prev) => {
-        const seen = new Set(prev);
-        const additions: string[] = [];
-        for (const c of codes) {
-          if (!seen.has(c)) {
-            additions.push(c);
-            seen.add(c);
-          }
-        }
-        return additions.length ? [...additions, ...prev] : prev;
-      });
-    },
-    [],
+    [addressById],
   );
 
   const handleClose = useCallback(
-    (code: string) => setOpenCodes((prev) => prev.filter((c) => c !== code)),
+    (id: string) => setOpenIds((prev) => prev.filter((x) => x !== id)),
     [],
   );
 
@@ -151,42 +128,38 @@ export default function Live() {
         }
       }
     }
-    return { live, flagged, total: sections.length };
-  }, [metrics, liveCodes, sections.length]);
+    return { live, flagged, total: addresses.length };
+  }, [metrics, liveCodes, addresses.length]);
 
   return (
     <div className="flex h-full flex-col md:flex-row">
-      {/* Map column */}
       <div className="relative flex-1 overflow-hidden">
-        {/* Title block + search. Mobile: full-width top bar, compact,
-            inline eyebrow · title so the floating chrome doesn't eat the
-            map. Desktop: floating card with display-size title. */}
         <div className="absolute left-3 right-3 top-3 z-10 flex flex-col gap-2 md:right-auto md:w-[min(460px,calc(100%-14rem))]">
           <div className="rounded-md border border-border bg-background/95 px-3 py-1.5 shadow-sm backdrop-blur md:py-2">
-            {/* Mobile: single tight line */}
             <p className="flex items-baseline gap-2 font-display text-sm font-medium leading-tight tracking-tight text-foreground md:hidden">
               <span className="text-2xs font-medium uppercase tracking-eyebrow text-muted-foreground">
                 19.04
               </span>
               Народно събрание · на живо
             </p>
-            {/* Desktop: full eyebrow + display title */}
             <p className="hidden text-2xs font-medium uppercase tracking-eyebrow text-muted-foreground md:block">
               19 април 2026 · на живо
+              {demoMode && (
+                <span className="ml-2 rounded bg-score-high/10 px-1.5 py-0.5 text-3xs uppercase tracking-wide text-score-high">
+                  демо
+                </span>
+              )}
             </p>
             <h1 className="mt-0.5 hidden font-display font-medium leading-tight tracking-tight text-foreground md:block md:text-2xl">
               Избори за народни представители
             </h1>
           </div>
-          <LiveSearch sections={sections} onPick={(s) => handleOpen(s.section_code)} />
+          <LiveSearch addresses={addresses} onPick={(a) => handleOpen(a.id)} />
         </div>
 
-        {/* Stats + legend chip — desktop only. On mobile we'd be fighting
-            the title for the top strip and the user cares about the map,
-            not a live counter. */}
         <div className="absolute right-3 top-3 z-10 hidden flex-col items-end gap-1.5 md:flex">
           <div className="rounded-md border border-border bg-card/95 px-2.5 py-1.5 font-mono text-2xs tabular-nums text-muted-foreground shadow-sm backdrop-blur">
-            {sectionsLoading ? (
+            {addressesLoading ? (
               "…"
             ) : (
               <>
@@ -200,7 +173,7 @@ export default function Live() {
                 <span className="text-foreground">
                   {stats.total.toLocaleString("bg-BG")}
                 </span>{" "}
-                секции
+                адреса
               </>
             )}
           </div>
@@ -215,11 +188,11 @@ export default function Live() {
           center={BULGARIA_CENTER}
           zoom={BULGARIA_ZOOM}
           className="h-full w-full"
-          loading={sectionsLoading}
+          loading={addressesLoading}
           ref={mapRef}
         >
           <LiveMapLayer
-            sections={sections}
+            addresses={addresses}
             metrics={metrics}
             liveCodes={liveCodes}
             onClick={handleOpen}
@@ -228,14 +201,13 @@ export default function Live() {
       </div>
 
       <LiveVideoPanel
-        openSections={openSections}
-        openCodes={openCodes}
-        allSections={sections}
+        openAddresses={openAddresses}
+        openIds={openIds}
+        allAddresses={addresses}
         metrics={metrics}
         streamBySection={streamBySection}
-        latestElectionId={latestElectionId}
+        liveCodes={liveCodes}
         onOpen={handleOpen}
-        onOpenMany={handleOpenMany}
         onClose={handleClose}
       />
     </div>

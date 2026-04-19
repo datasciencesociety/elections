@@ -1,27 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
-import type { LiveSection } from "@/lib/api/live-sections.js";
+import type { LiveAddress } from "@/lib/api/live-sections.js";
 
 /**
- * Autocomplete for polling-section codes and addresses. Candidates are the
- * flattened CIK list (~12k rows, already in memory via React Query), so we
- * match client-side with a normalized substring check: lowercase, strip
- * punctuation, tokenize, every token must hit either `address` or
- * `section_code`.
- *
- * This is intentionally separate from the app's main `section-search-input`,
- * which queries the API and is scoped to our analytical universe. The
- * election-day `/live` page should also find polling places that aren't in
- * our DB yet (abroad, newly added) — so the source of truth here is the
- * CIK JSON.
+ * Autocomplete for polling addresses. Matches lowercase-normalized tokens
+ * against the address string and the section codes that share it, so a
+ * viewer can type "елен" → "ЖК ЕЛЕНОВО" or "010300084" → the specific
+ * school that hosts that section. One match per address, no duplicates.
  */
 export function LiveSearch({
-  sections,
+  addresses,
   onPick,
-  placeholder = "Търсене на секция: адрес, училище, номер...",
+  placeholder = "Търсене: адрес, училище, номер на секция...",
 }: {
-  sections: LiveSection[];
-  onPick: (section: LiveSection) => void;
+  addresses: LiveAddress[];
+  onPick: (address: LiveAddress) => void;
   placeholder?: string;
 }) {
   const [query, setQuery] = useState("");
@@ -41,25 +34,25 @@ export function LiveSearch({
 
   const results = useMemo(() => {
     const q = normalize(query);
-    if (q.length < 2) return [] as LiveSection[];
+    if (q.length < 2) return [] as LiveAddress[];
     const tokens = q.split(/\s+/).filter(Boolean);
-    const out: LiveSection[] = [];
-    for (const s of sections) {
-      const haystack = `${s.section_code} ${normalize(s.address)}`;
+    const out: LiveAddress[] = [];
+    for (const a of addresses) {
+      const haystack = `${a.section_codes.join(" ")} ${normalize(a.address)}`;
       if (tokens.every((t) => haystack.includes(t))) {
-        out.push(s);
+        out.push(a);
         if (out.length >= 30) break;
       }
     }
     return out;
-  }, [sections, query]);
+  }, [addresses, query]);
 
   useEffect(() => {
     setActiveIdx(0);
   }, [results]);
 
-  function pick(section: LiveSection) {
-    onPick(section);
+  function pick(a: LiveAddress) {
+    onPick(a);
     setQuery("");
     setFocused(false);
     inputRef.current?.blur();
@@ -126,13 +119,13 @@ export function LiveSearch({
               Няма намерени секции.
             </div>
           ) : (
-            results.map((s, idx) => (
+            results.map((a, idx) => (
               <button
-                key={s.section_code}
+                key={a.id}
                 type="button"
                 role="option"
                 aria-selected={idx === activeIdx}
-                onClick={() => pick(s)}
+                onClick={() => pick(a)}
                 onMouseEnter={() => setActiveIdx(idx)}
                 className={`flex w-full flex-col items-start gap-0.5 border-b border-border/40 px-3 py-2 text-left last:border-b-0 ${
                   idx === activeIdx ? "bg-secondary/70" : "hover:bg-secondary/40"
@@ -140,10 +133,15 @@ export function LiveSearch({
               >
                 <div className="flex w-full items-baseline gap-2">
                   <span className="font-mono text-xs font-semibold tabular-nums text-foreground">
-                    {s.section_code}
+                    {a.section_codes[0]}
+                    {a.section_codes.length > 1 && (
+                      <span className="ml-1 text-3xs font-medium text-muted-foreground">
+                        +{a.section_codes.length - 1}
+                      </span>
+                    )}
                   </span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {s.address}
+                    {a.address}
                   </span>
                 </div>
               </button>

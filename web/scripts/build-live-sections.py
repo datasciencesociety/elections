@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-"""Flatten the CIK polling-place index into a per-section static JSON.
+"""Slim the CIK polling-place index into a per-address static JSON.
 
 Input:  ../.internal/external-coords/cik-map-pe202604.json
         { count, rows: [{ rik, section_codes[], address, lat, lon, confirmed }] }
 
 Output: public/data/sections-pe202604.json
-        [{ section_code, rik, address, lat, lon }]
+        [{ id, rik, address, lat, lon, section_codes[] }]
 
-Each polling address hosts 1..N sections — one row per section code so the
-frontend can key the map layer by `section_code` and match the live metrics
-endpoint one-to-one.
+One row per physical polling location. Dropping to address-level cuts the
+marker count by ~40% (7,401 addresses vs 11,903 sections) so MapLibre isn't
+stacking 10 icons on one pixel — a school with 10 rooms is one pin, not
+ten. `id` is the first section_code so the UI has a stable React key.
+Section-level detail lives in `section_codes[]` and is used when the user
+clicks into a card.
 """
 
 from __future__ import annotations
@@ -29,29 +32,35 @@ def main() -> None:
 
     out: list[dict] = []
     skipped_abroad = 0
+    total_sections = 0
     for row in data["rows"]:
         # RIK 32 is the abroad district. There are no CIK cameras there,
         # so the /live map has nothing to render for those sections.
         if row["rik"] == 32:
             skipped_abroad += len(row["section_codes"])
             continue
-        for code in row["section_codes"]:
-            out.append(
-                {
-                    "section_code": code,
-                    "rik": row["rik"],
-                    "address": row["address"],
-                    "lat": row["lat"],
-                    "lon": row["lon"],
-                }
-            )
+        codes = sorted(row["section_codes"])
+        total_sections += len(codes)
+        out.append(
+            {
+                "id": codes[0],
+                "rik": row["rik"],
+                "address": row["address"],
+                "lat": row["lat"],
+                "lon": row["lon"],
+                "section_codes": codes,
+            }
+        )
 
     DST.parent.mkdir(parents=True, exist_ok=True)
     with DST.open("w") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
 
     print(f"{SRC} -> {DST}")
-    print(f"{len(data['rows'])} addresses, {len(out)} sections ({skipped_abroad} abroad skipped)")
+    print(
+        f"{len(out)} addresses, {total_sections} sections "
+        f"({skipped_abroad} abroad skipped)"
+    )
 
 
 if __name__ == "__main__":
