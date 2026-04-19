@@ -9,8 +9,6 @@ import {
   statusTone,
   type UiStatus,
 } from "./live-status-badge.js";
-import { LiveNearbyChips } from "./live-nearby-chips.js";
-import type { LiveMetrics } from "@/lib/api/live-metrics.js";
 
 /**
  * One card per watched section code. The video is an `<iframe>` rather
@@ -28,24 +26,12 @@ export function LiveVideoCard({
   address,
   metric,
   streamUrl,
-  metrics,
-  streamBySection,
-  allAddresses,
-  liveCodes,
-  watchedAddressIds,
-  onOpenPopup,
   onClose,
 }: {
   sectionCode: string;
   address: LiveAddress | undefined;
   metric: LiveSectionMetric | undefined;
   streamUrl: string | undefined;
-  metrics: LiveMetrics | undefined;
-  streamBySection: Map<string, string>;
-  allAddresses: LiveAddress[];
-  liveCodes: Set<string>;
-  watchedAddressIds: string[];
-  onOpenPopup: (addressId: string) => void;
   onClose: () => void;
 }) {
   const uiStatus = resolveStatus(metric, streamUrl);
@@ -133,18 +119,6 @@ export function LiveVideoCard({
           )}
         </div>
       </div>
-
-      {address && (
-        <LiveNearbyChips
-          target={address}
-          allAddresses={allAddresses}
-          metrics={metrics}
-          streamBySection={streamBySection}
-          liveCodes={liveCodes}
-          watchedAddressIds={watchedAddressIds}
-          onOpenPopup={onOpenPopup}
-        />
-      )}
     </article>
   );
 }

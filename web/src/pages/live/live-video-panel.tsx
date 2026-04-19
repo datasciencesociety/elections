@@ -3,56 +3,49 @@ import type { LiveAddress } from "@/lib/api/live-sections.js";
 import type { LiveMetrics } from "@/lib/api/live-metrics.js";
 import { LiveVideoCard } from "./live-video-card.js";
 
-const CARD_WIDTH_PX = 360;
-const GAP_PX = 12;
 const CARD_HEIGHT_ESTIMATE_PX = 420;
 const VERTICAL_CHROME_PX = 120;
+/** Keep this much viewport reserved for the map before the panel
+ *  eats it — prevents the page from horizontally scrolling. */
+const MIN_MAP_WIDTH_PX = 420;
 
 /**
- * Sidebar with one card per watched section. Width grows with the number
- * of cards — one card shows a 360 px column, not a 50 vw slab that leaves
- * the map squished. Columns only multiply when cards won't fit
- * vertically, and max out at half the viewport before the user starts
- * scrolling.
+ * Sidebar with one card per watched section. Cards flow top-to-bottom in
+ * column 1 until they'd overflow the viewport height, then a new column
+ * opens to the right. If columns exceed the viewport budget, the panel
+ * itself horizontally scrolls — the page never does.
+ *
+ * Ordering: the most recently added section is always the first item in
+ * the array, so it lands in the top slot of column 1.
  */
 export function LiveVideoPanel({
   watchCodes,
   addressBySectionCode,
-  allAddresses,
   metrics,
   streamBySection,
-  liveCodes,
-  watchedAddressIds,
-  onOpenPopup,
   onClose,
 }: {
   watchCodes: string[];
   addressBySectionCode: Map<string, LiveAddress>;
-  allAddresses: LiveAddress[];
   metrics: LiveMetrics | undefined;
   streamBySection: Map<string, string>;
-  liveCodes: Set<string>;
-  watchedAddressIds: string[];
-  onOpenPopup: (addressId: string) => void;
   onClose: (code: string) => void;
 }) {
-  const { cardsPerCol, cols } = useGridShape(watchCodes.length);
+  const cardsPerCol = useCardsPerCol();
 
   if (watchCodes.length === 0) return null;
 
-  const desktopWidthPx = cols * CARD_WIDTH_PX + (cols - 1) * GAP_PX + 24;
-
   return (
     <aside
-      className="flex w-full shrink-0 flex-col overflow-auto border-t border-border bg-background/95 p-3 backdrop-blur max-h-[60vh] md:h-full md:max-h-none md:max-w-[50vw] md:w-[var(--panel-width)] md:border-l md:border-t-0"
+      className="flex w-full shrink-0 flex-col overflow-auto border-t border-border bg-background/95 p-3 backdrop-blur max-h-[60vh] md:h-full md:max-h-none md:w-auto md:max-w-[calc(100vw-var(--min-map-width))] md:border-l md:border-t-0 md:overflow-x-auto md:overflow-y-hidden"
       style={
         {
-          ["--panel-width" as string]: `${desktopWidthPx}px`,
           ["--panel-rows" as string]: String(cardsPerCol),
+          ["--min-map-width" as string]: `${MIN_MAP_WIDTH_PX}px`,
         } as CSSProperties
       }
     >
-      <div className="grid gap-3 md:[grid-auto-flow:column] md:[grid-template-rows:repeat(var(--panel-rows),min-content)]">
+      <div className="grid gap-3 md:h-full md:auto-cols-[360px] md:grid-flow-col md:[grid-template-rows:repeat(var(--panel-rows),minmax(0,1fr))]">
         {watchCodes.map((code) => (
           <LiveVideoCard
             key={code}
@@ -60,12 +53,6 @@ export function LiveVideoPanel({
             address={addressBySectionCode.get(code)}
             metric={metrics?.[code]}
             streamUrl={streamBySection.get(code)}
-            metrics={metrics}
-            streamBySection={streamBySection}
-            allAddresses={allAddresses}
-            liveCodes={liveCodes}
-            watchedAddressIds={watchedAddressIds}
-            onOpenPopup={onOpenPopup}
             onClose={() => onClose(code)}
           />
         ))}
@@ -74,33 +61,24 @@ export function LiveVideoPanel({
   );
 }
 
-function useGridShape(count: number): { cardsPerCol: number; cols: number } {
-  const [shape, setShape] = useState(() => computeShape(count));
+/** How many cards stack per column on desktop before the grid wraps to
+ *  a new column. Based on viewport height so the user doesn't get
+ *  vertical scroll inside the panel. */
+function useCardsPerCol(): number {
+  const [n, setN] = useState(computeCardsPerCol);
   useEffect(() => {
-    setShape(computeShape(count));
-  }, [count]);
-  useEffect(() => {
-    const onResize = () => setShape(computeShape(count));
+    const onResize = () => setN(computeCardsPerCol());
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [count]);
-  return shape;
+  }, []);
+  return n;
 }
 
-function computeShape(count: number): { cardsPerCol: number; cols: number } {
-  if (typeof window === "undefined") return { cardsPerCol: 2, cols: 1 };
+function computeCardsPerCol(): number {
+  if (typeof window === "undefined") return 2;
   const usableH = Math.max(
     CARD_HEIGHT_ESTIMATE_PX,
     window.innerHeight - VERTICAL_CHROME_PX,
   );
-  const cardsPerCol = Math.max(1, Math.floor(usableH / CARD_HEIGHT_ESTIMATE_PX));
-  const maxCols = Math.max(
-    1,
-    Math.floor((window.innerWidth * 0.5) / (CARD_WIDTH_PX + GAP_PX)),
-  );
-  const cols = Math.min(
-    maxCols,
-    Math.max(1, Math.ceil(Math.max(1, count) / cardsPerCol)),
-  );
-  return { cardsPerCol, cols };
+  return Math.max(1, Math.floor(usableH / CARD_HEIGHT_ESTIMATE_PX));
 }

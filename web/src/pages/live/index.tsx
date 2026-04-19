@@ -92,15 +92,6 @@ export default function Live() {
     return m;
   }, [addresses]);
 
-  const watchedAddressIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const code of watchCodes) {
-      const a = addressBySectionCode.get(code);
-      if (a) ids.add(a.id);
-    }
-    return Array.from(ids);
-  }, [watchCodes, addressBySectionCode]);
-
   const handleOpenPopup = useCallback(
     (id: string) => {
       const address = addressById.get(id);
@@ -253,12 +244,8 @@ export default function Live() {
       <LiveVideoPanel
         watchCodes={watchCodes}
         addressBySectionCode={addressBySectionCode}
-        allAddresses={addresses}
         metrics={metrics}
         streamBySection={streamBySection}
-        liveCodes={liveCodes}
-        watchedAddressIds={watchedAddressIds}
-        onOpenPopup={handleOpenPopup}
         onClose={handleClose}
       />
     </div>
