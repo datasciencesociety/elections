@@ -42,6 +42,16 @@ function hashPassword(password) {
 }
 
 /**
+ * Hash a plaintext password with bcrypt (cost 10) — async version.
+ * Use this for bulk operations to avoid blocking the event loop.
+ * @param {string} password
+ * @returns {Promise<string>} bcrypt hash
+ */
+function hashPasswordAsync(password) {
+  return bcrypt.hash(password, 10);
+}
+
+/**
  * Authenticate against the users table.
  * @param {import('node:sqlite').DatabaseSync} db
  * @param {string} username
@@ -164,6 +174,7 @@ function validateUserInput(username, password, role) {
 module.exports = {
   initUserStore,
   hashPassword,
+  hashPasswordAsync,
   authenticate,
   addUser,
   removeUser,

@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { DatabaseSync } = require('node:sqlite');
-const { initUserStore, authenticate, hashPassword, addUser, removeUser, listUsers, validateUserInput, createSessionCookie, buildSetCookie, buildClearCookie } = require('./auth');
+const { initUserStore, authenticate, hashPassword, hashPasswordAsync, addUser, removeUser, listUsers, validateUserInput, createSessionCookie, buildSetCookie, buildClearCookie } = require('./auth');
 const { authMiddleware } = require('./middleware');
 
 // ── DB ────────────────────────────────────────────────────────────────────────
@@ -742,17 +742,26 @@ const server = http.createServer(async (req, res) => {
       }
       let created = 0;
       const skipped = [];
+      // Hash passwords asynchronously first to avoid blocking the event loop
+      const prepared = [];
+      for (const entry of body) {
+        const invalid = validateUserInput(entry.username, entry.password, entry.role);
+        if (invalid) {
+          skipped.push(entry.username != null ? String(entry.username) : '(invalid)');
+          continue;
+        }
+        prepared.push({ username: entry.username, password: entry.password, role: entry.role });
+      }
+      // Hash all valid passwords in parallel (async, non-blocking)
+      const hashed = await Promise.all(
+        prepared.map(async (p) => ({ ...p, hash: await hashPasswordAsync(p.password) }))
+      );
+      // Now do the DB inserts synchronously in a transaction (fast, no bcrypt)
       const insertStmt = db.prepare('INSERT OR IGNORE INTO users (username, password_hash, role) VALUES (?, ?, ?)');
       db.exec('BEGIN');
       try {
-        for (const entry of body) {
-          const invalid = validateUserInput(entry.username, entry.password, entry.role);
-          if (invalid) {
-            skipped.push(entry.username != null ? String(entry.username) : '(invalid)');
-            continue;
-          }
-          const hash = hashPassword(entry.password);
-          const result = insertStmt.run(entry.username, hash, entry.role);
+        for (const entry of hashed) {
+          const result = insertStmt.run(entry.username, entry.hash, entry.role);
           if (result.changes > 0) {
             created++;
           } else {
