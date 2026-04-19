@@ -467,16 +467,11 @@ elUrl.addEventListener('keydown', e => { if (e.key === 'Enter') startMonitoring(
   const urlParam = params.get('url');
   const tParam   = params.get('t');
   const audioParam = params.get('audio');
-  const cardParam  = params.get('card');
 
   if (DIRECT_MODE) {
     // No proxy → no CORS headers → crossorigin="anonymous" makes the video
     // refuse to load. Strip it; accept that the canvas becomes tainted.
     video.removeAttribute('crossorigin');
-  }
-  if (cardParam === '1') {
-    // Compact card embed (volunteer grid fallback): no chrome, just <video>.
-    document.body.classList.add('card-mode');
   }
 
   if (audioParam === '1') {

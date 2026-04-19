@@ -370,18 +370,16 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
 .stream-card.error   { border-color: var(--card-err-border); background: var(--card-err-bg); }
 .stream-card.selected { outline: 2px solid #3b82f6; outline-offset: -1px; }
 
-.card-thumb,
-.card-frame {
+.card-thumb {
   width: 100%;
   aspect-ratio: 16/9;
   border-radius: 3px;
   background: #000;
   display: block;
 }
-/* Fallback iframes let clicks pass through so the parent card still opens
- * the inspect panel. card-mode hides all iframe chrome so there's nothing
- * to miss by swallowing pointer events. */
-.card-frame { border: 0; pointer-events: none; }
+/* Fallback <video> thumbs let clicks pass through so the parent card still
+ * opens the inspect panel. No controls shown, nothing to click on them. */
+video.card-thumb-video { pointer-events: none; object-fit: cover; }
 
 .card-label {
   font-size: 11px;
@@ -695,14 +693,12 @@ function isAssignedToMe(stream) {
 }
 
 // Proxy is considered absent when the server didn't inject a real URL. In
-// that case every card boots straight into iframe fallback — no <video>
-// attempts, no 30-60s wait for video.error to fire. Runtime proxy failures
-// still fall through the video.error path below.
+// that case every card boots straight into direct-video fallback — no proxy
+// attempts, no analysis, just a plain <video> hitting archive.evideo.bg from
+// the user's IP. (Can't iframe the MP4 — evideo returns a frame-ancestors
+// CSP. A <video> element is fine; CSP only gates iframe embedding.)
+// Runtime proxy failures still fall through the video.error path below.
 const NO_PROXY = !(typeof window !== 'undefined' && typeof window.PROXY_BASE === 'string' && window.PROXY_BASE.length > 0);
-
-function iframeThumb(streamUrl) {
-  return `<iframe class="card-frame" allow="autoplay" src="${escHtml(`${DETECTOR_URL}?url=${encodeURIComponent(streamUrl)}&card=1&direct=1`)}"></iframe>`;
-}
 
 function setupStream(stream) {
   let video = null, canvas = null, ctx = null;
@@ -759,7 +755,7 @@ function setupStream(stream) {
 
   const assigned = isAssignedToMe(stream);
   const thumbMarkup = NO_PROXY
-    ? iframeThumb(stream.url)
+    ? `<video class="card-thumb card-thumb-video" src="${escHtml(stream.url)}" muted autoplay playsinline preload="auto"></video>`
     : `<canvas class="card-thumb" width="192" height="108"></canvas>`;
 
   // Build card
@@ -878,10 +874,11 @@ function updateThumbnails() {
   }
 }
 
-// ── Fallback (iframe) ────────────────────────────────────────────────────────
-// On proxied <video> error, tear down the analysis pipeline for this card and
-// replace its thumb with an iframe pointing at the detector in card-mode with
-// direct=1 (bypasses proxy, plays from the user's own IP).
+// ── Fallback (direct <video>) ────────────────────────────────────────────────
+// On proxied <video> error, tear down the analysis pipeline and replace the
+// canvas thumb with a plain <video> pointing at the evideo URL. The user's
+// own browser hits evideo directly — CSP frame-ancestors blocks iframing the
+// MP4, but a <video> element doesn't trigger that check.
 function promoteToFallback(state) {
   if (state.fallback) return;
   try { state.video.pause(); state.video.src = ''; state.video.load(); state.video.remove(); } catch (_) {}
@@ -895,13 +892,17 @@ function promoteToFallback(state) {
 
   const card = document.querySelector(`[data-stream-id="${state.id}"]`);
   if (!card) return;
-  const thumb = card.querySelector('.card-thumb, .card-frame');
+  const thumb = card.querySelector('.card-thumb');
   if (thumb) {
-    const frame = document.createElement('iframe');
-    frame.className = 'card-frame';
-    frame.allow = 'autoplay';
-    frame.src = `${DETECTOR_URL}?url=${encodeURIComponent(state.url)}&card=1&direct=1`;
-    thumb.replaceWith(frame);
+    const v = document.createElement('video');
+    v.className = 'card-thumb card-thumb-video';
+    v.muted = true;
+    v.autoplay = true;
+    v.playsInline = true;
+    v.preload = 'auto';
+    v.src = state.url;
+    thumb.replaceWith(v);
+    v.play().catch(() => {});
   }
   applyMetricsToCard(state);
 }
@@ -1122,8 +1123,10 @@ function releaseAll() {
       }
     } catch (e) { /* ignore */ }
   }
-  // Fallback iframes hold their own <video> — drop their src too.
-  document.querySelectorAll('.card-frame').forEach(f => { try { f.src = ''; } catch (_) {} });
+  // Visible in-card fallback videos (no entry in streamStates.video).
+  document.querySelectorAll('video.card-thumb-video').forEach(v => {
+    try { v.pause(); v.src = ''; v.load(); } catch (_) {}
+  });
 }
 // beforeunload fires synchronously before navigation — more reliable than
 // pagehide alone in Edge (which may defer pagehide via bfcache).
