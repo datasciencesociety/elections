@@ -24,3 +24,8 @@ jobs:
             rm -rf /opt/elections/og-cache/*
             rm -rf /var/cache/nginx/*
             sudo systemctl restart elections-api
+            # Restart discovery only if the unit exists (installed once via
+            # discovery/scripts/bootstrap.sh). Safe no-op on fresh clones.
+            if systemctl list-unit-files | grep -q '^elections-video\.service'; then
+              sudo systemctl restart elections-video
+            fi

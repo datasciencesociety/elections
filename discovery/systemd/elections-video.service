@@ -1,0 +1,20 @@
+[Unit]
+Description=Elections Video Discovery & Metrics
+After=network.target
+
+[Service]
+Type=simple
+User=elections
+WorkingDirectory=/opt/elections/discovery
+ExecStart=/usr/bin/npx tsx src/index.ts
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=PORT=3001
+EnvironmentFile=/etc/elections-video.env
+# Defensive limits — the read path is memory-bound (pre-gzipped blob); writes are cheap.
+LimitNOFILE=16384
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target
