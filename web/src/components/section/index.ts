@@ -10,8 +10,6 @@
  *                          map sidebar and the sections-table sidebar so
  *                          the user sees the "why this section is flagged"
  *                          detail right in the drill-down.
- *   <SectionPeek />        compact thin summary — kept for surfaces that
- *                          only need address + top parties + flags.
  *   <SectionLocation />    settlement + address + map + suggest-location
  *   <SectionElection />    one election: links + protocol + ballot +
  *                          (optional) methodology cards
@@ -21,6 +19,5 @@
  */
 
 export { SectionView } from "./section-view.js";
-export { SectionPeek } from "./section-peek.js";
 export { SectionLocation } from "./section-location.js";
 export { SectionElection } from "./section-election.js";
