@@ -92,6 +92,9 @@ const CIK_ELECTION_MAP: Record<number, CikConfig> = {
   17: { prefix: "pi2021_07", type: "p", protoSuffix: "auto", scanSuffix: ".0", dataEl: 64, areaLen: 2 },
   // pi2021: HAS_PROTO dataEl=64 uses old array format (no suffix objects). No suffix in link.
   18: { prefix: "pi2021", type: "p", protoSuffix: "", scanSuffix: "", dataEl: 64, areaLen: 2 },
+  // pe202604: same shape as pe202410. Live-stream video is available per section
+  // via sections.video_url (populated from the evideo.bg scraper).
+  19: { prefix: "pe202604", type: "p", protoSuffix: "auto", scanSuffix: ".0", dataEl: 64, areaLen: 2 },
 };
 
 interface ProtocolLinks {

@@ -22,11 +22,9 @@ import { AcfCard } from "./cards/acf-card.js";
  *     when the section has anomaly scores
  *   - protocol violations
  *
- * Used by:
- *   - the anomaly-map sidebar (one election, full layout)
- *   - the sections-table sidebar drilldown (same)
- *   - `pages/section-detail.tsx` and `components/section-preview.tsx`
- *     once per election in the section's history (with `compact`)
+ * Used by `pages/section-detail.tsx` and `components/section-preview.tsx`
+ * once per election in the section's history (with `compact`). The map
+ * and table sidebars show a lighter `SectionPeek`, not this full card.
  *
  * Pass `initialAnomaly` when the parent already has the row (clicked
  * marker) so we skip the redundant `/anomalies` fetch.
@@ -65,6 +63,7 @@ export function SectionElection({
         electionId={electionId}
         sectionCode={sectionCode}
         machineCount={detail?.protocol.machine_count}
+        videoUrl={detail?.video_url}
       />
 
       <SectionProtocolSummary

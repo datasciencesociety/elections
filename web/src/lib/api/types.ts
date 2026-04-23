@@ -126,6 +126,8 @@ export interface SectionDetail {
   protocol: SectionProtocol;
   parties: SectionParty[];
   context: SectionContext;
+  /** CIK live-stream MP4 URL, available only for pe202604 (April 2026) onward. */
+  video_url: string | null;
 }
 
 // ---------- violations ----------

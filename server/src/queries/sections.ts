@@ -52,6 +52,7 @@ export interface SectionDetail {
   protocol: SectionProtocol;
   parties: SectionParty[];
   context: SectionContext;
+  video_url: string | null;
 }
 
 interface LocInfoRow {
@@ -69,20 +70,22 @@ export function getSectionDetail(
   electionDate: string,
   sectionCode: string,
 ): SectionDetail | null {
-  const protocol = db
+  const protocolRow = db
     .prepare(
       `SELECT p.registered_voters, p.actual_voters, p.received_ballots,
               p.added_voters, p.invalid_votes, p.null_votes,
-              s.machine_count
+              s.machine_count, s.video_url
          FROM protocols p
          JOIN sections s ON s.election_id = p.election_id AND s.section_code = p.section_code
          WHERE p.election_id = ? AND p.section_code = ?`,
     )
     .get(electionId, sectionCode) as
-    | Omit<SectionProtocol, "valid_votes">
+    | (Omit<SectionProtocol, "valid_votes"> & { video_url: string | null })
     | undefined;
 
-  if (!protocol) return null;
+  if (!protocolRow) return null;
+
+  const { video_url, ...protocol } = protocolRow;
 
   const ballotRows = getSectionBallot(db, electionId, sectionCode, electionType);
   const partyRows = ballotRows.map((r) => ({
@@ -202,6 +205,7 @@ export function getSectionDetail(
   return {
     protocol: { ...protocol, valid_votes: validVotes },
     parties,
+    video_url: video_url ?? null,
     context: {
       municipality_name: locInfo?.municipality_name ?? null,
       rik_avg_turnout: rikAvg?.avg_turnout ?? null,

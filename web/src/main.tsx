@@ -63,9 +63,10 @@ createRoot(document.getElementById("root")!).render(
         <AnalyticsTracker />
         <Routes>
           <Route element={<Layout />}>
-            {/* Election day (2026-04-19): land on the live-camera page.
-                Restore `<Landing />` after tonight. */}
-            <Route path="/" element={<Navigate to="/live" replace />} />
+            {/* Election day + aftermath (2026-04-19): land on the pe202604
+                results page while the results are fresh. Restore `<Landing />`
+                once the news cycle has moved on. */}
+            <Route path="/" element={<Navigate to="/19/results" replace />} />
             <Route path="/explore" element={<Landing />} />
 
             {/* Browse drill-down */}

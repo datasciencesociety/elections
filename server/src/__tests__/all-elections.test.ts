@@ -39,15 +39,15 @@ beforeAll(() => {
 });
 
 describe("API smoke tests — every election", () => {
-  it("DB has the 18 expected elections", () => {
-    expect(elections.length).toBe(18);
+  it("DB has the 19 expected elections", () => {
+    expect(elections.length).toBe(19);
   });
 
   // Build the test cases from the live DB so adding/removing elections is
   // automatically reflected. Each describe block uses the slug as the title
   // for readable failure output.
   describe.each(
-    Array.from({ length: 18 }, (_, i) => i + 1),
+    Array.from({ length: 19 }, (_, i) => i + 1),
   )("election id %i", (electionId) => {
     let election: ElectionRow;
 

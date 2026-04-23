@@ -2,7 +2,9 @@ import type { AnomalySection } from "@/lib/api/types.js";
 
 /**
  * Two binary protocol flags shown above the methodology cards:
- *   - arithmetic_error: more votes cast than ballots received
+ *   - arithmetic_error: protocol identity broken — either actual voters
+ *     ≠ invalid + null + Σ valid, or paper voters > paper ballots received
+ *     (with the machine cohort excluded on hybrid forms).
  *   - vote_sum_mismatch: paper + machine ≠ total for at least one party
  *
  * Renders nothing when both are clear.
@@ -18,7 +20,7 @@ export function BinaryFlags({ section: s }: { section: AnomalySection }) {
             Аритметична грешка в протокола
           </div>
           <div className="mt-1 text-xs text-score-high">
-            Гласувалите са повече от получените бюлетини
+            Общо гласували ≠ действителни + недействителни + бели
           </div>
         </div>
       ) : null}
