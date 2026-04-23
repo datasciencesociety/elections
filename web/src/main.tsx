@@ -16,7 +16,12 @@ import Landing from "./pages/landing.js";
 import { BrowseAbroad, BrowseDistrict } from "./pages/browse.js";
 import ExplorerHelp from "./pages/explorer-help.js";
 import DesignSystem from "./pages/design-system.js";
-import Live from "./pages/live/index.js";
+
+// Results page for the most recent election shown by the whole app.
+// Whenever a newer one ships, bump this; the "/" and "/live" redirects
+// both point here so election-night visitors and bookmark-holders of
+// the retired `/live` page land on the same place.
+const LATEST_RESULTS_PATH = "/19/results";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,10 +68,10 @@ createRoot(document.getElementById("root")!).render(
         <AnalyticsTracker />
         <Routes>
           <Route element={<Layout />}>
-            {/* Election day + aftermath (2026-04-19): land on the pe202604
-                results page while the results are fresh. Restore `<Landing />`
+            {/* Election day + aftermath (2026-04-19): land on the latest
+                election's results while they're fresh. Restore `<Landing />`
                 once the news cycle has moved on. */}
-            <Route path="/" element={<Navigate to="/19/results" replace />} />
+            <Route path="/" element={<Navigate to={LATEST_RESULTS_PATH} replace />} />
             <Route path="/explore" element={<Landing />} />
 
             {/* Browse drill-down */}
@@ -82,7 +87,12 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/help/coordinates" element={<MissingCoordinates />} />
             <Route path="/help/explorer" element={<ExplorerHelp />} />
             <Route path="/design-system" element={<DesignSystem />} />
-            <Route path="/live" element={<Live />} />
+            {/* `/live` was the election-day camera view; retired once results
+                started flowing. Any bookmarks get sent to the latest results. */}
+            <Route
+              path="/live"
+              element={<Navigate to={LATEST_RESULTS_PATH} replace />}
+            />
             {/* Redirect old risk URL to combined sections page */}
             <Route path="/:electionId/risk" element={<RedirectToSections />} />
           </Route>

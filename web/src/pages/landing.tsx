@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { Globe, Video } from "lucide-react";
+import { Globe } from "lucide-react";
 import { useElections } from "@/lib/hooks/use-elections.js";
 import AppFooter from "@/components/app-footer.js";
 import {
@@ -57,37 +57,6 @@ export default function Landing() {
           >
             Какво е Изборен монитор ↓
           </a>
-        </section>
-
-        {/* Election-day live cameras — temporary tile, shown while voting
-            is open. Remove or date-gate after 2026-04-19. */}
-        <section className="mb-8">
-          <Link
-            to="/live"
-            className="group flex items-start gap-3 rounded-md border border-border bg-card p-4 transition-all hover:border-foreground/30 hover:shadow-sm"
-          >
-            <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-score-high/10 text-score-high">
-              <Video size={16} />
-            </span>
-            <span className="flex-1">
-              <span className="flex items-center gap-2">
-                <span className="text-md font-medium text-foreground group-hover:text-score-high">
-                  Избори на живо — камерите в секциите
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-score-high/10 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-eyebrow text-score-high">
-                  <span className="size-1 rounded-full bg-score-high" />
-                  днес
-                </span>
-              </span>
-              <span className="mt-1 block text-sm text-muted-foreground">
-                Открийте Вашата секция на картата и вижте стрийма от ЦИК.
-                Автоматичен индикатор „работи / покрита / тъмна“.
-              </span>
-            </span>
-            <span className="mt-1 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground">
-              →
-            </span>
-          </Link>
         </section>
 
         {/* Primary: district grid */}
