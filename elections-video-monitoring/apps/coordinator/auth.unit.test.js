@@ -215,3 +215,22 @@ describe('8.5 buildSetCookie and buildClearCookie attributes', () => {
     assert.ok(cookie.includes('Expires='), 'Clear cookie should include an Expires attribute to clear it');
   });
 });
+
+// ── 8.6 Cookie expiry and malformed signatures ──────────────────────────────
+
+describe('8.6 verifySessionCookie expiry and malformed input', () => {
+  const { createSessionCookie, verifySessionCookie } = require('./auth');
+
+  it('should reject a cookie issued longer ago than the TTL', () => {
+    const issuedLongAgo = Date.now() - 365 * 24 * 60 * 60 * 1000;
+    assert.equal(verifySessionCookie(createSessionCookie('alice', 'volunteer', issuedLongAgo)), null);
+  });
+
+  it('should accept a freshly issued cookie', () => {
+    assert.deepEqual(verifySessionCookie(createSessionCookie('alice', 'volunteer')), { username: 'alice', role: 'volunteer' });
+  });
+
+  it('should return null (not throw) when the signature length is wrong', () => {
+    assert.equal(verifySessionCookie('abc.def'), null);
+  });
+});

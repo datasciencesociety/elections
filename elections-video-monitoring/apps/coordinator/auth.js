@@ -3,7 +3,11 @@
 const crypto = require('node:crypto');
 const bcrypt = require('bcryptjs');
 
-const COOKIE_SECRET = crypto.randomBytes(32);
+// Set COOKIE_SECRET so logins survive restarts; otherwise every restart logs everyone out.
+const COOKIE_SECRET = process.env.COOKIE_SECRET || crypto.randomBytes(32);
+const COOKIE_TTL_MS = parseInt(process.env.COOKIE_TTL_MS, 10) || 24 * 60 * 60 * 1000; // 24 h default
+// Only enable behind HTTPS — browsers drop Secure cookies set over plain HTTP.
+const COOKIE_SECURE = process.env.COOKIE_SECURE === '1';
 
 /**
  * Initialize the user store. If the users table is empty, seed an admin
@@ -100,10 +104,11 @@ function listUsers(db) {
  * Create a signed cookie value for the given user.
  * @param {string} username
  * @param {string} role
+ * @param {number} [now] - issue time in ms (for tests)
  * @returns {string} cookie value: base64url(payload) + "." + hmac_hex
  */
-function createSessionCookie(username, role) {
-  const payload = Buffer.from(JSON.stringify({ u: username, r: role })).toString('base64url');
+function createSessionCookie(username, role, now = Date.now()) {
+  const payload = Buffer.from(JSON.stringify({ u: username, r: role, e: now + COOKIE_TTL_MS })).toString('base64url');
   const hmac = crypto.createHmac('sha256', COOKIE_SECRET).update(payload).digest('hex');
   return payload + '.' + hmac;
 }
@@ -122,12 +127,15 @@ function verifySessionCookie(cookieValue) {
   const payload = cookieValue.slice(0, dotIndex);
   const signature = cookieValue.slice(dotIndex + 1);
 
-  const expected = crypto.createHmac('sha256', COOKIE_SECRET).update(payload).digest('hex');
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+  const expected = Buffer.from(crypto.createHmac('sha256', COOKIE_SECRET).update(payload).digest('hex'));
+  const actual = Buffer.from(signature);
+  // timingSafeEqual throws on length mismatch — reject first so garbage cookies don't 500
+  if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) return null;
 
   try {
     const data = JSON.parse(Buffer.from(payload, 'base64url').toString());
     if (typeof data.u !== 'string' || (data.r !== 'admin' && data.r !== 'volunteer')) return null;
+    if (typeof data.e !== 'number' || data.e <= Date.now()) return null;
     return { username: data.u, role: data.r };
   } catch {
     return null;
@@ -140,7 +148,8 @@ function verifySessionCookie(cookieValue) {
  * @returns {string}
  */
 function buildSetCookie(cookieValue) {
-  return `session=${cookieValue}; HttpOnly; SameSite=Strict; Path=/`;
+  const maxAge = Math.floor(COOKIE_TTL_MS / 1000);
+  return `session=${cookieValue}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${maxAge}${COOKIE_SECURE ? '; Secure' : ''}`;
 }
 
 /**
@@ -148,7 +157,7 @@ function buildSetCookie(cookieValue) {
  * @returns {string}
  */
 function buildClearCookie() {
-  return 'session=; HttpOnly; SameSite=Strict; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  return `session=; HttpOnly; SameSite=Strict; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT${COOKIE_SECURE ? '; Secure' : ''}`;
 }
 
 /**
