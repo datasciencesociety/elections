@@ -21,6 +21,7 @@ cp "$SCRIPT_DIR/nginx.conf"            /etc/nginx/nginx.conf
 cp "$SCRIPT_DIR/conf.d/hls-proxy.conf" /etc/nginx/conf.d/hls-proxy.conf
 cp "$SCRIPT_DIR/conf.d/_proxy_headers.inc" /etc/nginx/conf.d/_proxy_headers.inc
 cp "$SCRIPT_DIR/conf.d/_cors_headers.inc"  /etc/nginx/conf.d/_cors_headers.inc
+cp "$SCRIPT_DIR/conf.d/_cors_preflight.inc" /etc/nginx/conf.d/_cors_preflight.inc
 
 echo "==> Removing default site..."
 rm -f /etc/nginx/sites-enabled/default
