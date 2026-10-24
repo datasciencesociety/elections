@@ -38,6 +38,7 @@ if (!indexUrl) {
 }
 
 function log(msg) { process.stderr.write(msg + '\n'); }
+let warnedTourIgnored = false;
 
 // ── Browser context factory (anti-Cloudflare fingerprint) ─────────────────────
 
@@ -130,6 +131,10 @@ async function scrapeOik(page, oikUrl, oikLabel) {
       try { vid = JSON.parse(bm[1]); } catch { continue; }
       if (Array.isArray(vid) && vid.length > 0 && typeof vid[0] === 'string' && vid[0].startsWith('http')) {
         // tourFilter doesn't apply — no tour metadata in this format
+        if (tourFilter && !warnedTourIgnored) {
+          log(`  Warning: --tour=${tourFilter} ignored — this page format has no tour data; output may mix tours`);
+          warnedTourIgnored = true;
+        }
         streams.push({ section: sik, url: vid[0], label });
         pushed = true;
         break;
