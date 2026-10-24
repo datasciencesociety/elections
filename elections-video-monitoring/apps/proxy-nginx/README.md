@@ -102,7 +102,7 @@ Then add weighted A records in Route 53 (one per EIP, equal Weight = round-robin
 - `client_max_body_size 1k` — no request body needed
 - Client timeouts: 10 s header + body (drops slow-loris clients)
 - `real_ip_header CF-Connecting-IP` — logs show real visitor IPs
-- Rate limit: 300 req/min per real IP, burst 50 (via `limit_req_zone`)
+- Rate limit: 1200 req/min per real IP, burst 100–150 (via `limit_req_zone`). One HLS card makes ~45 req/min, and volunteers on one Wi-Fi share an IP; at 300 req/min, 8 cards per IP stalled 43% of segments in load tests
 - `proxy_ssl_server_name on` — required SNI for Cloudflare-hosted origins
 - `resolver 169.254.169.253 ipv6=off` — AWS internal DNS, no IPv6 failures
 - MP4 passthrough: `proxy_buffering off` + `proxy_cache off` — range requests work correctly

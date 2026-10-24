@@ -93,7 +93,7 @@ http {
     set_real_ip_from   197.234.240.0/22;
     set_real_ip_from   198.41.128.0/17;
 
-    limit_req_zone $binary_remote_addr zone=hls_rate:10m rate=300r/m;
+    limit_req_zone $binary_remote_addr zone=hls_rate:10m rate=1200r/m;
 
     include /etc/nginx/conf.d/*.conf;
 }
@@ -115,7 +115,7 @@ server {
     }
 
     location ~ ^/((?:[a-z0-9-]+\.)*evideo\.bg)(/.+\.m3u8.*)$ {
-        limit_req zone=hls_rate burst=30 nodelay;
+        limit_req zone=hls_rate burst=100 nodelay;
         include /etc/nginx/conf.d/_cors_preflight.inc;
         set $ups_host $1;
         set $ups_path $2;
@@ -136,7 +136,7 @@ server {
     }
 
     location ~ ^/((?:[a-z0-9-]+\.)*evideo\.bg)(/.+\.(ts|m4s).*)$ {
-        limit_req zone=hls_rate burst=30 nodelay;
+        limit_req zone=hls_rate burst=100 nodelay;
         include /etc/nginx/conf.d/_cors_preflight.inc;
         set $ups_host $1;
         set $ups_path $2;
@@ -158,7 +158,7 @@ server {
     }
 
     location ~ ^/((?:[a-z0-9-]+\.)*evideo\.bg)(/.+)$ {
-        limit_req zone=hls_rate burst=50 nodelay;
+        limit_req zone=hls_rate burst=150 nodelay;
         include /etc/nginx/conf.d/_cors_preflight.inc;
         set $ups_host $1;
         set $ups_path $2;
