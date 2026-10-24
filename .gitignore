@@ -17,3 +17,6 @@ test-results/
 
 # Reports
 *report/
+
+# Playwright MCP browser snapshots
+.playwright-mcp/

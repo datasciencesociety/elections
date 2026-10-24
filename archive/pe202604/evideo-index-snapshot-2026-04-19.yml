@@ -1,0 +1,216 @@
+- generic [active] [ref=e1]:
+  - heading "На този сайт може да наблюдавате онлайн видеоизлъчването на живо на преброяването на бюлетините и попълването на протоколите" [level=1] [ref=e2]
+  - generic [ref=e4]:
+    - complementary [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - heading "Видео излъчване от СИК" [level=2] [ref=e9]:
+            - link "Видео излъчване от СИК" [ref=e10] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e11]: Видео
+              - generic [ref=e12]: излъчване
+              - generic [ref=e13]: от СИК
+          - heading "Парламентарни избори 2026.04" [level=3] [ref=e14]
+        - generic [ref=e16]:
+          - heading "Как да гледам" [level=2] [ref=e17]:
+            - button "Как да гледам" [expanded] [ref=e18] [cursor=pointer]
+          - generic "Как да гледам" [ref=e19]:
+            - generic [ref=e20]:
+              - paragraph [ref=e21]: "За да наблюдавате на живо онлайн видеоизлъчването на преброяването на бюлетините и попълването на СИК протокола в конкретна секция, изберете:"
+              - list [ref=e22]:
+                - listitem [ref=e23]: Районна избирателна комисия (РИК),
+                - listitem [ref=e24]: Секцията, която Ви интересува.
+        - generic [ref=e25]:
+          - heading "Избрете РИК" [level=2] [ref=e26]
+          - list [ref=e27]:
+            - listitem [ref=e28]:
+              - link "РИК 01 Благоевград" [ref=e29] [cursor=pointer]:
+                - /url: ./01.html
+                - generic [ref=e30]: РИК 01
+                - text: Благоевград
+            - listitem [ref=e31]:
+              - link "РИК 02 Бургас" [ref=e32] [cursor=pointer]:
+                - /url: ./02.html
+                - generic [ref=e33]: РИК 02
+                - text: Бургас
+            - listitem [ref=e34]:
+              - link "РИК 03 Варна" [ref=e35] [cursor=pointer]:
+                - /url: ./03.html
+                - generic [ref=e36]: РИК 03
+                - text: Варна
+            - listitem [ref=e37]:
+              - link "РИК 04 Велико Търново" [ref=e38] [cursor=pointer]:
+                - /url: ./04.html
+                - generic [ref=e39]: РИК 04
+                - text: Велико Търново
+            - listitem [ref=e40]:
+              - link "РИК 05 Видин" [ref=e41] [cursor=pointer]:
+                - /url: ./05.html
+                - generic [ref=e42]: РИК 05
+                - text: Видин
+            - listitem [ref=e43]:
+              - link "РИК 06 Враца" [ref=e44] [cursor=pointer]:
+                - /url: ./06.html
+                - generic [ref=e45]: РИК 06
+                - text: Враца
+            - listitem [ref=e46]:
+              - link "РИК 07 Габрово" [ref=e47] [cursor=pointer]:
+                - /url: ./07.html
+                - generic [ref=e48]: РИК 07
+                - text: Габрово
+            - listitem [ref=e49]:
+              - link "РИК 08 Добрич" [ref=e50] [cursor=pointer]:
+                - /url: ./08.html
+                - generic [ref=e51]: РИК 08
+                - text: Добрич
+            - listitem [ref=e52]:
+              - link "РИК 09 Кърджали" [ref=e53] [cursor=pointer]:
+                - /url: ./09.html
+                - generic [ref=e54]: РИК 09
+                - text: Кърджали
+            - listitem [ref=e55]:
+              - link "РИК 10 Кюстендил" [ref=e56] [cursor=pointer]:
+                - /url: ./10.html
+                - generic [ref=e57]: РИК 10
+                - text: Кюстендил
+            - listitem [ref=e58]:
+              - link "РИК 11 Ловеч" [ref=e59] [cursor=pointer]:
+                - /url: ./11.html
+                - generic [ref=e60]: РИК 11
+                - text: Ловеч
+            - listitem [ref=e61]:
+              - link "РИК 12 Монтана" [ref=e62] [cursor=pointer]:
+                - /url: ./12.html
+                - generic [ref=e63]: РИК 12
+                - text: Монтана
+            - listitem [ref=e64]:
+              - link "РИК 13 Пазарджик" [ref=e65] [cursor=pointer]:
+                - /url: ./13.html
+                - generic [ref=e66]: РИК 13
+                - text: Пазарджик
+            - listitem [ref=e67]:
+              - link "РИК 14 Перник" [ref=e68] [cursor=pointer]:
+                - /url: ./14.html
+                - generic [ref=e69]: РИК 14
+                - text: Перник
+            - listitem [ref=e70]:
+              - link "РИК 15 Плевен" [ref=e71] [cursor=pointer]:
+                - /url: ./15.html
+                - generic [ref=e72]: РИК 15
+                - text: Плевен
+            - listitem [ref=e73]:
+              - link "РИК 16 Пловдив Град" [ref=e74] [cursor=pointer]:
+                - /url: ./16.html
+                - generic [ref=e75]: РИК 16
+                - text: Пловдив Град
+            - listitem [ref=e76]:
+              - link "РИК 17 Пловдив Област" [ref=e77] [cursor=pointer]:
+                - /url: ./17.html
+                - generic [ref=e78]: РИК 17
+                - text: Пловдив Област
+            - listitem [ref=e79]:
+              - link "РИК 18 Разград" [ref=e80] [cursor=pointer]:
+                - /url: ./18.html
+                - generic [ref=e81]: РИК 18
+                - text: Разград
+            - listitem [ref=e82]:
+              - link "РИК 19 Русе" [ref=e83] [cursor=pointer]:
+                - /url: ./19.html
+                - generic [ref=e84]: РИК 19
+                - text: Русе
+            - listitem [ref=e85]:
+              - link "РИК 20 Силистра" [ref=e86] [cursor=pointer]:
+                - /url: ./20.html
+                - generic [ref=e87]: РИК 20
+                - text: Силистра
+            - listitem [ref=e88]:
+              - link "РИК 21 Сливен" [ref=e89] [cursor=pointer]:
+                - /url: ./21.html
+                - generic [ref=e90]: РИК 21
+                - text: Сливен
+            - listitem [ref=e91]:
+              - link "РИК 22 Смолян" [ref=e92] [cursor=pointer]:
+                - /url: ./22.html
+                - generic [ref=e93]: РИК 22
+                - text: Смолян
+            - listitem [ref=e94]:
+              - link "РИК 23 София 23 МИР" [ref=e95] [cursor=pointer]:
+                - /url: ./23.html
+                - generic [ref=e96]: РИК 23
+                - text: София 23 МИР
+            - listitem [ref=e97]:
+              - link "РИК 24 София 24 МИР" [ref=e98] [cursor=pointer]:
+                - /url: ./24.html
+                - generic [ref=e99]: РИК 24
+                - text: София 24 МИР
+            - listitem [ref=e100]:
+              - link "РИК 25 София 25 МИР" [ref=e101] [cursor=pointer]:
+                - /url: ./25.html
+                - generic [ref=e102]: РИК 25
+                - text: София 25 МИР
+            - listitem [ref=e103]:
+              - link "РИК 26 София Област" [ref=e104] [cursor=pointer]:
+                - /url: ./26.html
+                - generic [ref=e105]: РИК 26
+                - text: София Област
+            - listitem [ref=e106]:
+              - link "РИК 27 Стара Загора" [ref=e107] [cursor=pointer]:
+                - /url: ./27.html
+                - generic [ref=e108]: РИК 27
+                - text: Стара Загора
+            - listitem [ref=e109]:
+              - link "РИК 28 Търговище" [ref=e110] [cursor=pointer]:
+                - /url: ./28.html
+                - generic [ref=e111]: РИК 28
+                - text: Търговище
+            - listitem [ref=e112]:
+              - link "РИК 29 Хасково" [ref=e113] [cursor=pointer]:
+                - /url: ./29.html
+                - generic [ref=e114]: РИК 29
+                - text: Хасково
+            - listitem [ref=e115]:
+              - link "РИК 30 Шумен" [ref=e116] [cursor=pointer]:
+                - /url: ./30.html
+                - generic [ref=e117]: РИК 30
+                - text: Шумен
+            - listitem [ref=e118]:
+              - link "РИК 31 Ямбол" [ref=e119] [cursor=pointer]:
+                - /url: ./31.html
+                - generic [ref=e120]: РИК 31
+                - text: Ямбол
+      - link "Архив излъчвания" [ref=e121] [cursor=pointer]:
+        - /url: ../index.html
+    - generic [ref=e125]:
+      - generic [ref=e126]:
+        - heading "Изберете РИК" [level=2] [ref=e127]
+        - paragraph [ref=e128]: Онлайн видеоизлъчването на живо на преброяването на бюлетините и попълването на СИК протокола в конкретна секция може да наблюдавате като изберете РИК от картата или списъка в ляво, а след това откриете секцията, която Ви интересува.
+      - img [ref=e129]:
+        - generic [ref=e130]:
+          - generic "Благоевград" [ref=e131]
+          - generic "Бургас" [ref=e136]
+          - generic "Варна" [ref=e142]
+          - generic "Велико Търново" [ref=e147]
+          - generic "Видин" [ref=e152]
+          - generic "Враца" [ref=e157]
+          - generic "Габрово" [ref=e162]
+          - generic "Добрич" [ref=e167]
+          - generic "Кърджали" [ref=e172]
+          - generic "Кюстендил" [ref=e177]
+          - generic "Ловеч" [ref=e182]
+          - generic "Монтана" [ref=e187]
+          - generic "Пазарджик" [ref=e192]
+          - generic "Перник" [ref=e197]
+          - generic "Плевен" [ref=e202]
+          - generic "Пловдив град" [ref=e207]
+          - generic "Пловдив област" [ref=e210]
+          - generic "Разград" [ref=e213]
+          - generic "Русе" [ref=e218]
+          - generic "Силистра" [ref=e223]
+          - generic "Сливен" [ref=e228]
+          - generic "Смолян" [ref=e233]
+          - generic "Софийска Област" [ref=e247]
+          - generic "Стара Загора" [ref=e250]
+          - generic "Търговище" [ref=e255]
+          - generic "Хасково" [ref=e260]
+          - generic "Шумен" [ref=e265]
+          - generic "Ямбол" [ref=e270]
