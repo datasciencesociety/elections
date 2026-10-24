@@ -23,25 +23,8 @@ const files   = args.length > 0 ? args : [
   path.join('apps', 'scraper', 'streams_le20260222_tour1_live.json'),
   path.join('apps', 'scraper', 'streams_le20250615_tour1_live.json'),
 ];
-const port    = process.env.PORT || 3000;
-const base    = (process.env.COORDINATOR_URL || `http://localhost:${port}`).replace(/\/$/, '');
+const { base, login } = require('./lib/coordinator');
 const replace = flags.has('--replace') || flags.has('--force');
-
-// Log in as admin and return the session cookie for subsequent requests
-async function login() {
-  const username = process.env.SEED_USER || process.env.ADMIN_USER;
-  const password = process.env.SEED_PASS || process.env.ADMIN_PASS;
-  if (!username || !password) throw new Error('Set SEED_USER and SEED_PASS (or ADMIN_USER/ADMIN_PASS) to an admin account');
-  const res = await fetch(`${base}/api/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
-  });
-  if (!res.ok) throw new Error(`Login failed (${res.status})`);
-  const { role } = await res.json();
-  if (role !== 'admin') throw new Error(`${username} is not an admin`);
-  return res.headers.get('set-cookie').split(';')[0];
-}
 
 async function run() {
   const cookie  = await login();
