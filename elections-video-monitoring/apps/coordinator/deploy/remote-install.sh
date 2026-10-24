@@ -15,7 +15,7 @@ TS=$(basename "$STAGE")
 
 die() { echo "ABORT: $*" >&2; exit 1; }
 say() { echo "==> $*"; }
-env_get() { grep -E "^$1=" "$ENV_FILE" | tail -1 | cut -d= -f2-; }
+env_get() { grep -E "^$1=" "$ENV_FILE" | tail -1 | cut -d= -f2- || true; }  # a missing key is empty, not fatal
 
 # ── Preflight: refuse anything that could lose data or leave the site half-configured ──
 [ -f "$ENV_FILE" ] || die "$ENV_FILE missing; start from deploy/election-coordinator.env.example"
@@ -34,6 +34,18 @@ NODE_BIN=${NODE_BIN:-$(sudo -u "$SERVICE_USER" -i bash -c 'command -v node' || t
   || die "node $("$NODE_BIN" -v) is too old; node:sqlite needs >= 22.13"
 
 [ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ] || die "no certificate for $DOMAIN (certbot certonly --webroot -w /var/www/html -d $DOMAIN)"
+
+# Warn only: without a working proxy, cards play evideo directly and detection does not run
+PROXY_URL=$(env_get PROXY_URL)
+if [ -z "$PROXY_URL" ]; then
+  echo "WARNING: PROXY_URL is empty; cards will play without detection" >&2
+else
+  pcode=$(curl -s -o /dev/null -m 5 -w '%{http_code}' "$PROXY_URL/healthz" || true)
+  case $pcode in
+    000) echo "WARNING: PROXY_URL $PROXY_URL does not answer" >&2 ;;
+    3??) echo "WARNING: PROXY_URL $PROXY_URL redirects ($pcode); browsers will fail CORS on it" >&2 ;;
+  esac
+fi
 
 others=$(grep -RlE "server_name[^;]*[[:space:]]$DOMAIN([[:space:];]|$)" /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | grep -v "/$UNIT\$" || true)
 if [ -n "$others" ]; then
