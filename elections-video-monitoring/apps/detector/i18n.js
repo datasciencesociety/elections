@@ -19,6 +19,7 @@ const TRANSLATIONS = {
     'config.notif':      'Browser notifications',
     'config.reset':      'Reset to Defaults',
     // Alert log
+    'metrics.title':     'Metrics',
     'log.title':         'Alert Log',
     'btn.copy':          'Copy',
     'btn.clear':         'Clear',
@@ -96,6 +97,7 @@ const TRANSLATIONS = {
     'config.lowcpu':     'Нисък CPU режим (160×90)',
     'config.notif':      'Известия от браузъра',
     'config.reset':      'Нулиране по подразбиране',
+    'metrics.title':     'Метрики',
     'log.title':         'Журнал на известия',
     'btn.copy':          'Копиране',
     'btn.clear':         'Изчистване',

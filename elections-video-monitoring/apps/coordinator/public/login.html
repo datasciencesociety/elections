@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
 <title>Election Monitor — Login</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -11,6 +11,7 @@ body {
   background: #0d0d0d;
   color: #e0e0e0;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -55,7 +56,8 @@ input[type="password"] {
   border: 1px solid #333;
   border-radius: 4px;
   color: #e0e0e0;
-  font-size: 14px;
+  font-size: 16px; /* 16px or iOS zooms the page on focus */
+  min-height: 44px;
   font-family: system-ui, sans-serif;
   margin-bottom: 16px;
 }
@@ -64,6 +66,7 @@ input[type="text"]:focus,
 input[type="password"]:focus {
   outline: none;
   border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35);
 }
 
 button[type="submit"] {
@@ -83,10 +86,47 @@ button[type="submit"]:hover {
   background: #1d4ed8;
 }
 
+button[type="submit"]:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
 button[type="submit"]:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Phones and short screens: top-align and tighten the card, so the Sign in
+ * button stays above an on-screen keyboard even when the browser overlays the
+ * keyboard instead of resizing the page (iOS Safari). */
+@media (max-height: 640px), (max-width: 500px) {
+  body { align-items: flex-start; }
+  .login-card { padding: 16px 20px; margin: 12px 16px; }
+  .login-card p { margin-bottom: 12px; }
+  input[type="text"], input[type="password"] { padding: 8px 12px; margin-bottom: 12px; }
+}
+
+/* Landscape phones: the keyboard leaves ~200px. Put Sign in on the password
+ * row: the browser always scrolls the focused field into view, and the button
+ * comes with it, whether the keyboard resizes or overlays the page. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .login-card { max-width: 640px; padding: 12px 20px; margin-top: 8px; }
+  #login-form { display: grid; grid-template-columns: 1fr 1fr auto; column-gap: 12px; }
+  #login-form label[for="username"] { grid-area: 1 / 1; }
+  #login-form label[for="password"] { grid-area: 1 / 2; }
+  #username { grid-area: 2 / 1; }
+  #password { grid-area: 2 / 2; }
+  #submit-btn { grid-area: 2 / 3; width: auto; }
+  input[type="text"], input[type="password"] { margin-bottom: 0; }
+}
+
+/* Small phones (iPhone SE 1st gen): the subtitle costs the button its place above the keyboard */
+@media (max-height: 600px) {
+  .login-card p { display: none; }
+  .login-card h1 { margin-bottom: 12px; }
+}
+
+button[type="submit"] { min-height: 44px; }
 
 #error-msg {
   background: #7f1d1d;
@@ -109,10 +149,10 @@ button[type="submit"]:disabled {
 
   <form id="login-form">
     <label for="username">Username</label>
-    <input type="text" id="username" name="username" autocomplete="username" required>
+    <input type="text" id="username" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next" required>
 
     <label for="password">Password</label>
-    <input type="password" id="password" name="password" autocomplete="current-password" required>
+    <input type="password" id="password" name="password" autocomplete="current-password" enterkeyhint="go" required>
 
     <button type="submit" id="submit-btn">Sign in</button>
   </form>
@@ -155,6 +195,18 @@ form.addEventListener('submit', async (e) => {
     submitBtn.textContent = 'Sign in';
   }
 });
+
+// Keep the Sign in button above the on-screen keyboard. Presentational only:
+// once the keyboard opens (visual viewport shrinks) or a field gets focus,
+// scroll the button into view if it is hidden.
+(function () {
+  const reveal = () => {
+    const a = document.activeElement;
+    if (a && a.form === form) submitBtn.scrollIntoView({ block: 'nearest' });
+  };
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', reveal);
+  form.addEventListener('focusin', () => setTimeout(reveal, 350));
+})();
 </script>
 </body>
 </html>

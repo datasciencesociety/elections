@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
 <title data-i18n="help.page.title">Help — Election Stream Monitor</title>
 <script src="i18n.js"></script>
 <style>
@@ -28,6 +28,7 @@ body {
   background: var(--bg);
   color: var(--text);
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -39,6 +40,7 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 8px;
 }
 header h1 { font-size: 15px; font-weight: 600; }
@@ -48,8 +50,15 @@ header h1 { font-size: 15px; font-weight: 600; }
   background: var(--surface); color: var(--text-muted);
   border: 1px solid var(--border); border-radius: 4px;
   text-decoration: none; cursor: pointer;
+  white-space: nowrap;
 }
 .header-actions a:hover, .header-actions button:hover { color: var(--text); }
+@media (pointer: coarse) {
+  .header-actions a, .header-actions button {
+    padding: 0 12px !important; font-size: 12px; min-height: 44px; min-width: 44px; justify-content: center;
+    display: inline-flex; align-items: center;
+  }
+}
 main {
   flex: 1;
   display: flex;
@@ -69,7 +78,7 @@ main iframe {
   <div class="header-actions">
     <a href="/" data-i18n="help.back">← Back to Monitor</a>
     <button id="lang-toggle">EN</button>
-    <button id="btn-logout" style="background:#7f1d1d;color:#fca5a5;border:1px solid #991b1b;">Logout</button>
+    <button id="btn-logout" style="background:#7f1d1d;color:#fca5a5;border:1px solid #991b1b;" data-i18n="btn.logout">Logout</button>
   </div>
 </header>
 

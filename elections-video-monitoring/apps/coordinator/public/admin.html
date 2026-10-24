@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
 <title data-i18n="admin.page.title">Election Monitor — Admin</title>
 <script src="i18n.js"></script>
 <style>
@@ -65,8 +65,9 @@ button {
 #btn-upload:hover { background: #1d4ed8; }
 #btn-file-pick { background: #374151; color: #e0e0e0; }
 #btn-file-pick:hover { background: #4b5563; }
-#btn-reset { background: #7f1d1d; color: #fca5a5; font-size: 11px; margin-top: 4px; }
-#btn-reset:hover { background: #991b1b; }
+/* Destructive and rare: outlined, so it never reads as the primary action. */
+#btn-reset { background: transparent; color: #fca5a5; border: 1px solid #7f1d1d; font-size: 11px; margin-top: 4px; }
+#btn-reset:hover { background: #7f1d1d; }
 #file-input { display: none; }
 #upload-msg { font-size: 12px; padding: 4px 0; min-height: 20px; }
 #upload-msg.ok  { color: #22c55e; }
@@ -74,7 +75,9 @@ button {
 
 /* Flagged table */
 #flagged-section { position: relative; }
-#refresh-status { position: absolute; top: 16px; right: 20px; font-size: 11px; color: #555; }
+/* Tablet portrait: the six-column table is wider than the card; scroll it, not the page. */
+#flagged-container { overflow-x: auto; }
+#refresh-status { position: absolute; top: 16px; right: 20px; font-size: 11px; color: #888; }
 
 .flag-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .flag-table th {
@@ -99,7 +102,7 @@ button {
 
 .report-count { font-weight: 600; color: #f97316; }
 
-#no-flags { color: #555; font-size: 13px; padding: 8px 0; }
+#no-flags { color: #888; font-size: 13px; padding: 8px 0; }
 
 /* Sections list */
 #sections-list { max-height: 400px; overflow-y: auto; }
@@ -116,7 +119,14 @@ button {
 .section-row.disabled { opacity: 0.4; }
 #sections-filter { background: #111; border: 1px solid #333; color: #e0e0e0; padding: 6px 10px; font-size: 12px; border-radius: 4px; width: 100%; margin-bottom: 8px; }
 #sections-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-#sections-count { font-size: 11px; color: #666; }
+#sections-count { font-size: 11px; color: #888; }
+/* Long JSON examples must wrap, or they push the page sideways on phones. */
+section p code { overflow-wrap: anywhere; }
+
+/* Visible keyboard focus; the dark inputs otherwise only change by 1px. */
+input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible {
+  outline: 2px solid #3b82f6; outline-offset: 1px;
+}
 
 /* User management */
 #user-mgmt-msg { font-size: 12px; padding: 4px 0; min-height: 20px; }
@@ -161,7 +171,18 @@ textarea#bulk-users-json {
 .users-table tr:hover td { background: #1f1f1f; }
 .btn-delete-user { background: #7f1d1d; color: #fca5a5; font-size: 11px; padding: 3px 10px; }
 .btn-delete-user:hover { background: #991b1b; }
-#no-users { color: #555; font-size: 13px; padding: 8px 0; }
+#no-users { color: #888; font-size: 13px; padding: 8px 0; }
+
+/* ── Touch sizing ──────────────────────────────────────────────────────────── */
+@media (pointer: coarse) {
+  button, .section-row .s-toggle { min-height: 44px; }
+  .btn-delete-user { min-height: 44px; padding: 6px 14px; }
+  input, select, textarea, #sections-filter,
+  textarea#stream-json, textarea#bulk-users-json,
+  #add-user-form input, #add-user-form select { font-size: 16px; }
+  #add-user-form input, #add-user-form select, #sections-filter { min-height: 44px; }
+  header > div:last-child button { padding: 0 12px !important; font-size: 12px !important; min-width: 44px; }
+}
 
 /* ── Mobile responsive ────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
@@ -172,10 +193,13 @@ textarea#bulk-users-json {
   main { padding: 12px; gap: 16px; }
   section { padding: 12px; }
 
-  #upload-row { flex-direction: column; }
+  #upload-row, #bulk-upload-row { flex-direction: column; align-items: stretch; }
   textarea#stream-json { min-width: 0; width: 100%; height: 80px; font-size: 10px; }
-  #upload-controls { flex-direction: row; flex-wrap: wrap; gap: 6px; min-width: 0; }
-  #upload-controls button { flex: 1; min-width: 100px; }
+  /* File + Upload as two equal halves; message and Reset get full rows */
+  #upload-controls, #bulk-upload-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-width: 0; }
+  #upload-msg, #bulk-upload-msg, #btn-reset { grid-column: 1 / -1; }
+  #btn-reset { font-size: 13px; }
+  #btn-add-user { align-self: stretch; }
 
   /* Convert table to card layout on mobile */
   .flag-table thead { display: none; }
@@ -205,6 +229,18 @@ textarea#bulk-users-json {
   }
   .url-cell { max-width: 100%; white-space: normal; word-break: break-all; }
 
+  /* Phones: the label is what admins scan; the URL column squeezed it to a few characters. */
+  .section-row .s-url { display: none; }
+  .section-row { padding: 8px 0; }
+  .section-row .s-toggle { padding: 8px 10px; font-size: 11px; }
+
+  /* 16px inputs stop iOS from zooming; scroll-margin keeps the submit button
+   * of the add-user form in view above the keyboard. */
+  #sections-filter, #add-user-form input, #add-user-form select { font-size: 16px; }
+  #add-user-form input, #add-user-form select { scroll-margin-bottom: 120px; }
+  #btn-reset { margin-top: 4px; }
+  header > div:last-child button { padding: 7px 12px !important; font-size: 12px !important; }
+
   #add-user-form { flex-direction: column; align-items: stretch; }
   #add-user-form input, #add-user-form select { min-width: 0; width: 100%; }
   #bulk-upload-row { flex-direction: column; }
@@ -223,6 +259,11 @@ textarea#bulk-users-json {
     text-transform: uppercase; display: block; margin-bottom: 2px;
   }
 }
+
+/* Touch, narrow: keep the JSON boxes at 16px (the 600px block above sets 10px). */
+@media (pointer: coarse) {
+  textarea#stream-json, textarea#bulk-users-json { font-size: 16px; }
+}
 </style>
 </head>
 <body>
@@ -236,7 +277,7 @@ textarea#bulk-users-json {
   </div>
   <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
     <button id="lang-toggle" style="font-size:11px;padding:3px 8px;background:#1f2937;color:#9ca3af;border:1px solid #374151;border-radius:4px;cursor:pointer;">EN</button>
-    <button id="btn-logout" style="font-size:11px;padding:3px 8px;background:#7f1d1d;color:#fca5a5;border:1px solid #991b1b;border-radius:4px;cursor:pointer;">Logout</button>
+    <button id="btn-logout" style="font-size:11px;padding:3px 8px;background:#7f1d1d;color:#fca5a5;border:1px solid #991b1b;border-radius:4px;cursor:pointer;" data-i18n="btn.logout">Logout</button>
   </div>
 </header>
 
@@ -260,7 +301,7 @@ textarea#bulk-users-json {
   <!-- Add / Update sections -->
   <section>
     <h2 data-i18n="upload.title">Add / Update Sections</h2>
-    <p style="font-size:12px;color:#666;margin-bottom:10px">
+    <p style="font-size:12px;color:#999;margin-bottom:10px">
       JSON array: <code style="color:#9ca3af">[{"section":"102700005","url":"https://...","label":"OIK 42 / …","assigned_users":"4905dd,8d4a1a"}, …]</code>
       — adds new sections or updates URL if section already exists (device restart). Section ID is auto-parsed from URL if omitted. <code style="color:#9ca3af">assigned_users</code> is an optional comma-separated list of volunteer IDs pre-assigned to this section; volunteers can also self-select sections with low or no assignments.
     </p>
@@ -327,7 +368,7 @@ textarea#bulk-users-json {
     <div id="user-mgmt-msg"></div>
 
     <!-- Bulk Upload Users -->
-    <p style="font-size:12px;color:#666;margin-top:14px;margin-bottom:6px">
+    <p style="font-size:12px;color:#999;margin-top:14px;margin-bottom:6px">
       Bulk upload — JSON array: <code style="color:#9ca3af">[{"username":"vol1","password":"pass1234","role":"volunteer"}, …]</code>
     </p>
     <div id="bulk-upload-row">
@@ -452,6 +493,7 @@ document.getElementById('btn-reset').addEventListener('click', async () => {
 async function refreshStats() {
   try {
     const res = await fetch('/api/streams/stats');
+    if (!res.ok) return; // keep the placeholders rather than show "undefined"
     const d = await res.json();
     document.getElementById('stat-total').textContent = d.total;
     document.getElementById('stat-enabled').textContent = d.enabled;

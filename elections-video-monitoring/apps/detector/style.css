@@ -150,10 +150,10 @@ body.embedded-mode .video-overlay { display: block; }
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  opacity: 0.6;
+  opacity: 0.85;
   transition: opacity 0.2s;
 }
-.vid-btn:hover { opacity: 0.9; }
+.vid-btn:hover, .vid-btn:focus-visible { opacity: 1; }
 .maximize-btn {
   top: 8px; right: 8px;
   background: rgba(0,0,0,0.55);
@@ -183,6 +183,15 @@ body.embedded-mode .video-overlay { display: block; }
   box-shadow: 0 4px 16px rgba(0,0,0,0.4);
 }
 .phone-popup.open { display: block; }
+
+/* Touch: "Report issue" and "Call" are the volunteer's main actions here. */
+@media (pointer: coarse) {
+  .vid-btn { min-height: 44px; padding: 8px 14px; font-size: 13px; }
+  .maximize-btn { width: 44px; height: 44px; font-size: 20px; }
+  .call-btn { right: 60px; }
+  .phone-popup { top: 60px; right: 8px; }
+  .phone-popup li { padding: 8px 0; font-size: 14px; }
+}
 .phone-popup h4 { font-size: 12px; margin-bottom: 6px; color: var(--text); }
 .phone-popup ul { list-style: none; font-size: 11px; color: var(--text-muted); }
 .phone-popup li { padding: 3px 0; }
@@ -297,18 +306,20 @@ body.embedded-mode .video-overlay { display: block; }
 .log-time { color: var(--text-muted); margin-right: .5rem; }
 
 @media (max-width: 500px) {
-  #status-panel { flex: 1; min-width: 0; width: auto; white-space: nowrap; overflow: hidden; padding: .4rem .6rem; }
+  /* flex: 0 0 auto, not 1: <main> is a column, so flex: 1 grew the panel
+   * vertically to fill spare height (and split the maximized view in half). */
+  #status-panel { flex: 0 0 auto; min-width: 0; width: auto; white-space: nowrap; overflow: hidden; padding: .4rem .6rem; }
   .status-text { font-size: .8rem; }
   .status-sub { font-size: .7rem; }
 
   main { padding: .75rem .5rem; gap: .75rem; }
 
-  #stream-url { min-width: 0; font-size: .8rem; padding: .6rem; }
+  #stream-url { min-width: 0; font-size: 16px; padding: .6rem; }
 
   .metrics-row { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: .3rem; scrollbar-width: none; -ms-overflow-style: none; }
   .metrics-row::-webkit-scrollbar { display: none; }
   .metric { flex: 0 0 auto; min-width: 72px; padding: .4rem .5rem; border-radius: 6px; }
-  .metric-label { font-size: .55rem; }
+  .metric-label { font-size: .6rem; }
   .metric-value { font-size: .8rem; }
 
   .preview-section  { padding: .5rem; order: 1; }
@@ -405,4 +416,14 @@ body.maximized #video {
   .metric.breach-dark    { border-color: #60a5fa; background: #eff6ff; color: #0f172a; }
 
   .log-entry.alert { background: #fef2f2; }
+}
+
+/* ── Touch sizing (last, so it wins over the base rules above) ──────────── */
+@media (pointer: coarse) {
+  .preview-url-row button { min-height: 44px; min-width: 44px; }
+  #stream-url { min-height: 44px; font-size: 16px; }
+  .btn-small, #btn-reset-config { min-height: 44px; padding: .4rem .9rem; }
+  .collapsible-section summary, .config-panel summary { min-height: 44px; }
+  .config-grid input[type="number"] { font-size: 16px; min-height: 44px; }
+  .checkbox-label input[type="checkbox"] { width: 20px; height: 20px; }
 }

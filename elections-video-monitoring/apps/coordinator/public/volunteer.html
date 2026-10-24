@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
 <title data-i18n="header.title">Stream Monitor</title>
 <script src="i18n.js"></script>
 <style>
@@ -20,10 +20,11 @@
   --hg: #666;
   --vol-off: #444;
   --card-ok-border: #166534;   --card-ok-bg: #0a1a0a;
-  --card-cov-border: #991b1b;  --card-cov-bg: #1a0808;
-  --card-frz-border: #92400e;  --card-frz-bg: #1a0e00;
-  --card-drk-border: #1e3a5f;  --card-drk-bg: #080d1a;
-  --card-err-border: #4a1d1d;  --card-err-bg: #120808;
+  --card-cov-border: #dc2626;  --card-cov-bg: #2a0a0a;  --card-cov-text: #f87171;
+  --card-frz-border: #d97706;  --card-frz-bg: #261400;  --card-frz-text: #fb923c;
+  --card-drk-border: #2563eb;  --card-drk-bg: #0a1430;  --card-drk-text: #60a5fa;
+  --card-err-border: #3f3f46;  --card-err-bg: #141414;
+  --focus: #3b82f6;
 }
 
 @media (prefers-color-scheme: light) {
@@ -40,11 +41,11 @@
     --loading: #94a3b8;
     --hg: #9ca3af;
     --vol-off: #cbd5e1;
-    --card-ok-border: #16a34a;   --card-ok-bg: #f0fdf4;
-    --card-cov-border: #dc2626;  --card-cov-bg: #fef2f2;
-    --card-frz-border: #d97706;  --card-frz-bg: #fff7ed;
-    --card-drk-border: #2563eb;  --card-drk-bg: #eff6ff;
-    --card-err-border: #f87171;  --card-err-bg: #fef2f2;
+    --card-ok-border: #86efac;   --card-ok-bg: #ffffff;
+    --card-cov-border: #dc2626;  --card-cov-bg: #fee2e2;  --card-cov-text: #b91c1c;
+    --card-frz-border: #d97706;  --card-frz-bg: #ffedd5;  --card-frz-text: #c2410c;
+    --card-drk-border: #2563eb;  --card-drk-bg: #dbeafe;  --card-drk-text: #1d4ed8;
+    --card-err-border: #94a3b8;  --card-err-bg: #f8fafc;
   }
 }
 
@@ -143,7 +144,7 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
     height: 60vh;
     height: 60dvh;
     transform: translateY(100%);
-    transition: transform 0.25s ease-out;
+    transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
     z-index: 50;
     border-top: 1px solid var(--border);
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
@@ -187,6 +188,14 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
   #overlay h2 { font-size: 18px; }
   #overlay p { font-size: 13px; padding: 0 16px; }
   #overlay button { padding: 12px 28px; font-size: 15px; }
+
+
+  /* Section picker: top-aligned and short enough that "Add selected" stays
+   * above the on-screen keyboard while typing in the filter. */
+  #section-modal-overlay { align-items: flex-start; padding-top: max(12px, env(safe-area-inset-top)); }
+  #section-modal { width: calc(100vw - 24px); max-height: min(60vh, calc(100dvh - 24px)); }
+  #section-filter { font-size: 16px; }
+  #stream-grid { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
 }
 
 /* ── Add section button ──────────────────────────────────────────────────── */
@@ -203,7 +212,8 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
   cursor: pointer;
   text-align: center;
 }
-#add-section-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+#add-section-btn:hover,
+#add-section-btn:focus-visible { border-color: #3b82f6; color: #3b82f6; }
 
 /* ── Section picker modal ────────────────────────────────────────────────── */
 #section-modal-overlay {
@@ -246,6 +256,7 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
   font-size: 12px;
   outline: none;
 }
+#section-filter:focus-visible { box-shadow: inset 0 -2px 0 var(--focus); }
 #section-list {
   flex: 1;
   overflow-y: auto;
@@ -302,6 +313,9 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
 }
 .stream-card.manual .card-remove { display: block; }
 .card-remove:hover { background: rgba(220,38,38,0.8); color: #fff; }
+@media (pointer: coarse) {
+  .card-remove { width: 26px; height: 26px; line-height: 26px; font-size: 16px; }
+}
 
 /* ── Inspect pane ─────────────────────────────────────────────────────────── */
 #inspect-panel {
@@ -317,7 +331,7 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--placeholder);
+  color: var(--text-muted);
   font-size: 13px;
 }
 
@@ -361,14 +375,22 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
   display: flex;
   flex-direction: column;
   gap: 4px;
-  transition: border-color 0.3s;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 .stream-card.ok      { border-color: var(--card-ok-border);  background: var(--card-ok-bg); }
-.stream-card.covered { border-color: var(--card-cov-border); background: var(--card-cov-bg); }
-.stream-card.frozen  { border-color: var(--card-frz-border); background: var(--card-frz-bg); }
-.stream-card.dark    { border-color: var(--card-drk-border); background: var(--card-drk-bg); }
-.stream-card.error   { border-color: var(--card-err-border); background: var(--card-err-bg); }
-.stream-card.selected { outline: 2px solid #3b82f6; outline-offset: -1px; }
+/* Problem states get a 2px edge (inset shadow, so the layout does not shift)
+ * and a coloured status word, so they read first in a grid of OK cards. */
+.stream-card.covered { border-color: var(--card-cov-border); background: var(--card-cov-bg); box-shadow: inset 0 0 0 1px var(--card-cov-border); }
+.stream-card.frozen  { border-color: var(--card-frz-border); background: var(--card-frz-bg); box-shadow: inset 0 0 0 1px var(--card-frz-border); }
+.stream-card.dark    { border-color: var(--card-drk-border); background: var(--card-drk-bg); box-shadow: inset 0 0 0 1px var(--card-drk-border); }
+.stream-card.covered .status-text { color: var(--card-cov-text); }
+.stream-card.frozen  .status-text { color: var(--card-frz-text); }
+.stream-card.dark    .status-text { color: var(--card-drk-text); }
+/* Error = no picture to judge, not an alarm: neutral and dashed, never red. */
+.stream-card.error   { border-color: var(--card-err-border); background: var(--card-err-bg); border-style: dashed; }
+.stream-card.error .status-text { color: var(--text-muted); }
+/* One-word Bulgarian labels ("Инициализиране") cannot wrap; clip them inside narrow cards. */
+.status-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .card-thumb {
   width: 100%;
@@ -417,7 +439,11 @@ video.card-thumb-video { pointer-events: none; object-fit: cover; }
 .card-metrics { font-size: 12px; color: var(--text-metrics); }
 
 .stream-card { cursor: pointer; position: relative; }
-.stream-card:hover { border-color: #3b82f6 !important; }
+/* Hover and selection sit outside the border so they never hide the status colour. */
+@media (hover: hover) and (pointer: fine) {
+  .stream-card:hover { outline: 2px solid rgba(59,130,246,0.45); outline-offset: 2px; }
+}
+.stream-card.selected { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 .card-star {
   position: absolute;
@@ -498,6 +524,41 @@ video.card-thumb-video { pointer-events: none; object-fit: cover; }
   }
   body.maximized #sheet-header { display: none; }
 }
+
+/* ── Touch sizing (any width: landscape phones and tablets are wider than 700px) ── */
+@media (pointer: coarse) {
+  #help-link, #lang-toggle, #btn-logout {
+    padding: 0 12px !important; font-size: 12px !important;
+    min-height: 44px; min-width: 44px; justify-content: center; display: inline-flex; align-items: center;
+  }
+  #add-section-btn { min-height: 44px; font-size: 13px; }
+  #sheet-close { min-height: 44px; }
+  #section-filter { font-size: 16px; padding: 12px 14px; }
+  .section-item { padding: 10px 14px; font-size: 13px; min-height: 44px; }
+  .section-item input[type="checkbox"] { width: 20px; height: 20px; }
+  #section-modal-close { min-width: 44px; min-height: 44px; font-size: 22px; }
+  #section-add-btn { min-height: 44px; padding: 8px 18px; font-size: 14px; }
+}
+@media (pointer: coarse) and (max-height: 500px) {
+  /* Landscape phone: keep the picker inside the space left by the keyboard. */
+  #section-modal-overlay { align-items: flex-start; padding-top: 4px; }
+  #section-modal { max-height: calc(100dvh - 8px); }
+  #section-modal-header { padding: 0 0 0 14px; }
+  #section-modal-footer { padding: 0 0 0 14px; }
+  #section-list { padding: 0; }
+}
+
+/* ── Press feedback ──────────────────────────────────────────────────────── */
+#start-btn, #section-add-btn, #add-section-btn, #lang-toggle, #btn-logout, #help-link {
+  transition: transform 120ms ease-out;
+}
+#start-btn:active, #section-add-btn:active:not(:disabled), #add-section-btn:active,
+#lang-toggle:active, #btn-logout:active, #help-link:active { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  #hg polygon { animation: none !important; }
+  #inspect-panel { transition: none !important; }
+}
 </style>
 </head>
 <body>
@@ -512,7 +573,7 @@ video.card-thumb-video { pointer-events: none; object-fit: cover; }
   <div class="header-actions">
     <a id="help-link" href="/help" data-i18n="help.link">Help</a>
     <button id="lang-toggle" style="font-size:11px;padding:3px 8px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:4px;cursor:pointer;">EN</button>
-    <button id="btn-logout" style="font-size:11px;padding:3px 8px;background:#7f1d1d;color:#fca5a5;border:1px solid #991b1b;border-radius:4px;cursor:pointer;">Logout</button>
+    <button id="btn-logout" style="font-size:11px;padding:3px 8px;background:#7f1d1d;color:#fca5a5;border:1px solid #991b1b;border-radius:4px;cursor:pointer;" data-i18n="btn.logout">Logout</button>
   </div>
 </header>
 
