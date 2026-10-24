@@ -695,7 +695,6 @@ async function init() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...(savedId ? { session_id: savedId } : {}),
-        ...(USER_ID ? { user_id: USER_ID }   : {}),
       }),
     });
     data = await res.json();

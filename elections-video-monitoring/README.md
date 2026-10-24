@@ -34,7 +34,7 @@ flowchart TD
    - **Freeze** — frame has not changed for 120 s
    - **No signal** — average frame luminance below threshold (black frame / camera off)
    - **Camera cover** — majority of 16×9 grid cells show near-zero local variance for 30 s (lens blocked)
-3. **Report** — volunteers POST detection results to the coordinator every 30 s. The server aggregates reports; streams flagged by ≥2 volunteers in the last 5 minutes surface in the admin view.
+3. **Report** — volunteers POST detection results to the coordinator every 30 s. The server aggregates reports; any stream a volunteer flagged in the last 5 minutes surfaces in the admin view.
 4. **Inspect** — clicking any card in the volunteer page loads the standalone detector in the right-side iframe panel at the exact stream and video timestamp, showing frame-accurate wall-clock recording time extracted from the filename.
 
 ## Local development

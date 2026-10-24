@@ -27,7 +27,7 @@ Default port: `3000`. Override with `PORT` env var.
 | `POST` | `/api/session` | Create a session; returns `{ session_id, streams[] }` |
 | `POST` | `/api/heartbeat` | Keep session alive; body `{ session_id }` |
 | `POST` | `/api/report` | Submit detection results; body `{ session_id, results[] }` |
-| `GET`  | `/api/flagged` | Get streams flagged in the last 5 min by ≥2 volunteers |
+| `GET`  | `/api/flagged` | Get streams flagged in the last 5 min by any volunteer |
 | `POST` | `/api/streams` | Bulk-replace stream list; body `[{ section?, url, label }]` — **destructive**, wipes all sessions/reports |
 | `POST` | `/api/streams/upsert` | Add/update sections; body `[{ section?, url, label }]` — additive, resets `last_checked` on URL change |
 | `GET`  | `/api/streams` | List all sections with enabled state |

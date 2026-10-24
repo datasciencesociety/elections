@@ -101,14 +101,14 @@ try { db.exec('ALTER TABLE sessions ADD COLUMN user_id TEXT'); } catch {}
 
 const stmt = {
   insertSession:     db.prepare('INSERT INTO sessions (id, assigned_at, last_heartbeat, user_id) VALUES (?, ?, ?, ?)'),
-  // pickStreams is dynamic — see pickStreamsForSession()
   insertAssignment:  db.prepare('INSERT OR REPLACE INTO assignments VALUES (?, ?, ?)'),
   heartbeat:         db.prepare('UPDATE sessions SET last_heartbeat = ? WHERE id = ?'),
   deadSessions:      db.prepare('SELECT id FROM sessions WHERE last_heartbeat < ?'),
   deleteSession:     db.prepare('DELETE FROM sessions WHERE id = ?'),
   deleteAssignments: db.prepare('DELETE FROM assignments WHERE session_id = ?'),
-  sessionExists:     db.prepare('SELECT 1 FROM sessions WHERE id = ?'),
-  sessionForHb:      db.prepare('SELECT user_id FROM sessions WHERE id = ?'),
+  sessionOwned:      db.prepare('SELECT 1 FROM sessions WHERE id = ? AND user_id = ?'),
+  sessionAssigned:   db.prepare('SELECT 1 FROM assignments WHERE session_id = ? AND stream_id = ?'),
+  userRole:          db.prepare('SELECT role FROM users WHERE username = ?'),
   preAssignedForUser: db.prepare(`
     SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
     WHERE s.enabled = 1
@@ -137,7 +137,6 @@ const stmt = {
       AND r.status != 'initializing'
       AND r.status != 'error'
     GROUP BY s.id, r.status
-    HAVING COUNT(DISTINCT r.session_id) >= 2
     ORDER BY report_count DESC, first_seen ASC
   `),
   volunteerCount:    db.prepare('SELECT COUNT(*) AS count FROM sessions WHERE last_heartbeat > ?'),
@@ -220,6 +219,8 @@ function txCreateSession(sessionId, streams, userId = null) {
 function txReport(sessionId, results, now) {
   transaction(() => {
     for (const r of results) {
+      // Only accept reports for streams this session is actually watching
+      if (!r || typeof r.status !== 'string' || !stmt.sessionAssigned.get(sessionId, r.stream_id)) continue;
       stmt.insertReport.run(sessionId, r.stream_id, now, r.status,
         r.cover_ratio ?? null, r.frozen_sec ?? null, r.luma ?? null);
       stmt.touchStream.run(now, r.stream_id);
@@ -326,66 +327,14 @@ function serveFile(res, filePath, contentType) {
 
 // ── Route handlers ────────────────────────────────────────────────────────────
 
-// Pick streams for a new volunteer.
-// Priority order:
-//   1. Sections pre-assigned to this userId (assigned_users contains the ID) that have no active coverage
-//   2. Other unassigned sections (not currently watched by any live session)
-//   3. Fallback: least-recently-checked sections regardless of assignment (when pool is small)
-// TODO: replace userId stub with real user ID from auth
-function pickStreamsForSession(activeCutoff, limit = 16, userId = null) {
-  const activeSub = `
-    SELECT a.stream_id FROM assignments a
-    JOIN sessions se ON se.id = a.session_id
-    WHERE se.last_heartbeat > ?
-  `;
-
-  // 1. Pre-assigned sections for this user, not currently covered
-  let prioritized = [];
-  if (userId) {
-    prioritized = db.prepare(`
-      SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
-      WHERE s.enabled = 1
-        AND s.id NOT IN (${activeSub})
-        AND s.assigned_users IS NOT NULL
-        AND (',' || s.assigned_users || ',') LIKE ('%,' || ? || ',%')
-      ORDER BY s.last_checked IS NOT NULL, s.last_checked ASC, RANDOM()
-      LIMIT ?
-    `).all(activeCutoff, userId, limit);
-  }
-
-  if (prioritized.length >= limit) return prioritized;
-
-  // 2. Other unassigned sections (exclude already-picked)
-  const excl1 = prioritized.map(s => s.id);
-  const ph1 = excl1.length ? excl1.map(() => '?').join(',') : 'NULL';
-  const unassigned = db.prepare(`
-    SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
-    WHERE s.enabled = 1
-      AND s.id NOT IN (${activeSub})
-      AND s.id NOT IN (${ph1})
-    ORDER BY s.last_checked IS NOT NULL, s.last_checked ASC, RANDOM()
-    LIMIT ?
-  `).all(activeCutoff, ...excl1, limit - prioritized.length);
-
-  const picked = [...prioritized, ...unassigned];
-  if (picked.length >= limit) return picked;
-
-  // 3. Pad with least-recently-checked (pool exhausted — all sections already covered)
-  const excl2 = picked.map(s => s.id);
-  const ph2 = excl2.length ? excl2.map(() => '?').join(',') : 'NULL';
-  const extra = db.prepare(`
-    SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
-    WHERE s.enabled = 1
-      AND s.id NOT IN (${ph2})
-    ORDER BY s.last_checked IS NOT NULL, s.last_checked ASC, RANDOM()
-    LIMIT ?
-  `).all(...excl2, limit - picked.length);
-
-  return [...picked, ...extra];
-}
-
 const SESSION_TTL = parseInt(process.env.SESSION_TTL_MS, 10) || 8 * 60 * 60 * 1000; // 8 h default
 
+
+// Current role from the DB, so deleted or demoted users lose access immediately
+function lookupRole(username) {
+  const row = stmt.userRole.get(username);
+  return row ? row.role : null;
+}
 
 function enrichWithContacts(streams) {
   return streams.map(s => ({ ...s, contacts: stmt.streamContacts.all(s.id) }));
@@ -394,25 +343,17 @@ function enrichWithContacts(streams) {
 async function handleSession(req, res) {
   let body = {};
   try { body = await readBody(req); } catch {}
+  // Identity comes from the verified login cookie, never from the request body
+  const userId = req.user.username;
 
-  // Resume existing session if the client sends a known session_id
-  if (body.session_id && stmt.sessionExists.get(body.session_id)) {
-    stmt.heartbeat.run(Date.now(), body.session_id);
-    const userId = body.user_id || null;
+  // Resume existing session if the client sends a session_id it owns
+  if (body.session_id && stmt.sessionOwned.get(body.session_id, userId)) {
+    const now = Date.now();
+    stmt.heartbeat.run(now, body.session_id);
 
     // Ensure pre-assigned streams are in the session, but keep manually-added ones too
-    if (userId) {
-      const preAssigned = db.prepare(`
-        SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
-        WHERE s.enabled = 1
-          AND s.assigned_users IS NOT NULL
-          AND (',' || s.assigned_users || ',') LIKE ('%,' || ? || ',%')
-        ORDER BY s.section ASC
-      `).all(userId);
-      const now = Date.now();
-      for (const s of preAssigned) {
-        stmt.insertAssignment.run(body.session_id, s.id, now); // INSERT OR REPLACE — safe if already exists
-      }
+    for (const s of stmt.preAssignedForUser.all(userId)) {
+      stmt.insertAssignment.run(body.session_id, s.id, now); // INSERT OR REPLACE — safe if already exists
     }
 
     // Return all streams currently assigned to this session
@@ -426,16 +367,8 @@ async function handleSession(req, res) {
     return;
   }
 
-  const userId = body.user_id || null;
-
   // All sections pre-assigned to this user; if none, pick 2 random enabled streams
-  let streams = userId ? db.prepare(`
-    SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
-    WHERE s.enabled = 1
-      AND s.assigned_users IS NOT NULL
-      AND (',' || s.assigned_users || ',') LIKE ('%,' || ? || ',%')
-    ORDER BY s.section ASC
-  `).all(userId) : [];
+  let streams = stmt.preAssignedForUser.all(userId);
 
   if (streams.length === 0) {
     streams = db.prepare(`
@@ -446,7 +379,7 @@ async function handleSession(req, res) {
   }
 
   const sessionId = crypto.randomUUID();
-  txCreateSession(sessionId, streams, body.user_id || null);
+  txCreateSession(sessionId, streams, userId);
   json(res, 200, { session_id: sessionId, streams: enrichWithContacts(streams) });
 }
 
@@ -455,9 +388,9 @@ async function handleHeartbeat(req, res) {
   const { session_id } = body;
   if (!session_id) { json(res, 400, { error: 'session_id required' }); return; }
 
-  const session = stmt.sessionForHb.get(session_id);
-  if (!session) {
-    // Session expired or was never created — tell client to reinitialise
+  const userId = req.user.username;
+  if (!stmt.sessionOwned.get(session_id, userId)) {
+    // Session expired, never created, or belongs to another user — tell client to reinitialise
     json(res, 200, { ok: false, reinit: true });
     return;
   }
@@ -467,14 +400,10 @@ async function handleHeartbeat(req, res) {
   const cleaned = txCleanDead(now - SESSION_TTL);
   if (cleaned > 0) console.log(`Cleaned ${cleaned} dead session(s)`);
 
-  const reply = { ok: true };
-  if (session.user_id) {
-    const preAssigned = stmt.preAssignedForUser.all(session.user_id);
-    for (const s of preAssigned) stmt.insertAssignment.run(session_id, s.id, now);
-    reply.assigned_streams = enrichWithContacts(preAssigned);
-  }
+  const preAssigned = stmt.preAssignedForUser.all(userId);
+  for (const s of preAssigned) stmt.insertAssignment.run(session_id, s.id, now);
 
-  json(res, 200, reply);
+  json(res, 200, { ok: true, assigned_streams: enrichWithContacts(preAssigned) });
 }
 
 async function handleReport(req, res) {
@@ -483,7 +412,7 @@ async function handleReport(req, res) {
   if (!session_id || !Array.isArray(results)) {
     json(res, 400, { error: 'session_id and results[] required' }); return;
   }
-  if (!stmt.sessionExists.get(session_id)) {
+  if (!stmt.sessionOwned.get(session_id, req.user.username)) {
     json(res, 400, { error: 'unknown session', reinit: true }); return;
   }
   txReport(session_id, results, Date.now());
@@ -556,7 +485,7 @@ async function handleAddStreams(req, res) {
   if (!session_id || !Array.isArray(stream_ids) || stream_ids.length === 0) {
     json(res, 400, { error: 'session_id and stream_ids[] required' }); return;
   }
-  if (!stmt.sessionExists.get(session_id)) {
+  if (!stmt.sessionOwned.get(session_id, req.user.username)) {
     json(res, 404, { error: 'session not found' }); return;
   }
   const now = Date.now();
@@ -582,7 +511,7 @@ async function handleRemoveStream(req, res) {
   if (!session_id || typeof stream_id !== 'number') {
     json(res, 400, { error: 'session_id and stream_id required' }); return;
   }
-  if (!stmt.sessionExists.get(session_id)) {
+  if (!stmt.sessionOwned.get(session_id, req.user.username)) {
     json(res, 404, { error: 'session not found' }); return;
   }
   stmt.deleteOneAssignment.run(session_id, stream_id);
@@ -618,7 +547,7 @@ const server = http.createServer(async (req, res) => {
 
   try {
     // Auth middleware — redirects or rejects unauthorized requests
-    if (authMiddleware(req, res)) return;
+    if (authMiddleware(req, res, { lookupRole })) return;
     // Static pages
     if (req.method === 'GET' && url === '/') {
       // Inject PROXY_BASE so the client knows where to send video requests.
@@ -664,7 +593,7 @@ const server = http.createServer(async (req, res) => {
         if (err) { res.writeHead(404); res.end('Not found'); return; }
         const injected = html.replace(
           '</head>',
-          `<script>window.PROXY_BASE = '${proxyBase}';</script>\n</head>`,
+          `<script>window.PROXY_BASE = ${JSON.stringify(proxyBase)};</script>\n</head>`,
         );
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(injected);
@@ -831,12 +760,6 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // CORS proxy
-    if (url.startsWith('/proxy/')) {
-      handleProxy(req, res);
-      return;
-    }
-
     // API
     if (req.method === 'POST' && url === '/api/session') {
       await handleSession(req, res); return;
@@ -882,10 +805,11 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(404); res.end();
   } catch (err) {
     console.error('Request error:', err);
-    if (!res.headersSent) json(res, 500, { error: err.message });
+    if (!res.headersSent) json(res, 500, { error: 'Internal server error' });
   }
 });
 
 const PORT = process.env.PORT || 3000;
 initUserStore(db);
+if (!process.env.COOKIE_SECRET) console.warn('COOKIE_SECRET not set — all logins are invalidated on every restart');
 server.listen(PORT, () => console.log(`Election monitor: http://localhost:${PORT}`));

@@ -1,369 +1,234 @@
 'use strict';
 
-const { describe, it, before, after, beforeEach, afterEach } = require('node:test');
+// Boots the real server.js on a temp DB and exercises auth + session rules over HTTP.
+
+const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
-const http = require('node:http');
+const { spawn } = require('node:child_process');
+const net = require('node:net');
 const path = require('node:path');
 const fs = require('node:fs');
+const os = require('node:os');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-/**
- * Make an HTTP request and return { statusCode, headers, body }.
- */
-function request(port, method, urlPath, { body, headers = {} } = {}) {
+function freePort() {
   return new Promise((resolve, reject) => {
-    const opts = {
-      hostname: '127.0.0.1',
-      port,
-      path: urlPath,
-      method,
-      headers: { ...headers },
-    };
-    if (body !== undefined) {
-      const payload = typeof body === 'string' ? body : JSON.stringify(body);
-      opts.headers['Content-Type'] = 'application/json';
-      opts.headers['Content-Length'] = Buffer.byteLength(payload);
-    }
-    const req = http.request(opts, (res) => {
-      const chunks = [];
-      res.on('data', (c) => chunks.push(c));
-      res.on('end', () => {
-        const raw = Buffer.concat(chunks).toString();
-        let parsed;
-        try { parsed = JSON.parse(raw); } catch { parsed = raw; }
-        resolve({ statusCode: res.statusCode, headers: res.headers, body: parsed });
-      });
+    const srv = net.createServer();
+    srv.listen(0, '127.0.0.1', () => {
+      const { port } = srv.address();
+      srv.close(() => resolve(port));
     });
-    req.on('error', reject);
-    if (body !== undefined) {
-      req.write(typeof body === 'string' ? body : JSON.stringify(body));
-    }
-    req.end();
+    srv.on('error', reject);
   });
 }
 
-// ── Credential validation test (no server needed) ───────────────────────────
+let base;
 
-describe('Credential validation at startup', () => {
-  let originalEnv;
+async function request(method, urlPath, { body, cookie } = {}) {
+  const headers = {};
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  if (cookie) headers.Cookie = cookie;
+  const res = await fetch(base + urlPath, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+    redirect: 'manual',
+  });
+  const raw = await res.text();
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch { parsed = raw; }
+  return { status: res.status, headers: res.headers, body: parsed };
+}
 
-  beforeEach(() => {
-    originalEnv = { ...process.env };
+async function login(username, password) {
+  const res = await request('POST', '/api/login', { body: { username, password } });
+  assert.equal(res.status, 200, `login ${username}`);
+  return res.headers.get('set-cookie').split(';')[0];
+}
+
+// ── Server lifecycle ─────────────────────────────────────────────────────────
+
+let child;
+let adminCookie, vol1Cookie, vol2Cookie;
+
+before(async () => {
+  const port = await freePort();
+  base = `http://127.0.0.1:${port}`;
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'coord-test-'));
+
+  child = spawn(process.execPath, [path.join(__dirname, 'server.js')], {
+    env: {
+      ...process.env,
+      PORT: String(port),
+      DB_PATH: path.join(tmpDir, 'test.db'),
+      ADMIN_USER: 'testadmin',
+      ADMIN_PASS: 'testadminpass',
+      COOKIE_SECRET: 'test-secret',
+      PROXY_URL: 'http://127.0.0.1:1',
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
 
-  afterEach(() => {
-    process.env = originalEnv;
-    delete require.cache[require.resolve('./auth')];
-  });
-
-  for (const varName of ['ADMIN_USER', 'ADMIN_PASS', 'VOLUNTEER_USER', 'VOLUNTEER_PASS']) {
-    it(`should exit with code 1 when ${varName} is missing`, () => {
-      process.env.ADMIN_USER = 'a';
-      process.env.ADMIN_PASS = 'b';
-      process.env.VOLUNTEER_USER = 'c';
-      process.env.VOLUNTEER_PASS = 'd';
-      delete process.env[varName];
-
-      const { validateCredentials } = require('./auth');
-
-      let exitCode = null;
-      const origExit = process.exit;
-      process.exit = (code) => { exitCode = code; };
-
-      try {
-        validateCredentials();
-        assert.equal(exitCode, 1);
-      } finally {
-        process.exit = origExit;
-      }
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('server did not start')), 10_000);
+    child.stdout.on('data', (d) => {
+      if (d.toString().includes('Election monitor')) { clearTimeout(timer); resolve(); }
     });
+    child.on('exit', (code) => { clearTimeout(timer); reject(new Error(`server exited ${code}`)); });
+  });
 
-    it(`should exit with code 1 when ${varName} is empty`, () => {
-      process.env.ADMIN_USER = 'a';
-      process.env.ADMIN_PASS = 'b';
-      process.env.VOLUNTEER_USER = 'c';
-      process.env.VOLUNTEER_PASS = 'd';
-      process.env[varName] = '';
+  adminCookie = await login('testadmin', 'testadminpass');
+  for (const u of ['vol1', 'vol2', 'vol3']) {
+    const res = await request('POST', '/api/users', {
+      cookie: adminCookie, body: { username: u, password: 'volpass123', role: 'volunteer' },
+    });
+    assert.equal(res.status, 201);
+  }
+  vol1Cookie = await login('vol1', 'volpass123');
+  vol2Cookie = await login('vol2', 'volpass123');
 
-      const { validateCredentials } = require('./auth');
+  const seed = await request('POST', '/api/streams/upsert', {
+    cookie: adminCookie,
+    body: [
+      { section: '010100001', url: 'https://example.test/a.mp4', label: 'A', assigned_users: 'vol1' },
+      { section: '010100002', url: 'https://example.test/b.mp4', label: 'B', assigned_users: 'vol2' },
+      { section: '010100003', url: 'https://example.test/c.mp4', label: 'C' },
+    ],
+  });
+  assert.equal(seed.status, 200);
+});
 
-      let exitCode = null;
-      const origExit = process.exit;
-      process.exit = (code) => { exitCode = code; };
+after(() => {
+  if (child) child.kill();
+});
 
-      try {
-        validateCredentials();
-        assert.equal(exitCode, 1);
-      } finally {
-        process.exit = origExit;
-      }
+// ── Route access ─────────────────────────────────────────────────────────────
+
+describe('Default-deny route access', () => {
+  const protectedApi = [
+    ['POST', '/api/streams/upsert'],
+    ['POST', '/api/streams/toggle'],
+    ['POST', '/api/streams'],
+    ['POST', '/api/session'],
+    ['POST', '/api/session/streams'],
+    ['DELETE', '/api/session/streams'],
+    ['POST', '/api/heartbeat'],
+    ['POST', '/api/report'],
+    ['GET', '/api/flagged'],
+    ['GET', '/api/users'],
+    ['GET', '/api/not-a-route'],
+  ];
+
+  for (const [method, p] of protectedApi) {
+    it(`unauthenticated ${method} ${p} → 401`, async () => {
+      const res = await request(method, p, { body: method === 'GET' ? undefined : {} });
+      assert.equal(res.status, 401);
+    });
+  }
+
+  for (const p of ['/', '/admin', '/inspect/', '/help', '/poc', '/proxy/anything', '/not-a-page']) {
+    it(`unauthenticated GET ${p} → redirect to /login`, async () => {
+      const res = await request('GET', p);
+      assert.equal(res.status, 302);
+      assert.equal(res.headers.get('location'), '/login');
+    });
+  }
+
+  for (const p of ['/api/streams', '/api/streams/count', '/api/streams/stats', '/api/streams/available', '/login']) {
+    it(`public GET ${p} → 200`, async () => {
+      const res = await request('GET', p);
+      assert.equal(res.status, 200);
+    });
+  }
+
+  for (const [method, p] of [['POST', '/api/streams/upsert'], ['POST', '/api/streams/toggle'], ['POST', '/api/streams']]) {
+    it(`volunteer ${method} ${p} → 401`, async () => {
+      const res = await request(method, p, { cookie: vol1Cookie, body: [] });
+      assert.equal(res.status, 401);
     });
   }
 });
 
-// ── Integration tests with running server ───────────────────────────────────
+// ── Cookies ──────────────────────────────────────────────────────────────────
 
-describe('Server integration', () => {
-  let server;
-  let port;
-  let adminCookie;
-  let volunteerCookie;
-
-  before(async () => {
-    // Set credential env vars before loading the server module
-    process.env.ADMIN_USER = 'testadmin';
-    process.env.ADMIN_PASS = 'testadminpass';
-    process.env.VOLUNTEER_USER = 'testvol';
-    process.env.VOLUNTEER_PASS = 'testvolpass';
-    process.env.PORT = '0'; // let OS pick a free port
-
-    // Use a temp DB path so we don't pollute the real data
-    const tmpDir = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'coord-test-'));
-    process.env.DB_PATH = path.join(tmpDir, 'test.db');
-
-    // Clear cached modules to pick up fresh env
-    delete require.cache[require.resolve('./auth')];
-    delete require.cache[require.resolve('./middleware')];
-    delete require.cache[require.resolve('./server')];
-
-    // Load the server module — it calls validateCredentials() and server.listen()
-    // We need to capture the server instance. The server.js module creates and
-    // listens on a server but doesn't export it, so we'll build our own server
-    // using the same pattern.
-
-    // Instead of requiring server.js (which auto-starts), we'll create our own
-    // minimal server that uses the same auth functions and middleware.
-    const { validateCredentials, authenticate, createSessionCookie, buildSetCookie, buildClearCookie } = require('./auth');
-    const { authMiddleware } = require('./middleware');
-
-    validateCredentials();
-
-    // Pre-create cookies for authenticated requests
-    adminCookie = `session=${createSessionCookie('testadmin', 'admin')}`;
-    volunteerCookie = `session=${createSessionCookie('testvol', 'volunteer')}`;
-
-    // Create a minimal server that mirrors the auth-related routes from server.js
-    const publicDir = path.join(__dirname, 'public');
-
-    server = http.createServer(async (req, res) => {
-      const url = req.url.split('?')[0];
-
-      try {
-        // Auth middleware
-        if (authMiddleware(req, res)) return;
-
-        // Static pages
-        if (req.method === 'GET' && url === '/') {
-          const filePath = path.join(publicDir, 'volunteer.html');
-          try {
-            const data = fs.readFileSync(filePath);
-            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-            res.end(data);
-          } catch {
-            res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end('<html><body>Volunteer</body></html>');
-          }
-          return;
-        }
-        if (req.method === 'GET' && url === '/admin') {
-          const filePath = path.join(publicDir, 'admin.html');
-          try {
-            const data = fs.readFileSync(filePath);
-            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-            res.end(data);
-          } catch {
-            res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end('<html><body>Admin</body></html>');
-          }
-          return;
-        }
-
-        // Auth routes
-        if (req.method === 'GET' && url === '/login') {
-          res.writeHead(200, { 'Content-Type': 'text/html' });
-          res.end('<html><body>Login</body></html>');
-          return;
-        }
-        if (req.method === 'POST' && url === '/api/login') {
-          const body = await readBody(req);
-          const { username, password } = body;
-          if (!username || !password) {
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Username and password required' }));
-            return;
-          }
-          const result = authenticate(username, password);
-          if (!result) {
-            res.writeHead(401, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Invalid credentials' }));
-            return;
-          }
-          const cookie = createSessionCookie(username, result.role);
-          res.writeHead(200, {
-            'Content-Type': 'application/json',
-            'Set-Cookie': buildSetCookie(cookie),
-          });
-          res.end(JSON.stringify({ role: result.role }));
-          return;
-        }
-        if (req.method === 'POST' && url === '/api/logout') {
-          res.writeHead(200, {
-            'Content-Type': 'application/json',
-            'Set-Cookie': buildClearCookie(),
-          });
-          res.end(JSON.stringify({ ok: true }));
-          return;
-        }
-
-        // API routes (stub — just need them to exist for auth testing)
-        if (req.method === 'POST' && url === '/api/streams') {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ ok: true }));
-          return;
-        }
-
-        res.writeHead(404);
-        res.end();
-      } catch (err) {
-        if (!res.headersSent) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: err.message }));
-        }
-      }
-    });
-
-    await new Promise((resolve) => {
-      server.listen(0, '127.0.0.1', () => {
-        port = server.address().port;
-        resolve();
-      });
-    });
+describe('Login cookies', () => {
+  it('malformed cookie is treated as logged out, not a 500', async () => {
+    const page = await request('GET', '/admin', { cookie: 'session=abc.def' });
+    assert.equal(page.status, 302);
+    const api = await request('GET', '/api/users', { cookie: 'session=abc.def' });
+    assert.equal(api.status, 401);
   });
 
-  after(async () => {
-    if (server) {
-      await new Promise((resolve) => server.close(resolve));
-    }
-    // Clean up module cache
-    delete require.cache[require.resolve('./auth')];
-    delete require.cache[require.resolve('./middleware')];
+  it('login cookie carries Max-Age', async () => {
+    const res = await request('POST', '/api/login', { body: { username: 'vol1', password: 'volpass123' } });
+    assert.match(res.headers.get('set-cookie'), /Max-Age=\d+/);
   });
 
-  // ── Login tests ─────────────────────────────────────────────────────────
-
-  it('POST /api/login with valid admin creds returns 200, role, and Set-Cookie with HttpOnly + SameSite=Strict + Path=/', async () => {
-    const res = await request(port, 'POST', '/api/login', {
-      body: { username: 'testadmin', password: 'testadminpass' },
-    });
-
-    assert.equal(res.statusCode, 200);
-    assert.equal(res.body.role, 'admin');
-
-    const setCookie = res.headers['set-cookie'];
-    assert.ok(setCookie, 'Expected Set-Cookie header');
-    const cookieStr = Array.isArray(setCookie) ? setCookie[0] : setCookie;
-    assert.ok(cookieStr.includes('HttpOnly'), 'Cookie should have HttpOnly');
-    assert.ok(cookieStr.includes('SameSite=Strict'), 'Cookie should have SameSite=Strict');
-    assert.ok(cookieStr.includes('Path=/'), 'Cookie should have Path=/');
-  });
-
-  it('POST /api/login with valid volunteer creds returns 200 and role', async () => {
-    const res = await request(port, 'POST', '/api/login', {
-      body: { username: 'testvol', password: 'testvolpass' },
-    });
-
-    assert.equal(res.statusCode, 200);
-    assert.equal(res.body.role, 'volunteer');
-  });
-
-  it('POST /api/login with invalid creds returns 401', async () => {
-    const res = await request(port, 'POST', '/api/login', {
-      body: { username: 'wrong', password: 'wrong' },
-    });
-
-    assert.equal(res.statusCode, 401);
-    assert.equal(res.body.error, 'Invalid credentials');
-  });
-
-  // ── Logout test ─────────────────────────────────────────────────────────
-
-  it('POST /api/logout clears cookie and returns 200', async () => {
-    const res = await request(port, 'POST', '/api/logout');
-
-    assert.equal(res.statusCode, 200);
-    assert.deepEqual(res.body, { ok: true });
-
-    const setCookie = res.headers['set-cookie'];
-    assert.ok(setCookie, 'Expected Set-Cookie header');
-    const cookieStr = Array.isArray(setCookie) ? setCookie[0] : setCookie;
-    assert.ok(cookieStr.includes('session=;') || cookieStr.includes('session= ;'), 'Cookie should be cleared');
-    assert.ok(cookieStr.includes('Expires='), 'Cookie should have Expires for clearing');
-  });
-
-  // ── Admin route protection ──────────────────────────────────────────────
-
-  it('unauthenticated GET /admin redirects to /login', async () => {
-    const res = await request(port, 'GET', '/admin');
-
-    assert.equal(res.statusCode, 302);
-    assert.equal(res.headers.location, '/login');
-  });
-
-  it('volunteer cookie on GET /admin redirects to /login', async () => {
-    const res = await request(port, 'GET', '/admin', {
-      headers: { Cookie: volunteerCookie },
-    });
-
-    assert.equal(res.statusCode, 302);
-    assert.equal(res.headers.location, '/login');
-  });
-
-  it('admin cookie on GET /admin returns 200', async () => {
-    const res = await request(port, 'GET', '/admin', {
-      headers: { Cookie: adminCookie },
-    });
-
-    assert.equal(res.statusCode, 200);
-  });
-
-  // ── API route protection ────────────────────────────────────────────────
-
-  it('unauthenticated POST /api/streams returns 401', async () => {
-    const res = await request(port, 'POST', '/api/streams');
-
-    assert.equal(res.statusCode, 401);
-    assert.equal(res.body.error, 'Unauthorized');
-  });
-
-  // ── Volunteer route protection ──────────────────────────────────────────
-
-  it('unauthenticated GET / redirects to /login', async () => {
-    const res = await request(port, 'GET', '/');
-
-    assert.equal(res.statusCode, 302);
-    assert.equal(res.headers.location, '/login');
-  });
-
-  it('volunteer cookie on GET / returns 200', async () => {
-    const res = await request(port, 'GET', '/', {
-      headers: { Cookie: volunteerCookie },
-    });
-
-    assert.equal(res.statusCode, 200);
+  it('deleted user loses access immediately', async () => {
+    const vol3Cookie = await login('vol3', 'volpass123');
+    assert.equal((await request('GET', '/api/flagged', { cookie: vol3Cookie })).status, 200);
+    const del = await request('DELETE', '/api/users/vol3', { cookie: adminCookie });
+    assert.equal(del.status, 200);
+    assert.equal((await request('GET', '/api/flagged', { cookie: vol3Cookie })).status, 401);
   });
 });
 
-// ── Utility ─────────────────────────────────────────────────────────────────
+// ── Sessions ─────────────────────────────────────────────────────────────────
 
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    req.on('data', (c) => chunks.push(c));
-    req.on('end', () => {
-      try { resolve(JSON.parse(Buffer.concat(chunks).toString() || '{}')); }
-      catch (e) { reject(e); }
-    });
-    req.on('error', reject);
+describe('Volunteer sessions', () => {
+  let vol1Session, vol1Streams, streamC;
+
+  before(async () => {
+    // vol1 claims to be vol2 in the body — must be ignored
+    const res = await request('POST', '/api/session', { cookie: vol1Cookie, body: { user_id: 'vol2' } });
+    assert.equal(res.status, 200);
+    vol1Session = res.body.session_id;
+    vol1Streams = res.body.streams;
+    const all = await request('GET', '/api/streams');
+    streamC = all.body.streams.find((s) => s.section === '010100003');
   });
-}
+
+  it('assignments come from the login, not body.user_id', () => {
+    assert.deepEqual(vol1Streams.map((s) => s.section), ['010100001']);
+  });
+
+  it('another user cannot heartbeat, report on, or edit the session', async () => {
+    const hb = await request('POST', '/api/heartbeat', { cookie: vol2Cookie, body: { session_id: vol1Session } });
+    assert.equal(hb.body.reinit, true);
+    const rep = await request('POST', '/api/report', {
+      cookie: vol2Cookie, body: { session_id: vol1Session, results: [{ stream_id: vol1Streams[0].id, status: 'frozen' }] },
+    });
+    assert.equal(rep.status, 400);
+    const add = await request('POST', '/api/session/streams', {
+      cookie: vol2Cookie, body: { session_id: vol1Session, stream_ids: [streamC.id] },
+    });
+    assert.equal(add.status, 404);
+    const rm = await request('DELETE', '/api/session/streams', {
+      cookie: vol2Cookie, body: { session_id: vol1Session, stream_id: vol1Streams[0].id },
+    });
+    assert.equal(rm.status, 404);
+  });
+
+  it('owner can heartbeat its own session', async () => {
+    const hb = await request('POST', '/api/heartbeat', { cookie: vol1Cookie, body: { session_id: vol1Session } });
+    assert.equal(hb.body.ok, true);
+  });
+
+  it('a single report flags a stream; reports on unassigned streams are ignored', async () => {
+    const rep = await request('POST', '/api/report', {
+      cookie: vol1Cookie,
+      body: {
+        session_id: vol1Session,
+        results: [
+          { stream_id: vol1Streams[0].id, status: 'frozen' },
+          { stream_id: streamC.id, status: 'covered' },
+        ],
+      },
+    });
+    assert.equal(rep.status, 200);
+    const flagged = await request('GET', '/api/flagged', { cookie: adminCookie });
+    const ids = flagged.body.flagged.map((f) => f.stream_id);
+    assert.deepEqual(ids, [vol1Streams[0].id]);
+  });
+});
