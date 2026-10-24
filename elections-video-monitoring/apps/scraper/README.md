@@ -63,6 +63,25 @@ File naming convention: `streams_<election-code>[_tour<N>][_<type>].json`
 | `--concurrency=N` | `3` | Number of OIK sub-pages to scrape in parallel |
 | `--tour=N` | all | Only include streams for the given ballot tour number |
 | `--type=d\|r\|both` | `d` | Stream type: `d` = device recording, `r` = live recording |
+| `--discover[=URL]` | `https://evideo.bg/` | Poll the home page until an election code appears that was not linked at start, then scrape it |
+| `--code=X` | — | With `--discover`: wait for this code (use it if the election is already linked) |
+| `--poll=S` | `300` | `--discover` poll interval in seconds |
+| `--upsert` | off | Send each OIK page to the coordinator as soon as it is parsed (`COORDINATOR_URL`, `SEED_USER`/`SEED_PASS`) |
+| `--watch=S` | off | Rescrape every S seconds; with `--upsert` only new or changed sections are sent |
+| `--fast` | off | Block video requests and stop waiting once sections are in the DOM |
+| `--profile=DIR` | `~/.cache/evideo-scraper` | Browser profile kept between runs (Cloudflare cookie, upsert progress) |
+| `--headed` | off | Show the browser if Cloudflare keeps challenging headless mode |
+
+### Election day
+
+Start before evideo publishes; it seeds the coordinator page by page and keeps it current:
+
+```sh
+COORDINATOR_URL=https://video.promeni.bg SEED_USER=admin SEED_PASS=… \
+  node scrape-streams.js --discover --upsert --watch=120
+```
+
+It acts as one polite visitor: one Chrome profile for all pages, page loads at least 1.5 s apart, and when a Cloudflare challenge does not clear by itself, all requests pause with backoff (1, 2, 4 … 15 min). Do not lower `--poll` or raise `--concurrency` to go faster: Cloudflare blocks the IP for a while. Upserts send each section's stored `assigned_users` back, so assignments survive on older coordinators too.
 
 ## Output format
 
