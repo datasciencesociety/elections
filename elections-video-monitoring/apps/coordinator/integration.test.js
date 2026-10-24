@@ -215,6 +215,23 @@ describe('Volunteer sessions', () => {
     assert.equal(hb.body.ok, true);
   });
 
+  it('upsert without assigned_users keeps existing assignments; empty string clears them', async () => {
+    const before = (await request('GET', '/api/streams')).body.streams.find((s) => s.section === '010100001');
+    assert.equal(before.assigned_users, 'vol1');
+    // scraper-style batch: new URL, no assigned_users field
+    await request('POST', '/api/streams/upsert', {
+      cookie: adminCookie, body: [{ section: '010100001', url: before.url, label: 'A (rescraped)' }],
+    });
+    const kept = (await request('GET', '/api/streams')).body.streams.find((s) => s.section === '010100001');
+    assert.equal(kept.assigned_users, 'vol1');
+    assert.equal(kept.label, 'A (rescraped)');
+    await request('POST', '/api/streams/upsert', {
+      cookie: adminCookie, body: [{ section: '010100003', url: 'https://example.test/c.mp4', label: 'C', assigned_users: '' }],
+    });
+    const cleared = (await request('GET', '/api/streams')).body.streams.find((s) => s.section === '010100003');
+    assert.ok(!cleared.assigned_users);
+  });
+
   it('a single report flags a stream; reports on unassigned streams are ignored', async () => {
     const rep = await request('POST', '/api/report', {
       cookie: vol1Cookie,

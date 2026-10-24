@@ -143,7 +143,9 @@ const stmt = {
   insertStream:      db.prepare('INSERT INTO streams (section, url, label, assigned_users) VALUES (?, ?, ?, ?)'),
   upsertStream:      db.prepare(`
     INSERT INTO streams (section, url, label, assigned_users) VALUES (?, ?, ?, ?)
-    ON CONFLICT(section) DO UPDATE SET url = excluded.url, label = excluded.label, assigned_users = excluded.assigned_users, last_checked = NULL
+    ON CONFLICT(section) DO UPDATE SET url = excluded.url, label = excluded.label, last_checked = NULL,
+      -- Scraper batches carry no assigned_users (NULL) and must keep existing assignments; '' clears them
+      assigned_users = COALESCE(excluded.assigned_users, streams.assigned_users)
   `),
   streamStats:       db.prepare(`
     SELECT
@@ -269,7 +271,7 @@ function txUpsertStreams(streams) {
     for (const s of streams) {
       const section = s.section || extractSection(s.url) || String(s.label);
       const existing = stmt.streamBySection.get(section);
-      stmt.upsertStream.run(section, s.url, String(s.label), s.assigned_users || null);
+      stmt.upsertStream.run(section, s.url, String(s.label), s.assigned_users ?? null);
       if (existing) { if (existing.url !== s.url) updated++; }
       else inserted++;
       if (s.contacts) {
@@ -810,6 +812,8 @@ const server = http.createServer(async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+// Set HOST=127.0.0.1 behind nginx so the plain-HTTP port is not reachable from outside
+const HOST = process.env.HOST || undefined;
 initUserStore(db);
 if (!process.env.COOKIE_SECRET) console.warn('COOKIE_SECRET not set — all logins are invalidated on every restart');
-server.listen(PORT, () => console.log(`Election monitor: http://localhost:${PORT}`));
+server.listen(PORT, HOST, () => console.log(`Election monitor: http://${HOST || 'localhost'}:${PORT}`));
