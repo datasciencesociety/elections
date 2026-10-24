@@ -87,7 +87,7 @@ aws ssm get-command-invocation \
 echo ""
 echo "======================================================="
 echo "  Direct IP  : http://$ELASTIC_IP"
-echo "  CF domain  : https://evideo.izborenmonitor.com  (after DNS propagation)"
+echo "  CF domain  : ${PROXY_DOMAIN:-<your proxy domain>}  (after DNS propagation)"
 echo "  Test stream: curl -sI 'http://$ELASTIC_IP/evideo.bg/live/stream.m3u8'"
 echo "  MP4 test   : curl -sI 'http://$ELASTIC_IP/archive.evideo.bg/path/to/file.mp4'"
 echo "  Load test  : k6 run -e TARGET_URL=http://$ELASTIC_IP ../load-test.js"

@@ -2,7 +2,7 @@
 
 Caching reverse proxy for `evideo.bg` election video streams. Sits between viewers and the origin, reducing origin load and providing CORS headers for browser players.
 
-**Public endpoint:** `https://evideo.izborenmonitor.com` (Cloudflare → EC2 port 80)
+**Public endpoint:** your proxy domain (Cloudflare → EC2 port 80); set it as `PROXY_URL` on the coordinator.
 
 ## URL scheme
 
