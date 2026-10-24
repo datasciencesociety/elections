@@ -117,6 +117,8 @@ describe('Default-deny route access', () => {
     ['POST', '/api/report'],
     ['GET', '/api/flagged'],
     ['GET', '/api/users'],
+    ['GET', '/api/streams'],
+    ['GET', '/api/streams/available'],
     ['GET', '/api/not-a-route'],
   ];
 
@@ -135,7 +137,7 @@ describe('Default-deny route access', () => {
     });
   }
 
-  for (const p of ['/api/streams', '/api/streams/count', '/api/streams/stats', '/api/streams/available', '/login']) {
+  for (const p of ['/api/streams/count', '/api/streams/stats', '/login']) {
     it(`public GET ${p} → 200`, async () => {
       const res = await request('GET', p);
       assert.equal(res.status, 200);
@@ -185,7 +187,7 @@ describe('Volunteer sessions', () => {
     assert.equal(res.status, 200);
     vol1Session = res.body.session_id;
     vol1Streams = res.body.streams;
-    const all = await request('GET', '/api/streams');
+    const all = await request('GET', '/api/streams', { cookie: vol1Cookie });
     streamC = all.body.streams.find((s) => s.section === '010100003');
   });
 
@@ -216,19 +218,19 @@ describe('Volunteer sessions', () => {
   });
 
   it('upsert without assigned_users keeps existing assignments; empty string clears them', async () => {
-    const before = (await request('GET', '/api/streams')).body.streams.find((s) => s.section === '010100001');
+    const before = (await request('GET', '/api/streams', { cookie: adminCookie })).body.streams.find((s) => s.section === '010100001');
     assert.equal(before.assigned_users, 'vol1');
     // scraper-style batch: new URL, no assigned_users field
     await request('POST', '/api/streams/upsert', {
       cookie: adminCookie, body: [{ section: '010100001', url: before.url, label: 'A (rescraped)' }],
     });
-    const kept = (await request('GET', '/api/streams')).body.streams.find((s) => s.section === '010100001');
+    const kept = (await request('GET', '/api/streams', { cookie: adminCookie })).body.streams.find((s) => s.section === '010100001');
     assert.equal(kept.assigned_users, 'vol1');
     assert.equal(kept.label, 'A (rescraped)');
     await request('POST', '/api/streams/upsert', {
       cookie: adminCookie, body: [{ section: '010100003', url: 'https://example.test/c.mp4', label: 'C', assigned_users: '' }],
     });
-    const cleared = (await request('GET', '/api/streams')).body.streams.find((s) => s.section === '010100003');
+    const cleared = (await request('GET', '/api/streams', { cookie: adminCookie })).body.streams.find((s) => s.section === '010100003');
     assert.ok(!cleared.assigned_users);
   });
 

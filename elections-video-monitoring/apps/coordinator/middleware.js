@@ -35,16 +35,15 @@ function hasRole(userRole, requiredRole) {
   return false;
 }
 
-// Routes anyone may call. Stream listings are public by design (read-only).
+// Routes anyone may call. Only aggregate counts are public: the stream lists carry
+// volunteer usernames and contact phone numbers.
 const PUBLIC_ROUTES = new Set([
   'GET /login',
   'POST /api/login',
   'POST /api/logout',
   'GET /favicon.ico',
-  'GET /api/streams',
   'GET /api/streams/count',
   'GET /api/streams/stats',
-  'GET /api/streams/available',
 ]);
 
 // Routes that need the admin role. Everything else needs volunteer-or-above.
