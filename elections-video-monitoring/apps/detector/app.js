@@ -502,7 +502,7 @@ elUrl.addEventListener('keydown', e => { if (e.key === 'Enter') startMonitoring(
 
     // Listen for contacts from parent (volunteer page)
     window.addEventListener('message', (e) => {
-      if (!e.data || e.data.type !== 'contacts') return;
+      if (e.source !== window.parent || !e.data || e.data.type !== 'contacts') return;
       const contacts = e.data.contacts || [];
       const ul = phonePopup.querySelector('ul');
       if (!ul) return;
@@ -519,10 +519,13 @@ elUrl.addEventListener('keydown', e => { if (e.key === 'Enter') startMonitoring(
         const li = document.createElement('li');
         let text = c.name || '';
         if (c.role) text += ` (${c.role})`;
+        // Contacts come from uploaded data: build nodes, never innerHTML
+        li.textContent = text;
         if (c.phone) {
-          li.innerHTML = `${text}: <a href="tel:${c.phone}">${c.phone}</a>`;
-        } else {
-          li.textContent = text;
+          const a = document.createElement('a');
+          a.href = 'tel:' + String(c.phone).replace(/[^\d+]/g, '');
+          a.textContent = String(c.phone);
+          li.append(': ', a);
         }
         ul.appendChild(li);
       }

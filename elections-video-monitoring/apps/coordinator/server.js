@@ -639,6 +639,8 @@ const server = http.createServer(async (req, res) => {
       }
       const result = authenticate(db, username, password);
       if (!result) {
+        // nginx sets X-Real-IP; journalctl -u election-coordinator | grep 'login failed'
+        console.warn(`login failed user=${JSON.stringify(String(username).slice(0, 64))} ip=${req.headers['x-real-ip'] || req.socket.remoteAddress}`);
         json(res, 401, { error: 'Invalid credentials' });
         return;
       }
