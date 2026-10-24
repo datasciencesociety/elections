@@ -163,7 +163,19 @@ node scripts/inspect-db.js
 
 ## CORS proxy
 
-Requests to `/proxy/<path>` are forwarded to `https://archive.evideo.bg/<path>` with CORS headers added. This lets the volunteer page read canvas pixel data from cross-origin HLS streams.
+The coordinator does not proxy video. Set `PROXY_URL` to a CORS proxy (`apps/proxy` locally, `apps/proxy-nginx` in production) so the volunteer page can read canvas pixels from cross-origin HLS streams. Without it, cards play evideo directly and detection does not run.
+
+## Deploy
+
+`deploy/deploy.sh` ships the committed `coordinator/` and `detector/` to a server and installs them as the systemd service `election-coordinator` behind nginx (`deploy/nginx-site.conf`).
+
+```sh
+DEPLOY_HOST=ji@10.10.10.1 DOMAIN=video.promeni.bg apps/coordinator/deploy/deploy.sh
+```
+
+Once per server: create `/etc/election-coordinator.env` from `deploy/election-coordinator.env.example` and a certificate for the domain.
+
+The server side (`deploy/remote-install.sh`) refuses to run when the env file, `DB_PATH` or the certificate is missing, or when an unmanaged process holds the port. It also refuses when another nginx config serves the domain; rerun with `ADOPT_NGINX=1` to disable that config. Each deploy backs up the database (`backup-<release>.db` next to it). If the app does not start, or an unauthenticated write does not get 401, the deploy rolls back to the previous release and nginx config. Releases live in `/opt/election-coordinator/releases` (5 kept).
 
 ## Database
 

@@ -1,0 +1,22 @@
+# Installed by deploy.sh; @PLACEHOLDERS@ are filled in at deploy time.
+[Unit]
+Description=Election video-monitoring coordinator
+After=network.target
+
+[Service]
+Type=simple
+User=@SERVICE_USER@
+WorkingDirectory=@APP_DIR@/current/coordinator
+EnvironmentFile=/etc/election-coordinator.env
+ExecStart=@NODE_BIN@ server.js
+Restart=always
+RestartSec=2
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=@DB_DIR@
+
+[Install]
+WantedBy=multi-user.target
