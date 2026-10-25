@@ -30,15 +30,11 @@ node scrape-streams.js https://evideo.bg/le20260222/index.html
 # Save to file
 node scrape-streams.js https://evideo.bg/le20260222/index.html > out/streams.json
 
-# Upload the saved file to the coordinator (additive upsert)
-curl -X POST http://localhost:3000/api/streams/upsert \
-  -H 'Content-Type: application/json' \
-  -d @out/streams.json
+# Upload the saved file to the coordinator (additive upsert; needs an admin login)
+SEED_USER=admin SEED_PASS=… node ../../scripts/seed.js out/streams.json
 
-# Or replace all streams (destructive)
-curl -X POST http://localhost:3000/api/streams \
-  -H 'Content-Type: application/json' \
-  -d @out/streams.json
+# Or replace all streams (destructive: wipes sessions and reports)
+SEED_USER=admin SEED_PASS=… node ../../scripts/seed.js out/streams.json --replace --force
 
 # Only tour 1, live recordings, 5 parallel workers — name file after election code + filters
 node scrape-streams.js https://evideo.bg/le20260222/index.html \
@@ -74,12 +70,16 @@ File naming convention: `streams_<election-code>[_tour<N>][_<type>].json`
 
 ### Election day
 
-Start before evideo publishes; it seeds the coordinator page by page and keeps it current:
+Read today's evideo code from the "Гледай" link on the evideo.bg home page once, in a normal browser (it differs from the CIK code). Then start the scraper; it seeds the coordinator page by page and keeps it current:
 
 ```sh
 COORDINATOR_URL=https://stork-ai.com SEED_USER=admin SEED_PASS=… \
-  node scrape-streams.js --discover --upsert --watch=120
+  node scrape-streams.js --discover --code=<evideo-code> --upsert --watch=120 --fast
 ```
+
+- `--code` is required once the election is linked on the home page: without it `--discover` waits for a code that was not linked when it started.
+- `--fast` stops waiting for network idle, which live players on the page never reach.
+- Run it from an operator laptop, never from the coordinator server: that server's IP fetches all volunteer video through `/hls`, and a Cloudflare block on it would stop every card.
 
 It acts as one polite visitor: one Chrome profile for all pages, page loads at least 1.5 s apart, and when a Cloudflare challenge does not clear by itself, all requests pause with backoff (1, 2, 4 … 15 min). Do not lower `--poll` or raise `--concurrency` to go faster: Cloudflare blocks the IP for a while. Upserts send each section's stored `assigned_users` back, so assignments survive on older coordinators too.
 
