@@ -27,7 +27,8 @@
  *                    code appears that was not linked at start, then scrape its index
  *   --code=X         with --discover: wait for this code (e.g. pvr202610) instead of any new one
  *   --poll=S         --discover poll interval in seconds (default 300; keep it slow for Cloudflare)
- *   --upsert         send each OIK page's streams to the coordinator as soon as it is parsed
+ *   --upsert         send found streams to the coordinator in batches as the pages are parsed
+ *   --batch-size=N   with --upsert: rows per upload (default 30); the rest is sent at the end of each pass
  *   --watch=S        rescrape every S seconds; with --upsert only new/changed sections are sent
  *   --fast           block video requests and stop waiting once sections are in the DOM
  *   --profile=DIR    browser profile kept between runs (default ~/.cache/evideo-scraper);
@@ -45,6 +46,7 @@ const { chromium } = require('@playwright/test');
 const fs   = require('fs');
 const os   = require('os');
 const path = require('path');
+const { createBatchUploader } = require('../../scripts/lib/batch-upload');
 
 const opt = (name) => process.argv.find(a => a === `--${name}` || a.startsWith(`--${name}=`));
 const optVal = (name, dflt) => { const a = opt(name); return a && a.includes('=') ? a.slice(a.indexOf('=') + 1) : dflt; };
@@ -57,6 +59,7 @@ const discoverUrl = opt('discover') ? optVal('discover', 'https://evideo.bg/') :
 const wantCode    = optVal('code', null);
 const pollSec     = parseInt(optVal('poll', '300'), 10);
 const doUpsert    = !!opt('upsert');
+const batchSize   = parseInt(optVal('batch-size', '30'), 10);
 const watchSec    = opt('watch') ? parseInt(optVal('watch', '120'), 10) : 0;
 const fast        = !!opt('fast');
 const headed      = !!opt('headed');
@@ -64,9 +67,13 @@ const profileDir  = optVal('profile', path.join(os.homedir(), '.cache', 'evideo-
 
 if (!indexArg && !discoverUrl) {
   process.stderr.write(
-    'Usage: node scrape-streams.js <index-url> | --discover[=URL] [--code=X] [--upsert] [--watch=S] [--fast]\n' +
+    'Usage: node scrape-streams.js <index-url> | --discover[=URL] [--code=X] [--upsert [--batch-size=N]] [--watch=S] [--fast]\n' +
     '       [--concurrency=N] [--tour=N] [--type=d|r|both]\n'
   );
+  process.exit(1);
+}
+if (!(batchSize >= 1)) {
+  process.stderr.write(`--batch-size must be a positive integer\n`);
   process.exit(1);
 }
 
@@ -357,7 +364,8 @@ async function scrapePass(ctx, oikPages, onPage) {
   log(`Launching browser (profile ${profileDir})…`);
   const ctx = await openBrowser();
   const client = doUpsert ? require('../../scripts/lib/coordinator').createClient() : null;
-  if (client) log(`Upserting to ${client.base}`);
+  let uploader = null;
+  if (client) log(`Upserting to ${client.base} in batches of ${batchSize}`);
 
   try {
     const indexUrl = indexArg || await discoverIndex(ctx);
@@ -385,28 +393,41 @@ async function scrapePass(ctx, oikPages, onPage) {
 
       let onPage = null;
       if (client) {
-        const assigned = await client.assignments();
+        let assigned;
+        try { assigned = await client.assignments(); }
+        catch (e) {
+          if (!watchSec) throw e;
+          log(`Coordinator unreachable (${e.message}); retry in ${watchSec}s`);
+          await sleep(watchSec * 1000);
+          continue;
+        }
+        // Rows still queued from a failed upload in the last pass are sent with this pass's batches
+        uploader ??= createBatchUploader({
+          upsert: (rows) => client.upsert(rows),
+          batchSize,
+          log,
+          onSent(rows, r) {
+            rows.forEach(s => sent.set(s.section, s.url));
+            fs.writeFileSync(stateFile, JSON.stringify([...sent]));
+            log(`  upsert ${rows.length} → ${JSON.stringify(r)} (${sent.size} sections sent)`);
+          },
+        });
         onPage = async (found) => {
           const changed = found.filter(s => sent.get(s.section) !== s.url);
           if (changed.length === 0) return;
           // Send the stored assignments back: older coordinators clear assigned_users when a row omits it
-          const rows = changed.map(s => ({ ...s, assigned_users: assigned.get(s.section) ?? null }));
-          try {
-            const r = await client.upsert(rows);
-            changed.forEach(s => sent.set(s.section, s.url));
-            fs.writeFileSync(stateFile, JSON.stringify([...sent]));
-            log(`  upsert ${rows.length} → ${JSON.stringify(r)}`);
-          } catch (e) {
-            log(`  upsert failed (retried next pass): ${e.message}`);
-          }
+          await uploader.add(changed.map(s => ({ ...s, assigned_users: assigned.get(s.section) ?? null })));
         };
       }
 
       const unique = await scrapePass(ctx, oikPages, onPage);
-      log(`\nPass ${pass}: ${unique.length} unique streams${client ? `; ${sent.size} sections sent so far` : ''}`);
+      if (uploader) await uploader.flush();
+      log(`\nPass ${pass}: ${unique.length} unique streams${client ? `; ${sent.size} sections sent so far` : ''}` +
+        (uploader?.pending ? `; ${uploader.pending} not sent yet (coordinator errors; ${watchSec ? 'retried next pass' : 'rerun to send them'})` : ''));
 
       if (!watchSec) {
         process.stdout.write(JSON.stringify(unique, null, 2) + '\n');
+        if (uploader?.pending) process.exitCode = 2;
         break;
       }
       log(`Next pass in ${watchSec}s`);

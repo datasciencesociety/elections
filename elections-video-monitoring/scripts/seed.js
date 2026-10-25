@@ -12,6 +12,7 @@
  *   COORDINATOR_URL=http://host:3000 node scripts/seed.js file.json               # remote coordinator
  *   node scripts/seed.js file.json --stubs                                        # sections without URLs: cards say
  *                                                                                 # "Stream not yet started" until a scrape fills them
+ *   node scripts/seed.js file.json --batch-size=30                                # upsert 30 rows per request, retrying a failed one
  *
  * Needs an admin login: SEED_USER/SEED_PASS (falls back to ADMIN_USER/ADMIN_PASS).
  */
@@ -27,6 +28,10 @@ const files   = args.length > 0 ? args : [DEV_STREAMS];
 const { base, login } = require('./lib/coordinator');
 const replace = flags.has('--replace') || flags.has('--force');
 const stubs   = flags.has('--stubs');
+const batchArg = [...flags].find(f => f.startsWith('--batch-size='));
+const batchSize = batchArg ? parseInt(batchArg.split('=')[1], 10) : 0;
+if (batchArg && !(batchSize >= 1)) { process.stderr.write('--batch-size must be a positive integer\n'); process.exit(1); }
+if (batchArg && replace) { process.stderr.write('--batch-size works only with upsert: --replace wipes everything and must send one request\n'); process.exit(1); }
 
 const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(base);
 if (!isLocal && !stubs && files.some(f => path.resolve(f) === DEV_STREAMS)) {
@@ -65,6 +70,21 @@ async function run() {
     const res = await fetch(url, { method: 'POST', headers, body });
     const d = await res.json();
     process.stdout.write(`Done: ${JSON.stringify(d)}\n`);
+  } else if (batchSize) {
+    const { createClient } = require('./lib/coordinator');
+    const { createBatchUploader } = require('./lib/batch-upload');
+    const client = createClient();
+    for (const file of files) {
+      const streams = readStreams(file);
+      process.stdout.write(`Upserting ${streams.length} ${stubs ? 'stub' : 'section'}(s) from ${file} → ${base}/api/streams/upsert in batches of ${batchSize}\n`);
+      const uploader = createBatchUploader({
+        upsert: (rows) => client.upsert(rows), batchSize,
+        log: (m) => process.stderr.write(m + '\n'),
+        onSent: (rows, d) => process.stdout.write(`  ${rows.length} → ${JSON.stringify(d)}\n`),
+      });
+      await uploader.add(streams);
+      if (!(await uploader.flush())) throw new Error(`${uploader.pending} row(s) from ${file} not sent; rerun (upsert is idempotent)`);
+    }
   } else {
     const url = `${base}/api/streams/upsert`;
     for (const file of files) {

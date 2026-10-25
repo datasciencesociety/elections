@@ -62,7 +62,8 @@ File naming convention: `streams_<election-code>[_tour<N>][_<type>].json`
 | `--discover[=URL]` | `https://evideo.bg/` | Poll the home page until an election code appears that was not linked at start, then scrape it |
 | `--code=X` | — | With `--discover`: wait for this code (use it if the election is already linked) |
 | `--poll=S` | `300` | `--discover` poll interval in seconds |
-| `--upsert` | off | Send each OIK page to the coordinator as soon as it is parsed (`COORDINATOR_URL`, `SEED_USER`/`SEED_PASS`) |
+| `--upsert` | off | Send found streams to the coordinator while scraping (`COORDINATOR_URL`, `SEED_USER`/`SEED_PASS`) |
+| `--batch-size=N` | `30` | With `--upsert`: send every N new or changed sections at once; the rest goes at the end of the pass. A failed batch is retried (2, 4, 8 s) and then kept for the next pass |
 | `--watch=S` | off | Rescrape every S seconds; with `--upsert` only new or changed sections are sent |
 | `--fast` | off | Block video requests and stop waiting once sections are in the DOM |
 | `--profile=DIR` | `~/.cache/evideo-scraper` | Browser profile kept between runs (Cloudflare cookie, upsert progress) |
@@ -74,14 +75,22 @@ Read today's evideo code from the "Гледай" link on the evideo.bg home page
 
 ```sh
 COORDINATOR_URL=https://<live-domain> SEED_USER=admin SEED_PASS=… \
-  node scrape-streams.js --discover --code=<evideo-code> --upsert --watch=120 --fast
+  node scrape-streams.js --discover --code=<evideo-code> --upsert --batch-size=30 --watch=120 --fast
 ```
+
+- Volunteers get URLs 30 at a time while the scrape runs, not after the last OIK page. Partial batches never touch other sections: the upsert fills stubs in place and keeps assignments and the admin's enable/disable.
+- Progress is saved in the profile (`sent-<code>.json`), so a restart sends only new or changed sections. A rerun with a fresh profile resends everything, which is harmless.
+- Without `--watch`, the exit code is 2 when some rows could not be sent; run it again.
 
 - `--code` is required once the election is linked on the home page: without it `--discover` waits for a code that was not linked when it started.
 - `--fast` stops waiting for network idle, which live players on the page never reach.
 - Run it from an operator laptop, never from the coordinator server: that server's IP fetches all volunteer video through `/hls`, and a Cloudflare block on it would stop every card.
 
 It acts as one polite visitor: one Chrome profile for all pages, page loads at least 1.5 s apart, and when a Cloudflare challenge does not clear by itself, all requests pause with backoff (1, 2, 4 … 15 min). Do not lower `--poll` or raise `--concurrency` to go faster: Cloudflare blocks the IP for a while. Upserts send each section's stored `assigned_users` back, so assignments survive on older coordinators too.
+
+## Tests
+
+`node --test scrape-upsert.e2e.test.js` runs the scraper in Chromium against a local fake evideo origin and a local coordinator (temp DB): batches of 30, a retried 502, stubs filled in place, idempotent reruns. It never contacts evideo.bg. About 70 s.
 
 ## Output format
 
