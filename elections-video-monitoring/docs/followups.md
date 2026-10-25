@@ -28,6 +28,18 @@ Ideas from a peer site that monitored the same count, evideo.iaz.bg (wall view `
 - Show a dead feed (empty playlist from evideo) as "the broadcast is not active" with the last frame, not as frozen.
 - Check the motion threshold against a quiet counting room, where a live stream can look frozen.
 
+## Detect a stream that has ended
+
+Late in the count most cards wait on streams that will not come back. Track a state per section on the coordinator, reading the playlist through the proxy cache so evideo gets no extra requests:
+
+```text
+never started → live → stalled (no new segment for 2 min) → ended
+```
+
+- Ended on any of: `#EXT-X-ENDLIST` in the playlist; evideo's page shows an `archive.evideo.bg` link instead of the live one (scraper); CIK publishes the section's protocol; or, as a fallback, stalled for 15 min after it had played.
+- Any new segment returns the section to live. Feeds drop and resume mid-count, so the timeout alone must never be final.
+- An ended card shows "Излъчването приключи – БЛАГОДАРИМ ВИ!" instead of frozen or waiting, stops probing the stream, and offers the volunteer the next high-risk section that is still live.
+
 ## Proxy (nginx)
 
 - Rate limit per volunteer, not per server. The public server block sends `X-Real-IP`; the proxy uses `set_real_ip_from 127.0.0.1; real_ip_header X-Real-IP;` and about `rate=30r/s burst=100`. Polling stations and offices share addresses behind NAT, so keep the rate generous or key on the session cookie.
