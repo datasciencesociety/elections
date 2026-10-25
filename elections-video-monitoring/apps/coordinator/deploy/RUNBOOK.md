@@ -43,9 +43,10 @@ ssh <server> 'sudo tar -C /root -cz predeploy-<ts>' | tar -xz -C ~/predeploy
 | nginx files serving the domain, and **other domains in the same file** | `nginx` | `ADOPT_NGINX=1` disables whole files |
 | `worker_connections`, `worker_rlimit_nofile` | `nginx` | step 4 |
 | Certificate expiry | `TLS certificate` | must outlast the night |
-| Disk free on `/`, `/var/log`, `/opt`; NIC speed | `host` | about 2.2 Mbit/s per volunteer card goes in and out |
+| Disk free on `/`, `/var/log`, `/opt`; NIC speed; `nproc` | `host` | under 5 GB free: ask the server's owner to free space first (a full disk stops DB writes). About 2.2 Mbit/s per card each way, so 1 Gbit/s carries about 400 cards |
 | Someone already ran deploy.sh (`releases:`, env file keys) | `other things` | |
 | cron jobs, pm2, docker containers touching the app | `other things` | stop or keep, decide with their owner |
+| Untracked files in the old checkout (seed JSON, data) | `git-N.txt` | leave them where they are: the new release installs into its own directory and never touches the old checkout |
 
 ### Drift: changes deployed but never pushed
 
@@ -77,7 +78,7 @@ Check: each manifest has exit 0, or its drift is on a `server-drift/` branch and
 The snapshot's `environ-<pid>` files hold the old process's environment, including secrets. Carry over what the new release still uses, such as `ADMIN_*` (used only when the users table is empty), the DB path and the proxy. Write `/etc/election-coordinator.env` (root, mode 600):
 
 ```
-PORT=3000
+PORT=3100
 HOST=127.0.0.1
 DB_PATH=<the DB path from step 2>
 COOKIE_SECRET=<openssl rand -hex 32, or the old one to keep volunteers logged in>
@@ -85,11 +86,14 @@ COOKIE_SECURE=1
 PROXY_URL=/hls
 ```
 
+- `PORT`: any free port other than the old app's, so the old app keeps running until the switch and stays ready to go back to. nginx is the only way in, because `HOST=127.0.0.1`.
+- `DB_PATH`: the old app's DB file, used in place. The schema has not changed since April 2026 (59e51c5), so the old app can read the DB the new one writes. Never point it at a new file: volunteers, users and contacts live in the old one.
+
 Check: `sudo stat -c '%U %a' /etc/election-coordinator.env` gives `root 600`. The DB file is owned by the non-root user that will run the service.
 
 ## 4. nginx limits (once per server)
 
-Ubuntu's defaults (768 connections, 1024 open files per worker) stop at a few hundred cards. In `/etc/nginx/nginx.conf`, at top level `worker_rlimit_nofile 65535;`, and in `events {}` `worker_connections 8192;`, then:
+Skip this step if `nproc` × `worker_connections` is above 10,000: `worker_processes auto` starts one worker per core. On a small server, Ubuntu's defaults (768 connections, 1024 open files per worker) stop at a few hundred cards. In `/etc/nginx/nginx.conf`, at top level `worker_rlimit_nofile 65535;`, and in `events {}` `worker_connections 8192;`, then:
 
 ```sh
 sudo nginx -t && sudo systemctl reload nginx
@@ -99,14 +103,16 @@ Check: `nginx -T | grep -E 'worker_(connections|rlimit)'` shows both values.
 
 ## 5. Deploy
 
-1. Stop the old app only if it is not systemd's `election-coordinator`. Use the pid from step 2: `sudo kill <pid>`, then `ss -ltn 'sport = :3000'` is empty.
+1. Leave the old app running. It keeps its port; only the nginx switch moves traffic to the new one.
 2. From the checkout of `<commit>`:
 
    ```sh
-   DEPLOY_HOST=<server> DOMAIN=<live-domain> ADOPT_NGINX=1 apps/coordinator/deploy/deploy.sh
+   DEPLOY_HOST=<server> DEPLOY_PORT=<ssh port> DOMAIN=<live-domain> ADOPT_NGINX=1 NODE_BIN=/usr/bin/node apps/coordinator/deploy/deploy.sh
    ```
 
-   `ADOPT_NGINX=1` is only for the first run, and only if step 2 showed that the old nginx file serves nothing but this domain.
+   - `ADOPT_NGINX=1` is only for the first run, and only if step 2 showed that the old nginx file serves nothing but this domain. The file is moved to `/opt/election-coordinator/rollback-<ts>/`, not deleted.
+   - `NODE_BIN` is needed when the service user has no login shell (`www-data` has `nologin`). Otherwise the install stops with "node not found".
+   - Volunteers who have the old page open must reload it after the switch.
 
 `remote-install.sh` refuses to start if anything is missing: env, cert, DB, node 22.13+, a port held by an unmanaged process, or other nginx files for the domain. It backs up the DB, switches, and checks:
 - the app answers;
@@ -132,6 +138,9 @@ curl -s  -o /dev/null -w '%{http_code}\n' "http://${D#https://}/hls/healthz"    
 Then in a browser:
 - Log in as admin. Stream and user counts match step 2.
 - Log in as a test volunteer. Cards show "Излъчването не е започнало" or video. Open one card's inspect panel.
+- The help page shows the current help document.
+
+Only when all of this passes, stop the old app so it no longer writes to the DB and its port closes (it may be open to the internet). Use the unit or pid from step 2, for example `sudo systemctl disable --now <old unit>`. Leave its directory in place: it is the way back.
 
 ## 7. Data for the night
 
@@ -174,7 +183,7 @@ Then in a browser:
   sudo nginx -t && sudo systemctl reload nginx
   ```
 
-  Then start it the way step 2 recorded. The new release only added DB columns. If needed, restore the DB from `backup-<ts>.db` next to it, or from the snapshot's `db-backup.db`.
+  Then start it the way step 2 recorded, for example `sudo systemctl enable --now <old unit>`. It reads the same DB: the schema is unchanged since April 2026. Streams the new release saved as stubs (no URL) show as broken cards in the old app until the scraper fills them. If needed, restore the DB from `backup-<ts>.db` next to it, or from the snapshot's `db-backup.db`.
 
 ## Afterwards
 
