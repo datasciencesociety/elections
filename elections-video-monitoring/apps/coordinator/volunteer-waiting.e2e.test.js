@@ -87,7 +87,11 @@ async function openVolunteer(streamUrl, answer) {
     const s = streamStates[0];
     return { status: s.status, fallback: s.fallback, src: s.video ? s.video.getAttribute('src') : null, intervals: intervals.length };
   });
-  const tick = () => page.evaluate(() => checkAllStreams());
+  // One probe, after any probe the page started itself: a tick during one is skipped by design
+  const tick = () => page.evaluate(async () => {
+    while (streamStates[0].probing) await new Promise((r) => setTimeout(r, 20));
+    if (streamStates[0].status === 'waiting') await probeWaiting(streamStates[0]);
+  });
   return { page, hls, state, tick };
 }
 
