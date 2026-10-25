@@ -303,6 +303,9 @@ function startMonitoring() {
 }
 
 function loadStream(url) {
+  // Decide on the original URL: the proxied one contains /hls/ even for an MP4
+  const isHls = url.includes('.m3u8') || url.includes('hls');
+
   // Route all external (non-same-origin) video URLs through the CORS proxy
   // so canvas.getImageData() is not blocked by cross-origin restrictions.
   // In DIRECT_MODE (volunteer iframe fallback), skip the proxy — we accept
@@ -318,8 +321,6 @@ function loadStream(url) {
       // Relative or invalid URL — pass through unchanged
     }
   }
-
-  const isHls = url.includes('.m3u8') || url.includes('hls');
 
   if (typeof Hls !== 'undefined' && Hls.isSupported() && isHls) {
     hls = new Hls({ enableWorker: true });
