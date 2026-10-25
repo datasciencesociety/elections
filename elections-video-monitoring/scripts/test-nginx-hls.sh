@@ -6,8 +6,9 @@ set -euo pipefail
 
 DEPLOY=$(cd "$(dirname "$0")/../apps/coordinator/deploy" && pwd)
 # Under $HOME: colima and Docker Desktop share it with the VM, unlike $TMPDIR
-WORK=${XDG_CACHE_HOME:-$HOME/.cache}/coordinator-nginx/test
-rm -rf "$WORK"; mkdir -p "$WORK"
+# A fresh directory per run: colima can serve a stale copy of a bind-mounted path that was recreated
+mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache}/coordinator-nginx"
+WORK=$(mktemp -d "${XDG_CACHE_HOME:-$HOME/.cache}/coordinator-nginx/test.XXXXXX")
 
 # Same file, one change: the upstream is the fake origin below instead of https://<evideo host>
 sed 's#proxy_pass https://$hls_host$hls_path$is_args$args;#proxy_pass http://127.0.0.1:9000$hls_path$is_args$args;#' \
@@ -17,7 +18,7 @@ grep -q 'proxy_pass http://127.0.0.1:9000' "$WORK/hls.conf" || { echo "FAIL: pro
 cat > "$WORK/default.conf" <<'EOF'
 include /etc/nginx/hls-http.conf;
 proxy_cache_path /var/cache/nginx/coordinator-hls levels=1:2 keys_zone=coord_hls_cache:10m max_size=100m inactive=1m use_temp_path=off;
-log_format origin '$request_uri';
+log_format origin '$request_uri range=$http_range';
 server {
     listen 8080;
     resolver 127.0.0.11 ipv6=off;
@@ -40,8 +41,10 @@ docker run -d --name "$name" --network none \
   -v "$WORK/hls.conf:/etc/nginx/hls.conf:ro" \
   -v "$DEPLOY/nginx-hls-http.conf:/etc/nginx/hls-http.conf:ro" \
   nginx:1.18.0-alpine >/dev/null
-trap 'docker rm -f "$name" >/dev/null 2>&1' EXIT
-for _ in $(seq 1 20); do docker exec "$name" curl -sf -o /dev/null http://127.0.0.1:8080/hls/healthz && break; sleep 0.5; done
+trap 'docker rm -f "$name" >/dev/null 2>&1; rm -r "$WORK"' EXIT
+for _ in $(seq 1 20); do docker exec "$name" curl -sf -o /dev/null http://127.0.0.1:8080/hls/healthz 2>/dev/null && break; sleep 0.5; done
+docker exec "$name" curl -sf -o /dev/null http://127.0.0.1:8080/hls/healthz 2>/dev/null \
+  || { echo "FAIL: nginx did not start; its log:" >&2; docker logs "$name" >&2; exit 1; }
 
 COOKIE="session=eyJ1IjoidiJ9.$(printf 'a%.0s' $(seq 1 64))"
 fails=0
@@ -62,7 +65,12 @@ check "other host → 403"                "$(status "$COOKIE" GET /hls/example.c
 check "lookalike host → 403"            "$(status "$COOKIE" GET /hls/evideo.bg.evil.com/a/index.m3u8)" 403
 check "non-media path → 403"            "$(status "$COOKIE" GET /hls/live-1.evideo.bg/page.html)" 403
 check "POST → 403"                      "$(status "$COOKIE" POST /hls/live-1.evideo.bg/a/index.m3u8)" 403
+for enc in '%3Fx.m3u8' '%23x.m3u8' '%25x.m3u8'; do  # encoded ? # % must not smuggle a non-media path
+  check "page.html$enc refused (4xx)"   "$(status "$COOKIE" GET "/hls/live-1.evideo.bg/page.html$enc" | cut -c1)" 4
+done
 check "html never reached the origin"   "$(origin_hits page.html)" 0
+req "curl -s -o /dev/null -H 'Cookie: $COOKIE' -H 'Range: bytes=100-199' http://127.0.0.1:8080/hls/live-1.evideo.bg/f/rec.mp4" >/dev/null
+check "Range reaches the origin"        "$(origin_hits '/f/rec.mp4 range=bytes=100-199')" 1
 
 hdrs=$(req "curl -s -D - -o /dev/null -H 'Cookie: $COOKIE' http://127.0.0.1:8080/hls/live-1.evideo.bg/b/index.m3u8")
 check "CSP sandbox on responses"        "$(echo "$hdrs" | grep -c "Content-Security-Policy: default-src 'none'; sandbox")" 1
@@ -73,7 +81,7 @@ check "playlist cached (3 requests → 1 upstream)" "$(origin_hits /c/index.m3u8
 for _ in 1 2; do status "$COOKIE" GET /hls/live-1.evideo.bg/c/seg1.ts >/dev/null; done
 check "segments not cached (2 → 2)"     "$(origin_hits /c/seg1.ts)" 2
 
-codes=$(req "for i in \$(seq 1 200); do curl -s -o /dev/null -w '%{http_code}\n' -H 'Cookie: $COOKIE' http://127.0.0.1:8080/hls/live-1.evideo.bg/d/seg\$i.ts; done | sort | uniq -c")
+codes=$(req "for i in \$(seq 1 400); do curl -s -o /dev/null -w '%{http_code}\n' -H 'Cookie: $COOKIE' http://127.0.0.1:8080/hls/live-1.evideo.bg/d/seg\$i.ts; done | sort | uniq -c")
 check "rate limit answers 429"          "$(echo "$codes" | grep -c ' 429$')" 1
 
 docker exec "$name" touch /etc/nginx/coordinator-hls-off
