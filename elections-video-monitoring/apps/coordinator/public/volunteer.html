@@ -1237,8 +1237,9 @@ async function sendHeartbeat() {
         const newState = streamStates[streamStates.length - 1];
         if (newState?.video) newState.video.play().catch(() => {});
       }
-      // Remove server-assigned streams that are no longer in the assignment
-      const toRemove = streamStates.filter(s => !s.manual && !assignedIds.has(s.id));
+      // Remove only cards that were pre-assigned to this user and no longer are. Random and
+      // manually added cards are never in assigned_streams, so they must stay.
+      const toRemove = streamStates.filter(s => !s.manual && isAssignedToMe(s.stream) && !assignedIds.has(s.id));
       for (const s of toRemove) {
         fetch('/api/session/streams', {
           method: 'DELETE',

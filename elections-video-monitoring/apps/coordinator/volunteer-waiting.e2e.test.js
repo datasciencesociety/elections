@@ -152,3 +152,71 @@ describe('Volunteer card while the stream has not started', () => {
     await v.page.close();
   });
 });
+
+// Bug of 25 Oct 2026: with no pre-assigned sections the volunteer gets 2 random streams, and the
+// first heartbeat (60-90 s later) removed both cards because they were not in assigned_streams.
+describe('Volunteer heartbeat keeps the cards it did not pre-assign', () => {
+  async function loginAs(user) {
+    const page = await browser.newPage();
+    await page.route('**/*', (route) => {
+      const u = new URL(route.request().url());
+      if (u.hostname !== 'localhost') return route.abort();
+      if (!u.pathname.startsWith('/hls/')) return route.continue();
+      return route.fulfill({ status: 200, contentType: 'application/vnd.apple.mpegurl', body: EMPTY });
+    });
+    await page.goto(base + '/login');
+    await page.fill('#username', user);
+    await page.fill('#password', 'volpass123');
+    await page.click('#submit-btn');
+    await page.waitForURL(base + '/');
+    await page.waitForFunction(() => intervals.length > 0, null, { timeout: 5000 });
+    return page;
+  }
+  const newVolunteer = async () => {
+    const user = `vol${++userSeq}`;
+    assert.equal((await api('POST', '/api/users', { username: user, password: 'volpass123', role: 'volunteer' }, adminCookie)).status, 201);
+    return user;
+  };
+  const cards = (page) => page.evaluate(() => ({
+    states: streamStates.map((s) => s.id).sort(),
+    dom: [...document.querySelectorAll('#stream-grid .stream-card')].map((c) => Number(c.dataset.streamId)).sort(),
+  }));
+  const serverUrls = (page) => page.evaluate(async () => {
+    const res = await fetch('/api/heartbeat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: SESSION_ID }) });
+    return Object.keys((await res.json()).urls).map(Number).sort();
+  });
+
+  it('random streams survive heartbeats, on the page and on the server', async () => {
+    // Only unassigned streams, as on the live site on 25 Oct
+    const streams = [1, 2, 3, 4].map((i) => {
+      const section = String(30000000 + i).padStart(9, '0');
+      return { section, url: URL_LIVE.replace(SECTION, section), label: `random ${i}` };
+    });
+    assert.equal((await api('POST', '/api/streams', streams, adminCookie)).status, 200);
+    const page = await loginAs(await newVolunteer());
+    const before = await cards(page);
+    assert.equal(before.states.length, 2, 'two random streams');
+    assert.deepEqual(before.dom, before.states);
+
+    await page.evaluate(() => sendHeartbeat());
+    await page.evaluate(() => sendHeartbeat());
+    await new Promise((r) => setTimeout(r, 200)); // let any DELETE the page sent reach the server
+    assert.deepEqual(await cards(page), before, 'cards still on the page after heartbeats');
+    assert.deepEqual(await serverUrls(page), before.states, 'assignments still on the server');
+    await page.close();
+  });
+
+  it('a pre-assigned card still goes away once the admin unassigns it', async () => {
+    const user = await newVolunteer();
+    const section = String(40000000 + userSeq).padStart(9, '0');
+    const stream = { section, url: URL_LIVE.replace(SECTION, section), label: user };
+    await api('POST', '/api/streams/upsert', [{ ...stream, assigned_users: user }], adminCookie);
+
+    const page = await loginAs(user);
+    assert.equal((await cards(page)).states.length, 1);
+    await api('POST', '/api/streams/upsert', [{ ...stream, assigned_users: '' }], adminCookie);
+    await page.evaluate(() => sendHeartbeat());
+    assert.deepEqual((await cards(page)).dom, []);
+    await page.close();
+  });
+});
