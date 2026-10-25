@@ -414,6 +414,70 @@ video.card-thumb-video { pointer-events: none; object-fit: cover; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Section number: volunteers copy it into reports, so it is large, selectable in one
+ * click (user-select: all) and has its own copy button. Clicks here never open inspect. */
+.card-section {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.card-section-num {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  user-select: all;
+  -webkit-user-select: all;
+  cursor: text;
+  white-space: nowrap; /* a section number split over two lines is easy to misread */
+}
+.card-copy {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px; height: 28px;
+  padding: 0;
+  background: var(--surface2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 120ms ease-out;
+}
+.card-copy svg { width: 14px; height: 14px; }
+.card-copy:hover, .card-copy:focus-visible { color: var(--text); border-color: var(--focus); }
+.card-copy:active { transform: scale(0.95); }
+.card-section.copied .card-copy { color: #16a34a; border-color: #16a34a; }
+/* Confirmation floats above the row so the number never moves or wraps */
+.card-copied {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 4px);
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #16a34a;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+.card-section.copied .card-copied { opacity: 1; }
+@media (pointer: coarse) {
+  /* 44px tall; narrower so 9 digits fit beside it in a 320px-wide two-column grid */
+  .card-copy { width: 38px; height: 44px; }
+  .card-copy svg { width: 18px; height: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-copy, .card-copied { transition: none; }
+}
 .card-status-row {
   display: flex;
   align-items: center;
@@ -631,6 +695,10 @@ video.card-thumb-video { pointer-events: none; object-fit: cover; }
 
 <!-- Hourglass symbol — defined once, reused via <use href="#hg"> -->
 <svg style="display:none" aria-hidden="true">
+  <symbol id="copy" viewBox="0 0 16 16">
+    <rect x="5" y="5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  </symbol>
   <symbol id="star" viewBox="0 0 16 16">
     <path d="M8 1l1.85 3.75L14 5.65l-3 2.92.71 4.13L8 10.75l-3.71 1.95.71-4.13-3-2.92 4.15-.9z"
           fill="currentColor"/>
@@ -894,6 +962,11 @@ function setupStream(stream) {
     <div class="card-metrics"></div>
     ${thumbMarkup}
     ${assigned ? '<svg class="card-star" aria-label="assigned"><use href="#star"/></svg>' : ''}
+    ${stream.section ? `<div class="card-section">
+      <span class="card-section-num">${escHtml(stream.section)}</span>
+      <button type="button" class="card-copy" aria-label="${escHtml(t('section.copy'))}" title="${escHtml(t('section.copy'))}"><svg aria-hidden="true"><use href="#copy"/></svg></button>
+      <span class="card-copied" role="status"></span>
+    </div>` : ''}
     <div class="card-label" title="${escHtml(stream.label)}">${escHtml(stream.label)}</div>
     <div class="card-status-row">
       <div class="card-status">
@@ -903,6 +976,13 @@ function setupStream(stream) {
       </div>
     </div>
   `;
+
+  const sectionRow = card.querySelector('.card-section');
+  if (sectionRow) {
+    // Selecting or copying the number must not open the inspect panel
+    sectionRow.addEventListener('click', (e) => e.stopPropagation());
+    sectionRow.querySelector('.card-copy').addEventListener('click', () => copySection(sectionRow, stream.section));
+  }
 
   // Remove button handler (only works for manually-added streams)
   card.querySelector('.card-remove').addEventListener('click', async (e) => {
@@ -970,6 +1050,10 @@ function setupStream(stream) {
     frame.onload = () => {
       loading.style.display = 'none';
       frame.style.display = 'block';
+      // Section and login for the prefilled "Report issue" form. Same origin only: it carries the username.
+      if (frame.contentWindow) {
+        frame.contentWindow.postMessage({ type: 'report-context', section: state.section || '', user: USER_ID || '' }, location.origin);
+      }
       if (frame.contentWindow && state.contacts && state.contacts.length) {
         frame.contentWindow.postMessage({ type: 'contacts', contacts: state.contacts }, '*');
       }
@@ -1333,6 +1417,32 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+// ── Copy section number ───────────────────────────────────────────────────────
+// Clipboard API needs HTTPS (or localhost); older browsers get the execCommand fallback.
+async function copySection(row, section) {
+  let ok = false;
+  try {
+    await navigator.clipboard.writeText(section);
+    ok = true;
+  } catch (_) {
+    const num = row.querySelector('.card-section-num');
+    const range = document.createRange();
+    range.selectNodeContents(num);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
+    // On failure the number stays selected, so the volunteer can copy it by hand
+    if (ok) sel.removeAllRanges();
+  }
+  if (!ok) return;
+  const msg = row.querySelector('.card-copied');
+  msg.textContent = t('section.copied');
+  row.classList.add('copied');
+  clearTimeout(row._copiedTimer);
+  row._copiedTimer = setTimeout(() => { row.classList.remove('copied'); msg.textContent = ''; }, 1500);
+}
+
 // ── Util ──────────────────────────────────────────────────────────────────────
 function escHtml(s) {
   return String(s)
@@ -1524,6 +1634,7 @@ function onLangChange() {
       tf('monitoring.count', { n: streamStates.length });
   }
   for (const state of streamStates) updateCard(state);
+  document.querySelectorAll('.card-copy').forEach((b) => { b.title = t('section.copy'); b.setAttribute('aria-label', t('section.copy')); });
   // Sync language to detector iframe
   const frame = document.getElementById('inspect-frame');
   if (frame.contentWindow) frame.contentWindow.postMessage({ type: 'set-lang', lang: _lang }, '*');

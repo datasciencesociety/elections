@@ -11,6 +11,25 @@ const PROXY_BASE = (typeof window !== 'undefined' && window.PROXY_BASE) || 'http
 const DIRECT_MODE = typeof location !== 'undefined'
   && new URLSearchParams(location.search).get('direct') === '1';
 
+// "Подай сигнал" Tally form. Its first two questions are "Имейл адрес" (email field) and
+// "Номер на секцията" (number field). Tally fills a question from the URL only through a
+// hidden field: the form owner adds hidden fields named as below and sets each one as the
+// matching question's "Default answer". Names are case-sensitive.
+const TALLY_FORM_URL = 'https://tally.so/r/labENX';
+const TALLY_PARAMS = { email: 'email', section: 'section' };
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const SECTION_RE = /^\d{9}$/;
+
+// The login is sent only if it is an email: the first question is an email field and
+// would reject a plain username. A non-email username is simply left out.
+function buildReportUrl({ section, user } = {}) {
+  const params = new URLSearchParams();
+  if (typeof user === 'string' && EMAIL_RE.test(user)) params.set(TALLY_PARAMS.email, user);
+  if (typeof section === 'string' && SECTION_RE.test(section)) params.set(TALLY_PARAMS.section, section);
+  const qs = params.toString();
+  return qs ? `${TALLY_FORM_URL}?${qs}` : TALLY_FORM_URL;
+}
+
 // ── DOM refs ───────────────────────────────────────────────────────────────
 const elUrl          = document.getElementById('stream-url');
 const btnStart       = document.getElementById('btn-start');
@@ -499,6 +518,14 @@ elUrl.addEventListener('keydown', e => { if (e.key === 'Enter') startMonitoring(
       if (phonePopup.classList.contains('open') && !phonePopup.contains(e.target) && e.target !== btnCall) {
         phonePopup.classList.remove('open');
       }
+    });
+
+    // Section and login from the volunteer page prefill the report form
+    const btnSignal = document.getElementById('btn-signal-video');
+    window.addEventListener('message', (e) => {
+      if (e.source !== window.parent || e.origin !== location.origin) return;
+      if (!e.data || e.data.type !== 'report-context' || !btnSignal) return;
+      btnSignal.href = buildReportUrl({ section: e.data.section, user: e.data.user });
     });
 
     // Listen for contacts from parent (volunteer page)
