@@ -1548,7 +1548,7 @@ document.addEventListener('fullscreenchange', () => {
         <span class="section-id">${escHtml(s.section)}</span>
         <span class="section-label">${escHtml(s.label)}</span>
         ${s.risk != null ? `<span class="section-risk">${escHtml(tf('modal.risk', { n: s.risk }))}</span>` : ''}
-        ${s.watchers || s.eyes > 1 ? `<span class="section-watched">${escHtml(tf('modal.watched', { n: s.watchers, m: s.eyes }))}</span>` : ''}
+        <span class="section-watched">${escHtml(tf('modal.watched', { n: s.watchers ?? 0, m: s.eyes ?? 1 }))}</span>
       `;
       item.querySelector('input').addEventListener('change', (e) => {
         if (e.target.checked) selected.add(s.id); else selected.delete(s.id);
