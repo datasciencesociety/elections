@@ -235,10 +235,12 @@ function txReport(sessionId, results, now) {
 }
 
 // Extract section number from URL path: .../real/102700005/...
-// A stub has a section and an empty URL: its stream is not published yet
+// A stub has a section and an empty URL: its stream is not published yet.
+// Any other URL must parse as http(s): the volunteer page builds video sources from it.
 function isStreamOrStub(s) {
-  return !!s && typeof s.url === 'string' &&
-    (s.url.trim() !== '' || (typeof s.section === 'string' && s.section.trim() !== ''));
+  if (!s || typeof s.url !== 'string') return false;
+  if (s.url.trim() === '') return typeof s.section === 'string' && s.section.trim() !== '';
+  try { return /^https?:$/.test(new URL(s.url).protocol); } catch { return false; }
 }
 
 function extractSection(url) {

@@ -274,6 +274,13 @@ describe('Stub streams (no URL yet)', () => {
     stubId = res.body.streams.find((s) => s.section === STUB).id;
   });
 
+  it('a URL must be http(s) or empty', async () => {
+    const res = await request('POST', '/api/streams/upsert', {
+      cookie: adminCookie, body: [{ section: '010100011', url: 'javascript:alert(1)', label: 'Bad' }, { section: '010100012', url: 'not a url', label: 'Bad 2' }],
+    });
+    assert.equal(res.status, 400);
+  });
+
   it('a stub needs a section', async () => {
     const res = await request('POST', '/api/streams/upsert', { cookie: adminCookie, body: [{ url: '', label: 'No section' }] });
     assert.equal(res.status, 400);

@@ -987,6 +987,7 @@ function setupStream(stream) {
 
 // The scrape filled a stub (or changed a URL): rebuild the card in the same grid slot
 function replaceStreamUrl(state, url) {
+  try { new URL(url); } catch (_) { return; } // keep the card rather than lose it to a bad URL
   const next = state.card?.nextSibling || null;
   teardownStream(state);
   const fresh = setupStream({ ...state.stream, url });
