@@ -19,7 +19,8 @@ const SCRAPER = path.join(__dirname, 'scrape-streams.js');
 const SERVER = path.join(__dirname, '../coordinator/server.js');
 const ADMIN = { user: 'e2eadmin', pass: 'e2eadminpass' };
 const CODE = 'pvr2026';
-// Three OIK pages, scraped one at a time: 40 + 40 + 5 sections → batches of 30, 30 and the final 25
+// Three OIK pages, scraped one at a time: 40 + 40 + 5 sections → each page is sent as soon as it is
+// read, at most 30 rows per upload: 30 + 10, 30 + 10, 5
 const OIKS = [40, 40, 5].map((n, o) => Array.from({ length: n }, (_, i) => `${String(o + 1).padStart(2, '0')}46000${String(i + 1).padStart(2, '0')}`));
 const STUB = OIKS[0][3];           // pre-seeded without URL, assigned to a volunteer
 const DISABLED = OIKS[1][7];       // pre-seeded and disabled by the admin
@@ -146,10 +147,10 @@ describe('scraper --upsert in batches', () => {
     const run = await scrape(profile(), ['--batch-size=30']);
     assert.equal(run.code, 0, run.stderr);
     const sizes = [...run.stderr.matchAll(/ upsert (\d+) → /g)].map(m => Number(m[1]));
-    assert.deepEqual(sizes, [30, 30, 25], run.stderr);
+    assert.deepEqual(sizes, [30, 10, 30, 10, 5], run.stderr);
     assert.match(run.stderr, /retry 1\/3/);
-    // The first batch went out before the last OIK page was scraped
-    assert.ok(run.stderr.indexOf(' upsert 30 → ') < run.stderr.indexOf('[3/3]'), run.stderr);
+    // Page 1's links, including the 10 under a full batch, went out before page 2 was scraped
+    assert.ok(run.stderr.indexOf(' upsert 10 → ') < run.stderr.indexOf('[2/3]'), run.stderr);
     assert.equal(JSON.parse(run.stdout).length, 85);
 
     const after = await streams();
@@ -175,7 +176,7 @@ describe('scraper --upsert in batches', () => {
     const run = await scrape(path.join(tmp, 'fresh-profile'), ['--batch-size=50']);
     assert.equal(run.code, 0, run.stderr);
     assert.deepEqual([...run.stderr.matchAll(/ upsert (\d+) → (\{[^}]*\})/g)].map(m => [Number(m[1]), JSON.parse(m[2])]),
-      [[50, { inserted: 0, updated: 0 }], [35, { inserted: 0, updated: 0 }]]);
+      [[40, { inserted: 0, updated: 0 }], [40, { inserted: 0, updated: 0 }], [5, { inserted: 0, updated: 0 }]]);
     const after = await streams();
     assert.deepEqual(new Map([...after].map(([k, v]) => [k, v.id])), idsAfterFirst);
     assert.equal(after.get(STUB).assigned_users, 'vol9');

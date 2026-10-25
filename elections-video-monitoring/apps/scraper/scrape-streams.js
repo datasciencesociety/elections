@@ -28,7 +28,7 @@
  *   --code=X         with --discover: wait for this code (e.g. pvr202610) instead of any new one
  *   --poll=S         --discover poll interval in seconds (default 300; keep it slow for Cloudflare)
  *   --upsert         send found streams to the coordinator in batches as the pages are parsed
- *   --batch-size=N   with --upsert: rows per upload (default 30); the rest is sent at the end of each pass
+ *   --batch-size=N   with --upsert: at most N rows per upload (default 30); each page's links are sent as soon as it is read
  *   --watch=S        rescrape every S seconds; with --upsert only new/changed sections are sent
  *   --fast           block video requests and stop waiting once sections are in the DOM
  *   --profile=DIR    browser profile kept between runs (default ~/.cache/evideo-scraper);
@@ -417,6 +417,8 @@ async function scrapePass(ctx, oikPages, onPage) {
           if (changed.length === 0) return;
           // Send the stored assignments back: older coordinators clear assigned_users when a row omits it
           await uploader.add(changed.map(s => ({ ...s, assigned_users: assigned.get(s.section) ?? null })));
+          // Volunteers get each page's links at once, not when 30 have piled up or the pass ends
+          await uploader.flush();
         };
       }
 

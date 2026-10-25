@@ -63,7 +63,7 @@ File naming convention: `streams_<election-code>[_tour<N>][_<type>].json`
 | `--code=X` | — | With `--discover`: wait for this code (use it if the election is already linked) |
 | `--poll=S` | `300` | `--discover` poll interval in seconds |
 | `--upsert` | off | Send found streams to the coordinator while scraping (`COORDINATOR_URL`, `SEED_USER`/`SEED_PASS`) |
-| `--batch-size=N` | `30` | With `--upsert`: send every N new or changed sections at once; the rest goes at the end of the pass. A failed batch is retried (2, 4, 8 s) and then kept for the next pass |
+| `--batch-size=N` | `30` | With `--upsert`: at most N sections per upload. Each OIK page's new or changed links are sent as soon as the page is read. A failed upload is retried (2, 4, 8 s) and then kept for the next pass |
 | `--watch=S` | off | Rescrape every S seconds; with `--upsert` only new or changed sections are sent |
 | `--fast` | off | Block video requests and stop waiting once sections are in the DOM |
 | `--profile=DIR` | `~/.cache/evideo-scraper` | Browser profile kept between runs (Cloudflare cookie, upsert progress) |
@@ -78,7 +78,7 @@ COORDINATOR_URL=https://<live-domain> SEED_USER=admin SEED_PASS=… \
   node scrape-streams.js --discover --code=<evideo-code> --upsert --batch-size=30 --watch=120 --fast
 ```
 
-- Volunteers get URLs 30 at a time while the scrape runs, not after the last OIK page. Partial batches never touch other sections: the upsert fills stubs in place and keeps assignments and the admin's enable/disable.
+- Volunteers get each link as soon as its OIK page is read, not after the last page. This covers every section the scrape finds: the pre-assigned ones and those volunteers pick themselves with "Добави секция", for example in their own neighbourhood. Partial batches never touch other sections: the upsert fills stubs in place and keeps assignments and the admin's enable/disable.
 - Progress is saved in the profile (`sent-<code>.json`), so a restart sends only new or changed sections. A rerun with a fresh profile resends everything, which is harmless.
 - Without `--watch`, the exit code is 2 when some rows could not be sent; run it again.
 
