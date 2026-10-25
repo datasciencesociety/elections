@@ -147,6 +147,8 @@ Only when all of this passes, stop the old app so it no longer writes to the DB 
 - Stubs, if the live DB still has test or old streams. This wipes sessions and reports:
   `COORDINATOR_URL=https://<live-domain> SEED_USER=… SEED_PASS=… node scripts/seed.js <sections.json> --stubs --replace --force`
 - Users and contacts: admin page uploads, from private files that are never in the repo.
+- Risk order for "Добави секция" (highest first, sections with fewer than 2 watchers), from the risk sheet exported as CSV, never in the repo. Try `--dry-run` first:
+  `COORDINATOR_URL=https://<live-domain> SEED_USER=… SEED_PASS=… node scripts/load-risk.js <risk.csv>`
 - Scraper: from an operator laptop, never the server. See `apps/scraper/README.md`, Election day.
 
 ### Before counting (about 30 minutes before polls close)

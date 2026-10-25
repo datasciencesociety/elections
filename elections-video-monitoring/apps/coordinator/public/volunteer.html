@@ -274,6 +274,8 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
 .section-item input[type="checkbox"] { flex-shrink: 0; }
 .section-item .section-id { font-weight: 600; color: var(--text); }
 .section-item .section-label { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.section-item .section-risk { flex-shrink: 0; margin-left: auto; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #dc2626; color: #fff; }
+.section-item .section-watched { flex-shrink: 0; font-size: 11px; color: var(--text-muted); }
 .section-empty { padding: 20px 14px; text-align: center; color: var(--text-muted); font-size: 12px; }
 #section-modal-footer {
   padding: 10px 14px;
@@ -1544,6 +1546,8 @@ document.addEventListener('fullscreenchange', () => {
         <input type="checkbox" value="${s.id}" ${selected.has(s.id) ? 'checked' : ''}>
         <span class="section-id">${escHtml(s.section)}</span>
         <span class="section-label">${escHtml(s.label)}</span>
+        ${s.risk != null ? `<span class="section-risk">${escHtml(tf('modal.risk', { n: s.risk }))}</span>` : ''}
+        ${s.watchers ? `<span class="section-watched">${escHtml(t('modal.watched'))}</span>` : ''}
       `;
       item.querySelector('input').addEventListener('change', (e) => {
         if (e.target.checked) selected.add(s.id); else selected.delete(s.id);

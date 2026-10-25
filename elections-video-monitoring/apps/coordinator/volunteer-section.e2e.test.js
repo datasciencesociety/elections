@@ -141,4 +141,24 @@ describe('Section number on the volunteer card and the prefilled report form', (
     if (process.env.SCREENSHOT_DIR) await v.page.screenshot({ path: path.join(process.env.SCREENSHOT_DIR, 'volunteer-section-320.png') });
     await v.context.close();
   });
+
+  it('"Добави секция" lists the highest risk first with a badge, and fits a 320px screen', async () => {
+    await api('POST', '/api/streams/upsert', [
+      { section: '040000001', url: 'https://live-0001.evideo.bg/pvr2026/040000001/index.m3u8', label: 'Риск нисък, дълъг адрес на секцията ул. „Някоя“ № 123' },
+      { section: '040000002', url: 'https://live-0001.evideo.bg/pvr2026/040000002/index.m3u8', label: 'Риск висок' },
+    ], adminCookie);
+    await api('POST', '/api/streams/risk', [{ section: '040000001', risk: 3 }, { section: '040000002', risk: 17 }], adminCookie);
+    const v = await openVolunteer('volunteer.three@example.org', { viewport: { width: 320, height: 568 }, isMobile: true, hasTouch: true });
+    await v.page.click('#add-section-btn');
+    await v.page.waitForSelector('#section-list .section-item');
+    const first = v.page.locator('#section-list .section-item').first();
+    assert.equal(await first.locator('.section-id').textContent(), '040000002');
+    assert.match(await first.locator('.section-risk').textContent(), /17/);
+    const badge = await first.locator('.section-risk').boundingBox();
+    const item = await first.boundingBox();
+    assert.ok(badge.x + badge.width <= item.x + item.width + 0.5, 'badge stays inside the row');
+    assert.equal(await v.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
+    if (process.env.SCREENSHOT_DIR) await v.page.screenshot({ path: path.join(process.env.SCREENSHOT_DIR, 'section-picker-risk-320.png') });
+    await v.context.close();
+  });
 });

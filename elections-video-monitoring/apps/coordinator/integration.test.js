@@ -110,6 +110,7 @@ describe('Default-deny route access', () => {
   const protectedApi = [
     ['POST', '/api/streams/upsert'],
     ['POST', '/api/streams/toggle'],
+    ['POST', '/api/streams/risk'],
     ['POST', '/api/streams'],
     ['POST', '/api/session'],
     ['POST', '/api/session/streams'],
@@ -145,7 +146,7 @@ describe('Default-deny route access', () => {
     });
   }
 
-  for (const [method, p] of [['POST', '/api/streams/upsert'], ['POST', '/api/streams/toggle'], ['POST', '/api/streams']]) {
+  for (const [method, p] of [['POST', '/api/streams/upsert'], ['POST', '/api/streams/toggle'], ['POST', '/api/streams/risk'], ['POST', '/api/streams']]) {
     it(`volunteer ${method} ${p} → 401`, async () => {
       const res = await request(method, p, { cookie: vol1Cookie, body: [] });
       assert.equal(res.status, 401);
@@ -384,5 +385,72 @@ describe('Audit log', () => {
     for (const secret of ['testadminpass', 'volpass123', 'wrong-pass-1', 'test-secret']) {
       assert.ok(!raw.includes(secret), `audit log must not contain ${secret}`);
     }
+  });
+});
+
+// ── "Добави секция": risk order, up to two watchers ─────────────────────────
+
+describe('Section picker: risk order and two watchers', () => {
+  const cookies = {};
+  const sessions = {};
+  const ids = {};
+
+  before(async () => {
+    for (const u of ['risk1', 'risk2', 'risk3']) {
+      const res = await request('POST', '/api/users', {
+        cookie: adminCookie, body: { username: u, password: 'volpass123', role: 'volunteer' },
+      });
+      assert.equal(res.status, 201);
+      cookies[u] = await login(u, 'volpass123');
+    }
+    await request('POST', '/api/streams/upsert', {
+      cookie: adminCookie,
+      body: [
+        { section: '030000001', url: 'https://example.test/r1.mp4', label: 'R low' },
+        { section: '030000002', url: 'https://example.test/r2.mp4', label: 'R high' },
+        { section: '030000003', url: 'https://example.test/r3.mp4', label: 'R none' },
+      ],
+    });
+    const all = (await request('GET', '/api/streams', { cookie: adminCookie })).body.streams;
+    for (const s of all) ids[s.label] = s.id;
+  });
+
+  it('admin loads risk by section; bad rows are dropped', async () => {
+    const res = await request('POST', '/api/streams/risk', {
+      cookie: adminCookie,
+      body: [{ section: '030000001', risk: 5 }, { section: '030000002', risk: 9 }, { section: 'x', risk: 1 }, { section: '030000009', risk: 'high' }],
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.saved, 2);
+  });
+
+  it('lists the highest risk first and unscored sections last', async () => {
+    const res = await request('GET', '/api/streams/available', { cookie: cookies.risk3 });
+    const order = res.body.streams.map((s) => s.label).filter((l) => l.startsWith('R '));
+    assert.deepEqual(order, ['R high', 'R low', 'R none']);
+    const high = res.body.streams.find((s) => s.label === 'R high');
+    assert.equal(high.risk, 9);
+    assert.equal(high.watchers, 0);
+    const last = res.body.streams.at(-1);
+    assert.equal(last.risk, null);
+  });
+
+  it('a section takes a second volunteer, then leaves the list', async () => {
+    for (const u of ['risk1', 'risk2']) {
+      sessions[u] = (await request('POST', '/api/session', { cookie: cookies[u], body: {} })).body.session_id;
+      const add = await request('POST', '/api/session/streams', {
+        cookie: cookies[u], body: { session_id: sessions[u], stream_ids: [ids['R high']] },
+      });
+      assert.deepEqual(add.body.added.map((s) => s.id), [ids['R high']], `${u} can add it`);
+      const list = (await request('GET', '/api/streams/available', { cookie: cookies.risk3 })).body.streams;
+      const row = list.find((s) => s.id === ids['R high']);
+      if (u === 'risk1') assert.equal(row.watchers, 1, 'still offered with one watcher');
+      else assert.equal(row, undefined, 'gone with two watchers');
+    }
+    sessions.risk3 = (await request('POST', '/api/session', { cookie: cookies.risk3, body: {} })).body.session_id;
+    const third = await request('POST', '/api/session/streams', {
+      cookie: cookies.risk3, body: { session_id: sessions.risk3, stream_ids: [ids['R high']] },
+    });
+    assert.deepEqual(third.body.added, []);
   });
 });

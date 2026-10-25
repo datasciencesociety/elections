@@ -52,6 +52,7 @@ const ADMIN_ROUTES = new Set([
   'POST /api/streams',
   'POST /api/streams/upsert',
   'POST /api/streams/toggle',
+  'POST /api/streams/risk',
   'POST /api/users',
   'POST /api/users/bulk',
   'GET /api/users',
