@@ -13,7 +13,7 @@ Volunteers keep the page open for hours, so a page-only deploy (`volunteer.html`
 
 ## Distribution
 
-- Reshuffle by risk: volunteers who logged in before the high-risk sections were loaded keep lower-risk cards, because cards are never taken away. Offer them a swap ("по-рисковa секция без наблюдател") instead of removing anything.
+- Reshuffle by risk: volunteers who logged in before the high-risk sections were loaded keep lower-risk cards, because cards are never taken away. Offer them a swap ("по-рискова секция без наблюдател") instead of removing anything.
 - Load every priority section as a stub before volunteers log in, not after: the login fill can only give sections the coordinator already knows.
 - Backup cover (`AUTOFILL_AFTER`) is built and tested but was not switched on. Decide whether to use it next time.
 
