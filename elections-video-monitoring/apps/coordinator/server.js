@@ -192,6 +192,20 @@ const stmt = {
     WHERE a.stream_id = ? AND a.session_id != ?
   `),
   deleteOneAssignment: db.prepare('DELETE FROM assignments WHERE session_id = ? AND stream_id = ?'),
+  sessionStreamCount: db.prepare('SELECT COUNT(*) AS n FROM assignments WHERE session_id = ?'),
+  // Assigned sections no active session watches: their volunteer never came or dropped.
+  // Sections that already have video first.
+  orphanedStreams:   db.prepare(`
+    SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
+    WHERE s.enabled = 1
+      AND s.assigned_users IS NOT NULL AND s.assigned_users != ''
+      AND s.id NOT IN (
+        SELECT a.stream_id FROM assignments a
+        JOIN sessions se ON se.id = a.session_id AND se.last_heartbeat > ?
+      )
+    ORDER BY (s.url = ''), RANDOM()
+    LIMIT ?
+  `),
   availableStreams: db.prepare(`
     SELECT s.id, s.section, s.label
     FROM streams s
@@ -357,6 +371,25 @@ function serveFile(res, filePath, contentType) {
 
 const SESSION_TTL = parseInt(process.env.SESSION_TTL_MS, 10) || 8 * 60 * 60 * 1000; // 8 h default
 
+// Backup cover: from AUTOFILL_AFTER on (ISO time; off when unset), every heartbeat tops the session
+// up to AUTOFILL_MAX cards with assigned sections nobody is watching. A card given this way is never
+// taken back, even when its own volunteer returns: cards must not disappear under a volunteer.
+const AUTOFILL_AFTER = process.env.AUTOFILL_AFTER ? Date.parse(process.env.AUTOFILL_AFTER) : NaN;
+const AUTOFILL_MAX = parseInt(process.env.AUTOFILL_MAX, 10) || 4;
+const ACTIVE_MS = 120_000; // a session without a heartbeat for this long no longer covers its cards
+const declined = new Map(); // session id → stream ids the volunteer closed; never handed back to them
+
+function autofill(sessionId, now) {
+  if (!(now >= AUTOFILL_AFTER)) return [];
+  const need = AUTOFILL_MAX - stmt.sessionStreamCount.get(sessionId).n;
+  if (need <= 0) return [];
+  const skip = declined.get(sessionId) || new Set();
+  const picked = stmt.orphanedStreams.all(now - ACTIVE_MS, need + skip.size)
+    .filter(s => !skip.has(s.id)).slice(0, need);
+  for (const s of picked) stmt.insertAssignment.run(sessionId, s.id, now);
+  return picked;
+}
+
 
 // Current role from the DB, so deleted or demoted users lose access immediately
 function lookupRole(username) {
@@ -434,9 +467,18 @@ async function handleHeartbeat(req, res) {
   const preAssigned = stmt.preAssignedForUser.all(userId);
   for (const s of preAssigned) stmt.insertAssignment.run(session_id, s.id, now);
 
+  // The page adds every card in assigned_streams it lacks and keeps cards not pre-assigned to the user
+  let backups = [];
+  try {
+    backups = autofill(session_id, now);
+    if (backups.length) audit(req, 'session.autofill', { session: session_id.slice(0, 8), streams: backups.map(s => s.id) });
+  } catch (e) {
+    console.error(`autofill failed: ${e.message}`);
+  }
+
   // Current URL of every stream in the session, so open cards notice when a stub gets its stream
   const urls = Object.fromEntries(stmt.sessionUrls.all(session_id).map(s => [s.id, s.url]));
-  json(res, 200, { ok: true, assigned_streams: enrichWithContacts(preAssigned), urls });
+  json(res, 200, { ok: true, assigned_streams: enrichWithContacts([...preAssigned, ...backups]), urls });
 }
 
 async function handleReport(req, res) {
@@ -551,6 +593,8 @@ async function handleRemoveStream(req, res) {
     json(res, 404, { error: 'session not found' }); return;
   }
   stmt.deleteOneAssignment.run(session_id, stream_id);
+  if (!declined.has(session_id)) declined.set(session_id, new Set());
+  declined.get(session_id).add(stream_id);
   audit(req, 'session.remove', { session: session_id.slice(0, 8), stream_id });
   json(res, 200, { ok: true });
 }

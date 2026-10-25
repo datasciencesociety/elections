@@ -15,7 +15,7 @@ Local commands run from `elections-video-monitoring/` in your checkout. Every st
 
 ```sh
 git fetch && git checkout <commit> && git status          # clean tree
-(cd apps/coordinator && node --test integration.test.js auth.unit.test.js auth.property.test.js middleware.property.test.js)
+(cd apps/coordinator && node --test integration.test.js auth.unit.test.js auth.property.test.js middleware.property.test.js audit.unit.test.js autofill.test.js)
 (cd apps/coordinator && node --test volunteer-waiting.e2e.test.js)   # needs Playwright Chromium
 scripts/test-nginx-hls.sh                                  # needs Docker; offline
 ```
