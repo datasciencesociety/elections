@@ -358,6 +358,10 @@ describe('Audit log', () => {
 
   it('records logins, admin changes and volunteer actions next to the DB, without passwords', async () => {
     assert.equal((await request('POST', '/api/login', { body: { username: 'vol1', password: 'wrong-pass-1' } })).status, 401);
+    // A section with a link: reports on stubs are always stored as waiting
+    await request('POST', '/api/streams/upsert', {
+      cookie: adminCookie, body: [{ section: '010100020', url: 'https://example.test/audit.mp4', label: 'Audit', assigned_users: 'vol2' }],
+    });
     const s = await request('POST', '/api/session', { cookie: vol2Cookie, body: {} });
     const sid = s.body.session_id;
     const streamId = s.body.streams[0].id;
@@ -452,5 +456,25 @@ describe('Section picker: risk order and two watchers', () => {
       cookie: cookies.risk3, body: { session_id: sessions.risk3, stream_ids: [ids['R high']] },
     });
     assert.deepEqual(third.body.added, []);
+  });
+});
+
+// ── A section without a link is never flagged ────────────────────────────────
+
+describe('Reports on a section without a link', () => {
+  it('a stale page reporting "frozen" on a stub is stored as waiting and not flagged', async () => {
+    await request('POST', '/api/users', { cookie: adminCookie, body: { username: 'stale1', password: 'volpass123', role: 'volunteer' } });
+    const cookie = await login('stale1', 'volpass123');
+    await request('POST', '/api/streams/upsert', {
+      cookie: adminCookie, body: [{ section: '050000001', url: '', label: 'Stub withdrawn', assigned_users: 'stale1' }],
+    });
+    const session = await request('POST', '/api/session', { cookie, body: {} });
+    const stub = session.body.streams.find((s) => s.section === '050000001');
+    const rep = await request('POST', '/api/report', {
+      cookie, body: { session_id: session.body.session_id, results: [{ stream_id: stub.id, status: 'frozen' }] },
+    });
+    assert.equal(rep.status, 200);
+    const flagged = await request('GET', '/api/flagged', { cookie: adminCookie });
+    assert.ok(!flagged.body.flagged.some((f) => f.stream_id === stub.id));
   });
 });

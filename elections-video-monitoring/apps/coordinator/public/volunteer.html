@@ -1075,7 +1075,7 @@ function setupStream(stream) {
 
 // The scrape filled a stub (or changed a URL): rebuild the card in the same grid slot
 function replaceStreamUrl(state, url) {
-  try { new URL(url); } catch (_) { return; } // keep the card rather than lose it to a bad URL
+  if (url !== '') { try { new URL(url); } catch (_) { return; } } // keep the card rather than lose it to a bad URL
   const next = state.card?.nextSibling || null;
   teardownStream(state);
   const fresh = setupStream({ ...state.stream, url });
@@ -1339,7 +1339,8 @@ async function sendHeartbeat() {
       if (data.urls) {
         for (const s of streamStates.slice()) {
           const url = data.urls[s.id];
-          if (typeof url === 'string' && url && url !== s.url) replaceStreamUrl(s, url);
+          // '' = the link was withdrawn: the card goes back to waiting instead of playing the old one
+          if (typeof url === 'string' && url !== s.url) replaceStreamUrl(s, url);
         }
       }
       if (toRemove.length || data.assigned_streams.some(s => !currentIds.has(s.id))) {

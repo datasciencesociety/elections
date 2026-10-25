@@ -133,6 +133,7 @@ const stmt = {
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `),
   touchStream:       db.prepare('UPDATE streams SET last_checked = ? WHERE id = ?'),
+  streamUrl:         db.prepare('SELECT url FROM streams WHERE id = ?'),
   flagged:           db.prepare(`
     SELECT
       s.id    AS stream_id,
@@ -149,6 +150,7 @@ const stmt = {
       AND r.status != 'initializing'
       AND r.status != 'error'
       AND r.status != 'waiting'
+      AND s.url != ''
     GROUP BY s.id, r.status
     ORDER BY report_count DESC, first_seen ASC
   `),
@@ -260,9 +262,11 @@ function txCreateSession(sessionId, streams, userId = null) {
 function txReport(sessionId, results, now) {
   const accepted = [];
   transaction(() => {
-    for (const r of results) {
+    for (let r of results) {
       // Only accept reports for streams this session is actually watching
       if (!r || typeof r.status !== 'string' || !stmt.sessionAssigned.get(sessionId, r.stream_id)) continue;
+      // A section without a link has nothing to freeze: a page still playing its old link says otherwise
+      if (stmt.streamUrl.get(r.stream_id)?.url === '') r = { ...r, status: 'waiting' };
       stmt.insertReport.run(sessionId, r.stream_id, now, r.status,
         r.cover_ratio ?? null, r.frozen_sec ?? null, r.luma ?? null);
       stmt.touchStream.run(now, r.stream_id);
