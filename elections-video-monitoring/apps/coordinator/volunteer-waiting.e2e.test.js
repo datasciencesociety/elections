@@ -84,7 +84,7 @@ async function openVolunteer(streamUrl, answer) {
   await page.fill('#password', 'volpass123');
   await page.click('#submit-btn');
   await page.waitForURL(base + '/');
-  await page.waitForFunction(() => streamStates.length === 1);
+  await page.waitForFunction(() => streamStates.length >= 1);
   const state = () => page.evaluate(() => {
     const s = streamStates[0];
     return { status: s.status, fallback: s.fallback, src: s.video ? s.video.getAttribute('src') : null, intervals: intervals.length };
@@ -195,7 +195,7 @@ describe('Volunteer heartbeat keeps the cards it did not pre-assign', () => {
     assert.equal((await api('POST', '/api/streams', streams, adminCookie)).status, 200);
     const page = await loginAs(await newVolunteer());
     const before = await cards(page);
-    assert.equal(before.states.length, 2, 'two random streams');
+    assert.equal(before.states.length, 3, 'three streams by risk');
     assert.deepEqual(before.dom, before.states);
 
     await page.evaluate(() => sendHeartbeat());
@@ -213,10 +213,14 @@ describe('Volunteer heartbeat keeps the cards it did not pre-assign', () => {
     await api('POST', '/api/streams/upsert', [{ ...stream, assigned_users: user }], adminCookie);
 
     const page = await loginAs(user);
-    assert.equal((await cards(page)).states.length, 1);
+    const own = await page.evaluate((sec) => streamStates.find((s) => s.stream.section === sec)?.id, section);
+    assert.ok(own, 'own card shown');
     await api('POST', '/api/streams/upsert', [{ ...stream, assigned_users: '' }], adminCookie);
     await page.evaluate(() => sendHeartbeat());
-    assert.deepEqual((await cards(page)).dom, []);
+    assert.ok(!(await cards(page)).dom.includes(own), 'own card gone');
+    await new Promise((r) => setTimeout(r, 200));
+    await page.evaluate(() => sendHeartbeat());
+    assert.ok(!(await cards(page)).dom.includes(own), 'and not handed back');
     await page.close();
   });
 });

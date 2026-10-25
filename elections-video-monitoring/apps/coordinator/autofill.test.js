@@ -111,7 +111,7 @@ describe('Backup cover for sections whose volunteer is away', () => {
     ids = Object.fromEntries(all.map((s) => [s.label, s.id]));
     // owner1 is online and covers S1
     const own = await newSession(owner1Cookie);
-    assert.deepEqual(own.streams.map((s) => s.label), ['S1']);
+    assert.equal(own.streams[0].label, 'S1');
   });
 
   it('tops a volunteer up to 4 cards with assigned sections nobody watches, video first', async () => {

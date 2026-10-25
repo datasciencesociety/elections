@@ -222,6 +222,22 @@ const stmt = {
     ORDER BY (s.url = ''), RANDOM()
     LIMIT ?
   `),
+  // Unassigned sections that still need watchers, for filling a new session: highest risk first
+  priorityStreams:   db.prepare(`
+    SELECT s.id, s.url, s.label, s.section, s.assigned_users
+    FROM streams s
+    LEFT JOIN section_risk r ON r.section = s.section
+    LEFT JOIN (
+      SELECT a.stream_id, COUNT(DISTINCT se.user_id) AS n FROM assignments a
+      JOIN sessions se ON se.id = a.session_id AND se.last_heartbeat > ?
+      GROUP BY a.stream_id
+    ) w ON w.stream_id = s.id
+    WHERE s.enabled = 1 AND (s.assigned_users IS NULL OR s.assigned_users = '')
+      AND COALESCE(w.n, 0) < COALESCE(r.eyes, ?)
+      AND s.id NOT IN (SELECT stream_id FROM assignments WHERE session_id = ?)
+    ORDER BY (r.risk IS NULL), r.risk DESC, COALESCE(w.n, 0), s.section
+    LIMIT ?
+  `),
   // Sections with fewer active volunteers than they need (eyes; DEFAULT_EYES when not listed):
   // highest risk first, then the least watched; sections without a risk score last
   availableStreams: db.prepare(`
@@ -400,6 +416,19 @@ const AUTOFILL_AFTER = process.env.AUTOFILL_AFTER ? Date.parse(process.env.AUTOF
 const AUTOFILL_MAX = parseInt(process.env.AUTOFILL_MAX, 10) || 4;
 const ACTIVE_MS = 120_000; // a session without a heartbeat for this long no longer covers its cards
 const DEFAULT_EYES = 1;    // watchers a section needs when the priority list does not say
+const LOGIN_CARDS = parseInt(process.env.LOGIN_CARDS, 10) || 3; // sessions are kept filled to this many cards
+
+// Tops the session up to LOGIN_CARDS with the highest-risk unassigned sections that still need
+// watchers. Never hands back a card the volunteer closed.
+function topUp(sessionId, now) {
+  const need = LOGIN_CARDS - stmt.sessionStreamCount.get(sessionId).n;
+  if (need <= 0) return [];
+  const skip = declined.get(sessionId) || new Set();
+  const picked = stmt.priorityStreams.all(now - ACTIVE_MS, DEFAULT_EYES, sessionId, need + skip.size)
+    .filter(s => !skip.has(s.id)).slice(0, need);
+  for (const s of picked) stmt.insertAssignment.run(sessionId, s.id, now);
+  return picked;
+}
 const declined = new Map(); // session id → stream ids the volunteer closed; never handed back to them
 
 function autofill(sessionId, now) {
@@ -439,6 +468,7 @@ async function handleSession(req, res) {
     for (const s of stmt.preAssignedForUser.all(userId)) {
       stmt.insertAssignment.run(body.session_id, s.id, now); // INSERT OR REPLACE — safe if already exists
     }
+    topUp(body.session_id, now);
 
     // Return all streams currently assigned to this session
     let streams = db.prepare(`
@@ -452,11 +482,13 @@ async function handleSession(req, res) {
     return;
   }
 
-  // All sections pre-assigned to this user; if none, pick 2 random enabled streams
+  // All sections pre-assigned to this user; topped up by risk once the session exists (below);
+  // with nothing to give at all, 2 random enabled streams
   let streams = stmt.preAssignedForUser.all(userId);
-  const mode = streams.length ? 'assigned' : 'random';
+  let mode = streams.length ? 'assigned' : 'priority';
 
-  if (streams.length === 0) {
+  if (streams.length === 0 && stmt.priorityStreams.all(Date.now() - ACTIVE_MS, DEFAULT_EYES, '', 1).length === 0) {
+    mode = 'random';
     streams = db.prepare(`
       SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
       WHERE s.enabled = 1
@@ -466,6 +498,7 @@ async function handleSession(req, res) {
 
   const sessionId = crypto.randomUUID();
   txCreateSession(sessionId, streams, userId);
+  if (mode !== 'random') streams = streams.concat(topUp(sessionId, Date.now()));
   audit(req, 'session.new', { session: sessionId.slice(0, 8), mode, streams: streams.map(s => s.id) });
   json(res, 200, { session_id: sessionId, streams: enrichWithContacts(streams) });
 }
@@ -491,6 +524,7 @@ async function handleHeartbeat(req, res) {
   for (const s of preAssigned) stmt.insertAssignment.run(session_id, s.id, now);
 
   // The page adds every card in assigned_streams it lacks and keeps cards not pre-assigned to the user
+  const filled = topUp(session_id, now);
   let backups = [];
   try {
     backups = autofill(session_id, now);
@@ -501,7 +535,7 @@ async function handleHeartbeat(req, res) {
 
   // Current URL of every stream in the session, so open cards notice when a stub gets its stream
   const urls = Object.fromEntries(stmt.sessionUrls.all(session_id).map(s => [s.id, s.url]));
-  json(res, 200, { ok: true, assigned_streams: enrichWithContacts([...preAssigned, ...backups]), urls });
+  json(res, 200, { ok: true, assigned_streams: enrichWithContacts([...preAssigned, ...filled, ...backups]), urls });
 }
 
 async function handleReport(req, res) {

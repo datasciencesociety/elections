@@ -181,7 +181,7 @@ describe('Login cookies', () => {
 // ── Sessions ─────────────────────────────────────────────────────────────────
 
 describe('Volunteer sessions', () => {
-  let vol1Session, vol1Streams, streamC;
+  let vol1Session, vol1Streams, streamB, streamC;
 
   before(async () => {
     // vol1 claims to be vol2 in the body — must be ignored
@@ -190,11 +190,14 @@ describe('Volunteer sessions', () => {
     vol1Session = res.body.session_id;
     vol1Streams = res.body.streams;
     const all = await request('GET', '/api/streams', { cookie: vol1Cookie });
+    streamB = all.body.streams.find((s) => s.section === '010100002');
     streamC = all.body.streams.find((s) => s.section === '010100003');
   });
 
   it('assignments come from the login, not body.user_id', () => {
-    assert.deepEqual(vol1Streams.map((s) => s.section), ['010100001']);
+    // Own section first; vol2's never, whatever body.user_id says (unassigned ones may fill the rest)
+    assert.equal(vol1Streams[0].section, '010100001');
+    assert.ok(!vol1Streams.some((s) => s.section === '010100002'));
   });
 
   it('another user cannot heartbeat, report on, or edit the session', async () => {
@@ -243,7 +246,7 @@ describe('Volunteer sessions', () => {
         session_id: vol1Session,
         results: [
           { stream_id: vol1Streams[0].id, status: 'frozen' },
-          { stream_id: streamC.id, status: 'covered' },
+          { stream_id: streamB.id, status: 'covered' },
         ],
       },
     });
@@ -377,7 +380,7 @@ describe('Audit log', () => {
     has((l) => l.action === 'users.create' && l.user === 'testadmin' && l.target === 'vol1' && l.target_role === 'volunteer', 'user created by admin');
     has((l) => l.action === 'streams.upsert' && l.user === 'testadmin' && l.rows === 3, 'upsert with row count');
     has((l) => l.action === 'session.new' && l.user === 'vol1' && l.mode === 'assigned', 'pre-assigned session');
-    has((l) => l.action === 'session.new' && l.user === 'vol2' && ['assigned', 'random'].includes(l.mode), 'session with its mode');
+    has((l) => l.action === 'session.new' && l.user === 'vol2' && ['assigned', 'priority', 'random'].includes(l.mode), 'session with its mode');
 
     // A status is logged when it changes, not on every report
     const vol2Reports = lines.filter((l) => l.action === 'report.status' && l.user === 'vol2');
@@ -499,5 +502,28 @@ describe('Section picker: a section needing one watcher', () => {
     const s2 = (await request('POST', '/api/session', { cookie: cookies.eye2, body: {} })).body.session_id;
     const a2 = await request('POST', '/api/session/streams', { cookie: cookies.eye2, body: { session_id: s2, stream_ids: [id] } });
     assert.ok(!a2.body.added.some((s) => s.id === id));
+  });
+});
+
+describe('Login fills the session with the highest-risk sections that need watchers', () => {
+  it('assigned sections first, then unassigned by risk up to 3, never a section already full', async () => {
+    await request('POST', '/api/users', { cookie: adminCookie, body: { username: 'fill1', password: 'volpass123', role: 'volunteer' } });
+    await request('POST', '/api/users', { cookie: adminCookie, body: { username: 'fill2', password: 'volpass123', role: 'volunteer' } });
+    const rows = [{ section: '070000001', url: 'https://example.test/f0.mp4', label: 'F own', assigned_users: 'fill1' }];
+    for (let i = 2; i <= 7; i++) rows.push({ section: `07000000${i}`, url: `https://example.test/f${i}.mp4`, label: `F${i}` });
+    rows.push({ section: '070000009', url: 'https://example.test/f9.mp4', label: 'F other', assigned_users: 'someone' });
+    await request('POST', '/api/streams/upsert', { cookie: adminCookie, body: rows });
+    await request('POST', '/api/streams/risk', {
+      cookie: adminCookie,
+      body: [{ section: '070000009', risk: 99 }, { section: '070000002', risk: 80, eyes: 1 }, { section: '070000003', risk: 70, eyes: 2 },
+        { section: '070000004', risk: 60 }, { section: '070000005', risk: 50 }],
+    });
+    const s1 = await request('POST', '/api/session', { cookie: await login('fill1', 'volpass123'), body: {} });
+    assert.deepEqual(s1.body.streams.map((s) => s.label), ['F own', 'F2', 'F3']);
+    // F2 needs 1 watcher and has it; F3 needs 2; F other belongs to someone else
+    const s2 = await request('POST', '/api/session', { cookie: await login('fill2', 'volpass123'), body: {} });
+    assert.deepEqual(s2.body.streams.slice(0, 2).map((s) => s.label), ['F3', 'F4']);
+    assert.equal(s2.body.streams.length, 3);
+    assert.ok(!s2.body.streams.some((s) => ['F2', 'F other', 'F own'].includes(s.label)));
   });
 });

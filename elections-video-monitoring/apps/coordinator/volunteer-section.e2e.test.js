@@ -82,7 +82,7 @@ async function openVolunteer(user, contextOptions = {}) {
   await page.fill('#password', 'volpass123');
   await page.click('#submit-btn');
   await page.waitForURL(base + '/');
-  await page.waitForFunction(() => streamStates.length === 1);
+  await page.waitForFunction(() => streamStates.length >= 1);
   return { page, context, section };
 }
 
@@ -143,12 +143,18 @@ describe('Section number on the volunteer card and the prefilled report form', (
   });
 
   it('"Добави секция" lists the highest risk first with a badge, and fits a 320px screen', async () => {
+    // The login fills the 3 cards with the two riskiest; the picker offers the rest, riskiest first
     await api('POST', '/api/streams/upsert', [
       { section: '040000001', url: 'https://live-0001.evideo.bg/pvr2026/040000001/index.m3u8', label: 'Риск нисък, дълъг адрес на секцията ул. „Някоя“ № 123' },
       { section: '040000002', url: 'https://live-0001.evideo.bg/pvr2026/040000002/index.m3u8', label: 'Риск висок' },
+      { section: '040000003', url: 'https://live-0001.evideo.bg/pvr2026/040000003/index.m3u8', label: 'Най-висок 1' },
+      { section: '040000004', url: 'https://live-0001.evideo.bg/pvr2026/040000004/index.m3u8', label: 'Най-висок 2' },
     ], adminCookie);
-    await api('POST', '/api/streams/risk', [{ section: '040000001', risk: 3 }, { section: '040000002', risk: 17 }], adminCookie);
+    await api('POST', '/api/streams/risk', [{ section: '040000001', risk: 3 }, { section: '040000002', risk: 17 },
+      { section: '040000003', risk: 30 }, { section: '040000004', risk: 25 }], adminCookie);
     const v = await openVolunteer('volunteer.three@example.org', { viewport: { width: 320, height: 568 }, isMobile: true, hasTouch: true });
+    await v.page.waitForFunction(() => streamStates.length === 3);
+    assert.deepEqual(await v.page.evaluate(() => streamStates.map((s) => s.stream.section).slice(1).sort()), ['040000003', '040000004']);
     await v.page.click('#add-section-btn');
     await v.page.waitForSelector('#section-list .section-item');
     const first = v.page.locator('#section-list .section-item').first();
