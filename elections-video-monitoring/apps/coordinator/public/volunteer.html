@@ -781,6 +781,8 @@ async function init() {
   localStorage.setItem(LS_SESSION_KEY, SESSION_ID);
   document.getElementById('session-label').textContent =
     t(data.resumed ? 'session.resumed' : 'session.new') + ' ' + SESSION_ID.slice(0, 8) + ' · ' + USER_ID;
+  // Green from the start: the first heartbeat only comes 60–90 s later
+  document.getElementById('vol-indicator').classList.add('active');
 
   const grid = document.getElementById('stream-grid');
   grid.innerHTML = '';
