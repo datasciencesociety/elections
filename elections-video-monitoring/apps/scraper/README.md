@@ -77,7 +77,7 @@ File naming convention: `streams_<election-code>[_tour<N>][_<type>].json`
 Start before evideo publishes; it seeds the coordinator page by page and keeps it current:
 
 ```sh
-COORDINATOR_URL=https://video.promeni.bg SEED_USER=admin SEED_PASS=… \
+COORDINATOR_URL=https://stork-ai.com SEED_USER=admin SEED_PASS=… \
   node scrape-streams.js --discover --upsert --watch=120
 ```
 

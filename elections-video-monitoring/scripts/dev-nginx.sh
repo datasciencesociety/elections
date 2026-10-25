@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Local nginx with the same /hls proxy as video.promeni.bg, in front of the coordinator on the host.
+# Local nginx with the same /hls proxy as the live site, in front of the coordinator on the host.
 # Usage: scripts/dev-nginx.sh [PORT of the coordinator, default 3000]
-# Start the coordinator with PROXY_URL=http://localhost:8080/hls, then open http://localhost:8080.
+# Start the coordinator with PROXY_URL=/hls, then open http://localhost:8080.
 set -euo pipefail
 
 PORT=${1:-${PORT:-3000}}

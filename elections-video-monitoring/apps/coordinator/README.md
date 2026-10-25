@@ -165,8 +165,8 @@ node scripts/inspect-db.js
 
 The coordinator does not proxy video; nginx does, on the same site. `deploy/nginx-hls.conf` serves `/hls/{host}/{path}` → `https://{host}/{path}` for `*.evideo.bg` only, to pages with a login cookie, rate-limited per IP. Same origin, so the volunteer page can read canvas pixels without CORS. Without `PROXY_URL`, cards play evideo directly and detection does not run.
 
-- Live: `PROXY_URL=https://video.promeni.bg/hls`. `nginx-site.conf` includes the file from the release, and `remote-install.sh` checks `/hls` after the reload.
-- Local: `scripts/dev-nginx.sh` runs the same file in nginx 1.18 (Docker) on port 8080 in front of the coordinator. Start the coordinator with `PROXY_URL=http://localhost:8080/hls` and open `http://localhost:8080`. `apps/proxy` (node, port 8788) is only a fallback.
+- Live: `PROXY_URL=/hls`, relative, so the same setting works on any domain the site is served from. `nginx-site.conf` includes the file from the release, and `remote-install.sh` checks `/hls` after the reload.
+- Local: `scripts/dev-nginx.sh` runs the same file in nginx 1.18 (Docker) on port 8080 in front of the coordinator. Start the coordinator with `PROXY_URL=/hls` and open `http://localhost:8080`. `apps/proxy` (node, port 8788) is only a fallback.
 
 ## Test streams and stubs
 
@@ -179,7 +179,7 @@ The coordinator does not proxy video; nginx does, on the same site. `deploy/ngin
 `deploy/deploy.sh` ships the committed `coordinator/` and `detector/` to a server and installs them as the systemd service `election-coordinator` behind nginx (`deploy/nginx-site.conf`).
 
 ```sh
-DEPLOY_HOST=ji@10.10.10.1 DOMAIN=video.promeni.bg apps/coordinator/deploy/deploy.sh
+DEPLOY_HOST=ji@10.10.10.1 DOMAIN=stork-ai.com apps/coordinator/deploy/deploy.sh
 ```
 
 Once per server: create `/etc/election-coordinator.env` from `deploy/election-coordinator.env.example` and a certificate for the domain.

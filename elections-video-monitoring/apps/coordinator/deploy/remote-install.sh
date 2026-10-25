@@ -39,7 +39,7 @@ NODE_BIN=${NODE_BIN:-$(sudo -u "$SERVICE_USER" -i bash -c 'command -v node' || t
 PROXY_URL=$(env_get PROXY_URL)
 if [ -z "$PROXY_URL" ]; then
   echo "WARNING: PROXY_URL is empty; cards will play without detection" >&2
-elif [ "$PROXY_URL" = "https://$DOMAIN/hls" ]; then
+elif [ "$PROXY_URL" = /hls ] || [ "$PROXY_URL" = "https://$DOMAIN/hls" ]; then
   :  # this release's nginx serves it; checked after the reload
 else
   pcode=$(curl -s -o /dev/null -m 5 -w '%{http_code}' "$PROXY_URL/healthz" || true)
@@ -136,8 +136,8 @@ done
 [ "$(pub "https://$DOMAIN/hls/evideo.bg/x.m3u8")" = 401 ] || rollback "/hls without a login cookie was not refused"
 [ "$(pub -H 'Cookie: session=x' "https://$DOMAIN/hls/example.com/x.m3u8")" = 403 ] || rollback "/hls proxied a host other than evideo.bg"
 case $PROXY_URL in
-  "https://$DOMAIN/hls") ;;
-  *) echo "WARNING: PROXY_URL=$PROXY_URL; set PROXY_URL=https://$DOMAIN/hls to use this server's proxy" >&2 ;;
+  /hls|"https://$DOMAIN/hls") ;;
+  *) echo "WARNING: PROXY_URL=$PROXY_URL; set PROXY_URL=/hls to use this server's proxy" >&2 ;;
 esac
 
 # keep the 5 newest releases
