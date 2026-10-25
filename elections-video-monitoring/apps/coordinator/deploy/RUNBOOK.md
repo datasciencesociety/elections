@@ -149,6 +149,14 @@ Only when all of this passes, stop the old app so it no longer writes to the DB 
 - Users and contacts: admin page uploads, from private files that are never in the repo.
 - Scraper: from an operator laptop, never the server. See `apps/scraper/README.md`, Election day.
 
+### Before counting (about 30 minutes before polls close)
+
+Volunteers who get random streams see every enabled stream, so a test video can reach them as if it were live.
+
+- Admin page, streams list: switch off every test stream (archive recordings, `archive.evideo.bg`, dev videos). Switching off hides a stream from distribution and keeps its row; the stub load above removes them instead, but also wipes sessions and reports.
+- Clear test assignments to operators' own accounts, unless they are meant to watch real sections tonight.
+- Check: `/api/streams/stats` counts only real sections as enabled, and a test volunteer login shows no archive video.
+
 ## During the night
 
 | Watch | Command on the server |
