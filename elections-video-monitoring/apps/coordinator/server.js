@@ -74,10 +74,12 @@ db.exec(`
     PRIMARY KEY (stream_id, contact_id)
   );
 
-  -- Fraud-fight priority per section; kept apart from streams so it can be loaded before the scrape
+  -- Fraud-fight priority and watchers needed per section; kept apart from streams so it can be
+  -- loaded before the scrape
   CREATE TABLE IF NOT EXISTS section_risk (
     section TEXT PRIMARY KEY,
-    risk    REAL NOT NULL
+    risk    REAL NOT NULL,
+    eyes    INTEGER
   );
 
   CREATE INDEX IF NOT EXISTS idx_reports_stream_ts  ON reports(stream_id, ts);
@@ -201,9 +203,10 @@ const stmt = {
     WHERE a.stream_id = ? AND a.session_id != ?
   `),
   upsertRisk:        db.prepare(`
-    INSERT INTO section_risk (section, risk) VALUES (?, ?)
-    ON CONFLICT(section) DO UPDATE SET risk = excluded.risk
+    INSERT INTO section_risk (section, risk, eyes) VALUES (?, ?, ?)
+    ON CONFLICT(section) DO UPDATE SET risk = excluded.risk, eyes = COALESCE(excluded.eyes, section_risk.eyes)
   `),
+  sectionEyes:       db.prepare('SELECT r.eyes FROM streams s JOIN section_risk r ON r.section = s.section WHERE s.id = ?'),
   deleteOneAssignment: db.prepare('DELETE FROM assignments WHERE session_id = ? AND stream_id = ?'),
   sessionStreamCount: db.prepare('SELECT COUNT(*) AS n FROM assignments WHERE session_id = ?'),
   // Assigned sections no active session watches: their volunteer never came or dropped.
@@ -219,10 +222,10 @@ const stmt = {
     ORDER BY (s.url = ''), RANDOM()
     LIMIT ?
   `),
-  // Sections with fewer than MAX_WATCHERS active volunteers: highest risk first, then the least
-  // watched; sections without a risk score last
+  // Sections with fewer active volunteers than they need (eyes; DEFAULT_EYES when not listed):
+  // highest risk first, then the least watched; sections without a risk score last
   availableStreams: db.prepare(`
-    SELECT s.id, s.section, s.label, r.risk, COALESCE(w.n, 0) AS watchers
+    SELECT s.id, s.section, s.label, r.risk, COALESCE(r.eyes, ?) AS eyes, COALESCE(w.n, 0) AS watchers
     FROM streams s
     LEFT JOIN section_risk r ON r.section = s.section
     LEFT JOIN (
@@ -230,7 +233,7 @@ const stmt = {
       JOIN sessions se ON se.id = a.session_id AND se.last_heartbeat > ?
       GROUP BY a.stream_id
     ) w ON w.stream_id = s.id
-    WHERE s.enabled = 1 AND COALESCE(w.n, 0) < ?
+    WHERE s.enabled = 1 AND COALESCE(w.n, 0) < COALESCE(r.eyes, ?)
     ORDER BY (r.risk IS NULL), r.risk DESC, watchers, s.section
   `),
 };
@@ -396,7 +399,7 @@ const SESSION_TTL = parseInt(process.env.SESSION_TTL_MS, 10) || 8 * 60 * 60 * 10
 const AUTOFILL_AFTER = process.env.AUTOFILL_AFTER ? Date.parse(process.env.AUTOFILL_AFTER) : NaN;
 const AUTOFILL_MAX = parseInt(process.env.AUTOFILL_MAX, 10) || 4;
 const ACTIVE_MS = 120_000; // a session without a heartbeat for this long no longer covers its cards
-const MAX_WATCHERS = 2;    // "Добави секция" offers and accepts sections with fewer active volunteers
+const DEFAULT_EYES = 1;    // watchers a section needs when the priority list does not say
 const declined = new Map(); // session id → stream ids the volunteer closed; never handed back to them
 
 function autofill(sessionId, now) {
@@ -572,19 +575,20 @@ function handleStreamsList(req, res) {
 
 function handleAvailableStreams(req, res) {
   const cutoff = Date.now() - 120_000;
-  const rows = stmt.availableStreams.all(cutoff, MAX_WATCHERS);
+  const rows = stmt.availableStreams.all(DEFAULT_EYES, cutoff, DEFAULT_EYES);
   json(res, 200, { streams: rows });
 }
 
-// Admin: [{section, risk}] → section_risk. Touches nothing else, so it can run before or after the scrape.
+// Admin: [{section, risk, eyes?}] → section_risk. Touches nothing else, so it can run before or after the scrape.
 async function handleStreamsRisk(req, res) {
   let body;
   try { body = await readBody(req); }
   catch (e) { json(res, 400, { error: e.message }); return; }
-  if (!Array.isArray(body)) { json(res, 400, { error: 'Expected JSON array [{section, risk}]' }); return; }
-  const valid = body.filter(r => r && /^\d{9}$/.test(String(r.section)) && Number.isFinite(Number(r.risk)));
+  if (!Array.isArray(body)) { json(res, 400, { error: 'Expected JSON array [{section, risk, eyes}]' }); return; }
+  const valid = body.filter(r => r && /^\d{9}$/.test(String(r.section)) && Number.isFinite(Number(r.risk))
+    && (r.eyes == null || (Number.isInteger(r.eyes) && r.eyes >= 1 && r.eyes <= 10)));
   if (valid.length === 0) { json(res, 400, { error: 'No valid rows' }); return; }
-  transaction(() => { for (const r of valid) stmt.upsertRisk.run(String(r.section), Number(r.risk)); });
+  transaction(() => { for (const r of valid) stmt.upsertRisk.run(String(r.section), Number(r.risk), r.eyes ?? null); });
   audit(req, 'streams.risk', { rows: body.length, valid: valid.length });
   json(res, 200, { saved: valid.length });
 }
@@ -606,7 +610,8 @@ async function handleAddStreams(req, res) {
       const stream = stmt.streamById.get(sid);
       if (!stream) continue;
       // Skip if enough other volunteers already watch it
-      if (stmt.otherWatchers.get(cutoff, stream.id, session_id).n >= MAX_WATCHERS) continue;
+      const eyes = stmt.sectionEyes.get(stream.id)?.eyes ?? DEFAULT_EYES;
+      if (stmt.otherWatchers.get(cutoff, stream.id, session_id).n >= eyes) continue;
       stmt.insertAssignment.run(session_id, stream.id, now);
       added.push(enrichWithContacts([stream])[0]);
     }

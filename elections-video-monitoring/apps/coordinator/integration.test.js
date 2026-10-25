@@ -422,7 +422,8 @@ describe('Section picker: risk order and two watchers', () => {
   it('admin loads risk by section; bad rows are dropped', async () => {
     const res = await request('POST', '/api/streams/risk', {
       cookie: adminCookie,
-      body: [{ section: '030000001', risk: 5 }, { section: '030000002', risk: 9 }, { section: 'x', risk: 1 }, { section: '030000009', risk: 'high' }],
+      body: [{ section: '030000001', risk: 5 }, { section: '030000002', risk: 9, eyes: 2 }, { section: 'x', risk: 1 },
+        { section: '030000009', risk: 'high' }, { section: '030000008', risk: 1, eyes: 0 }],
     });
     assert.equal(res.status, 200);
     assert.equal(res.body.saved, 2);
@@ -434,12 +435,14 @@ describe('Section picker: risk order and two watchers', () => {
     assert.deepEqual(order, ['R high', 'R low', 'R none']);
     const high = res.body.streams.find((s) => s.label === 'R high');
     assert.equal(high.risk, 9);
+    assert.equal(high.eyes, 2);
     assert.equal(high.watchers, 0);
+    assert.equal(res.body.streams.find((s) => s.label === 'R low').eyes, 1, 'unlisted needs one watcher');
     const last = res.body.streams.at(-1);
     assert.equal(last.risk, null);
   });
 
-  it('a section takes a second volunteer, then leaves the list', async () => {
+  it('a section needing 2 takes a second volunteer, then leaves the list', async () => {
     for (const u of ['risk1', 'risk2']) {
       sessions[u] = (await request('POST', '/api/session', { cookie: cookies[u], body: {} })).body.session_id;
       const add = await request('POST', '/api/session/streams', {
@@ -476,5 +479,25 @@ describe('Reports on a section without a link', () => {
     assert.equal(rep.status, 200);
     const flagged = await request('GET', '/api/flagged', { cookie: adminCookie });
     assert.ok(!flagged.body.flagged.some((f) => f.stream_id === stub.id));
+  });
+});
+
+describe('Section picker: a section needing one watcher', () => {
+  it('leaves the list once one volunteer watches it, and refuses a second', async () => {
+    const cookies = {};
+    for (const u of ['eye1', 'eye2']) {
+      await request('POST', '/api/users', { cookie: adminCookie, body: { username: u, password: 'volpass123', role: 'volunteer' } });
+      cookies[u] = await login(u, 'volpass123');
+    }
+    await request('POST', '/api/streams/upsert', { cookie: adminCookie, body: [{ section: '060000001', url: 'https://example.test/e1.mp4', label: 'One eye' }] });
+    const id = (await request('GET', '/api/streams', { cookie: adminCookie })).body.streams.find((s) => s.section === '060000001').id;
+    const s1 = (await request('POST', '/api/session', { cookie: cookies.eye1, body: {} })).body.session_id;
+    const a1 = await request('POST', '/api/session/streams', { cookie: cookies.eye1, body: { session_id: s1, stream_ids: [id] } });
+    assert.deepEqual(a1.body.added.map((s) => s.id), [id]);
+    const list = (await request('GET', '/api/streams/available', { cookie: cookies.eye2 })).body.streams;
+    assert.ok(!list.some((s) => s.id === id));
+    const s2 = (await request('POST', '/api/session', { cookie: cookies.eye2, body: {} })).body.session_id;
+    const a2 = await request('POST', '/api/session/streams', { cookie: cookies.eye2, body: { session_id: s2, stream_ids: [id] } });
+    assert.ok(!a2.body.added.some((s) => s.id === id));
   });
 });
