@@ -20,3 +20,6 @@ test-results/
 
 # Playwright MCP browser snapshots
 .playwright-mcp/
+
+# Sensitive data (volunteers, passwords, phones): kept on the server only, never committed
+private/
