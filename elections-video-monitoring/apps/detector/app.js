@@ -36,6 +36,7 @@ function buildReportUrl({ section, user } = {}) {
 const elUrl          = document.getElementById('stream-url');
 const btnStart       = document.getElementById('btn-start');
 const btnStop        = document.getElementById('btn-stop');
+const btnResume      = document.getElementById('btn-resume-video');
 const statusPanel    = document.getElementById('status-panel');
 const statusIcon     = document.getElementById('status-icon');
 const statusText     = document.getElementById('status-text');
@@ -317,6 +318,7 @@ function startMonitoring() {
 
   btnStart.disabled = true;
   btnStop.disabled  = false;
+  btnResume.hidden  = true;
   setStatus('idle', '⏳', t('connecting'), url);
   addLog(tf('log.started', { url }), 'info');
 
@@ -422,6 +424,7 @@ function stopMonitoring(resetStatus = true) {
   video.removeEventListener('error', onVideoError);
   btnStart.disabled = false;
   btnStop.disabled  = true;
+  btnResume.hidden  = !elUrl.value.trim();
   if (resetStatus) setStatus('idle', '⏸', t('idle'));
 }
 
@@ -450,6 +453,7 @@ video.addEventListener('ended', () => {
 // ── Controls ───────────────────────────────────────────────────────────────
 btnStart.addEventListener('click', startMonitoring);
 btnStop.addEventListener('click', () => { stopMonitoring(); addLog(t('log.stopped'), 'info'); });
+btnResume.addEventListener('click', startMonitoring);
 
 document.getElementById('btn-open-url').addEventListener('click', () => {
   const url = elUrl.value.trim();
