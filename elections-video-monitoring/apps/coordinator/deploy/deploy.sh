@@ -18,6 +18,12 @@ TS=$(date +%Y%m%d-%H%M%S)-$(git rev-parse --short HEAD)
 if [ "${SKIP_TESTS:-}" != 1 ]; then
   echo "==> tests"
   (cd coordinator && node --test integration.test.js auth.unit.test.js auth.property.test.js middleware.property.test.js)
+  # The browser and nginx tests need Playwright's Chromium and Docker; a skipped one is said out loud
+  if (cd coordinator && node -e "require('fs').accessSync(require('@playwright/test').chromium.executablePath())") 2>/dev/null; then
+    (cd coordinator && node --test volunteer-waiting.e2e.test.js)
+  else echo "!! SKIPPED volunteer e2e: no Playwright Chromium (pnpm exec playwright install chromium)"; fi
+  if docker info >/dev/null 2>&1; then ../scripts/test-nginx-hls.sh
+  else echo "!! SKIPPED nginx /hls test: Docker is not running"; fi
 fi
 
 STAGE=election-deploy/$TS

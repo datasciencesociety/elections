@@ -66,6 +66,7 @@ mkdir -p "$APP_DIR/releases" "$DB_DIR"
 rm -rf "$REL"; cp -a "$STAGE" "$REL"; chown -R root:root "$REL"
 # /hls/healthz names its release, so the checks below can wait for the reloaded config
 sed -i "s#@RELEASE@#$TS#g" "$REL/coordinator/deploy/nginx-hls.conf"
+grep -q "OK $TS\"" "$REL/coordinator/deploy/nginx-hls.conf" || die "nginx-hls.conf has no @RELEASE@ healthz line; the reload check would never pass"
 (cd "$REL/coordinator" && PATH="$(dirname "$NODE_BIN"):$PATH" npm ci --omit=dev --no-audit --no-fund --loglevel=error)
 chown "$SERVICE_USER" "$DB_DIR"
 
@@ -159,4 +160,5 @@ trap - ERR
 ls -1d "$APP_DIR"/releases/* | sort -r | tail -n +6 | while read -r d; do
   [ "$d" = "$REL" ] || [ "$d" = "$PREV" ] || rm -rf "$d"
 done
+# rollback-* directories are kept: a few small files each, and the first holds the old app's nginx site
 say "live: https://$DOMAIN (release $TS, service user $SERVICE_USER)"

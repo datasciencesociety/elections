@@ -234,3 +234,19 @@ describe('8.6 verifySessionCookie expiry and malformed input', () => {
     assert.equal(verifySessionCookie('abc.def'), null);
   });
 });
+
+describe('nginx /hls cookie gate matches the cookies auth.js issues', () => {
+  const { createSessionCookie } = require('./auth');
+  const conf = require('node:fs').readFileSync(require('node:path').join(__dirname, 'deploy/nginx-hls.conf'), 'utf8');
+  const gate = new RegExp(conf.match(/\$cookie_session !~ "([^"]+)"/)[1]);
+
+  it('accepts every issued cookie, so logged-in volunteers get video', () => {
+    for (const [user, role] of [['vol1', 'volunteer'], ['Иван.Петров-2', 'volunteer'], ['a'.repeat(200), 'admin']]) {
+      assert.match(createSessionCookie(user, role), gate);
+    }
+  });
+
+  it('refuses empty and malformed values', () => {
+    for (const v of ['', 'abc', 'abc.def', 'a b.' + '0'.repeat(64), 'abc.' + 'G'.repeat(64)]) assert.doesNotMatch(v, gate);
+  });
+});

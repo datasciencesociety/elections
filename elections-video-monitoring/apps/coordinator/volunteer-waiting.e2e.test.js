@@ -45,8 +45,10 @@ before(async () => {
     env: { ...process.env, PORT: String(port), DB_PATH: path.join(tmp, 'e2e.db'), ADMIN_USER: 'admin', ADMIN_PASS: 'adminpass123', COOKIE_SECRET: 'e2e', PROXY_URL: '/hls' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
+  let stderr = '';
+  child.stderr.on('data', (d) => { stderr += d; });
   await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('server did not start')), 10_000);
+    const timer = setTimeout(() => reject(new Error(`server did not start:\n${stderr}`)), 10_000);
     child.stdout.on('data', (d) => { if (d.toString().includes('Election monitor')) { clearTimeout(timer); resolve(); } });
   });
   adminCookie = (await api('POST', '/api/login', { username: 'admin', password: 'adminpass123' })).cookie;
