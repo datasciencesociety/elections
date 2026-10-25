@@ -16,4 +16,5 @@ exec docker run --rm --name coordinator-nginx -p 8080:8080 \
   --add-host host.docker.internal:host-gateway \
   -v "$CONF:/etc/nginx/conf.d/default.conf:ro" \
   -v "$DEPLOY/nginx-hls.conf:/etc/nginx/coordinator-hls.conf:ro" \
+  -v "$DEPLOY/nginx-hls-http.conf:/etc/nginx/coordinator-hls-http.conf:ro" \
   nginx:1.18.0-alpine
