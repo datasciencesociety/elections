@@ -308,6 +308,12 @@ describe('Stub streams (no URL yet)', () => {
     assert.equal(hb.body.urls[stubId], 'https://example.test/live/index.m3u8');
   });
 
+  it('a whitespace-only URL is a stub, and does not blank a known URL', async () => {
+    await request('POST', '/api/streams/upsert', { cookie: adminCookie, body: [{ section: STUB, url: '   ', label: 'Stub' }] });
+    const s = (await request('GET', '/api/streams', { cookie: adminCookie })).body.streams.find((x) => x.section === STUB);
+    assert.equal(s.url, 'https://example.test/live/index.m3u8');
+  });
+
   it('re-uploading a stub does not blank a known URL', async () => {
     await request('POST', '/api/streams/upsert', {
       cookie: adminCookie, body: [{ section: STUB, url: '', label: 'Stub again' }],
