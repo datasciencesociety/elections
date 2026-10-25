@@ -176,6 +176,8 @@ The coordinator does not proxy video; nginx does, on the same site. `deploy/ngin
 
 ## Deploy
 
+Follow [deploy/RUNBOOK.md](deploy/RUNBOOK.md): it probes and preserves the running system first (`deploy/preflight.sh`, `deploy/drift-check.sh`), then deploys and validates.
+
 `deploy/deploy.sh` ships the committed `coordinator/` and `detector/` to a server and installs them as the systemd service `election-coordinator` behind nginx (`deploy/nginx-site.conf`).
 
 ```sh

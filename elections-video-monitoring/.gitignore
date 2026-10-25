@@ -12,3 +12,7 @@ node_modules/
 
 # Playwright test artifacts
 test-results/
+
+# Server snapshots from deploy/preflight.sh hold secrets
+predeploy/
+predeploy-*/

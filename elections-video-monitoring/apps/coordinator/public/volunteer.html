@@ -729,8 +729,9 @@ async function init() {
   document.getElementById('add-section-btn').style.display = '';
 
   // Try autoplay — fallback cards autoplay inside their iframes on their own.
+  // Only cards with a source: play() on a <video> without one never settles, and init would stop here
   const playPromises = streamStates
-    .filter(s => s.video)
+    .filter(s => s.video && s.video.getAttribute('src'))
     .map(s => s.video.play().catch(() => null));
   const results = await Promise.allSettled(playPromises);
   const anyBlocked = results.some(r => r.status === 'rejected');
@@ -752,7 +753,7 @@ async function init() {
 }
 
 document.getElementById('start-btn').addEventListener('click', () => {
-  streamStates.forEach(s => { if (s.video) s.video.play().catch(() => {}); });
+  streamStates.forEach(s => { if (s.video && s.video.getAttribute('src')) s.video.play().catch(() => {}); });
   document.getElementById('overlay').classList.add('hidden');
   autoplayBlocked = false;
 });
@@ -777,19 +778,29 @@ function isPlaylist(url) {
   try { return new URL(url).pathname.endsWith('.m3u8'); } catch (_) { return false; }
 }
 
-// true once the playlist lists a segment; false while it is missing or empty.
-// Proxy or network failure → true, so the video error path decides (fallback).
-async function playlistHasSegments(playlistUrl) {
+function proxiedUrlFor(url) {
+  const u = new URL(url);
+  return window.PROXY_BASE + '/' + u.hostname + u.pathname + u.search;
+}
+
+// Statuses that mean "ask again on the next tick": the stream is not published yet (404),
+// the proxy rate limit (429) or a gateway blip (502-504).
+const PLAYLIST_RETRY = new Set([404, 429, 502, 503, 504]);
+
+// Should the card start its video? Yes once the playlist lists a segment. Also yes on any
+// other failure (401 login gone, 403 blocked, 410 proxy switched off, network error): the
+// video then errors and promoteToFallback plays evideo directly instead of waiting forever.
+async function shouldStartPlaylist(upstreamUrl) {
   try {
-    let res = await fetch(playlistUrl, { cache: 'no-store' });
-    if (!res.ok) return res.status >= 500;
+    let res = await fetch(proxiedUrlFor(upstreamUrl), { cache: 'no-store' });
+    if (!res.ok) return !PLAYLIST_RETRY.has(res.status);
     let text = await res.text();
     if (text.includes('#EXT-X-STREAM-INF')) {
-      // Master playlist: look at the first variant
+      // Master playlist: look at the first variant, resolved on evideo's side and proxied
       const variant = text.split('\n').map(l => l.trim()).find(l => l && !l.startsWith('#'));
       if (!variant) return false;
-      res = await fetch(new URL(variant, new URL(playlistUrl, location.href)), { cache: 'no-store' });
-      if (!res.ok) return res.status >= 500;
+      res = await fetch(proxiedUrlFor(new URL(variant, upstreamUrl).href), { cache: 'no-store' });
+      if (!res.ok) return !PLAYLIST_RETRY.has(res.status);
       text = await res.text();
     }
     return text.includes('#EXTINF');
@@ -801,7 +812,7 @@ async function playlistHasSegments(playlistUrl) {
 async function probeWaiting(state) {
   if (state.probing || !state.proxiedUrl) return;
   state.probing = true;
-  const started = await playlistHasSegments(state.proxiedUrl);
+  const started = await shouldStartPlaylist(state.url);
   state.probing = false;
   if (!streamStates.includes(state) || !started) return;
   state.status = 'loading';
@@ -817,8 +828,7 @@ function setupStream(stream) {
   const waitForPlaylist = !isStub && !NO_PROXY && isPlaylist(stream.url);
 
   if (!NO_PROXY && !isStub) {
-    const _u = new URL(stream.url);
-    proxiedUrl = window.PROXY_BASE + '/' + _u.hostname + _u.pathname + _u.search;
+    proxiedUrl = proxiedUrlFor(stream.url);
 
     video = document.createElement('video');
     video.muted = true;
@@ -977,6 +987,7 @@ function setupStream(stream) {
 
 // The scrape filled a stub (or changed a URL): rebuild the card in the same grid slot
 function replaceStreamUrl(state, url) {
+  try { new URL(url); } catch (_) { return; } // keep the card rather than lose it to a bad URL
   const next = state.card?.nextSibling || null;
   teardownStream(state);
   const fresh = setupStream({ ...state.stream, url });

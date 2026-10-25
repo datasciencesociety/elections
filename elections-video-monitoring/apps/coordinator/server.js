@@ -235,10 +235,17 @@ function txReport(sessionId, results, now) {
 }
 
 // Extract section number from URL path: .../real/102700005/...
-// A stub has a section and an empty URL: its stream is not published yet
+// URLs are stored trimmed, so a whitespace-only URL is a stub like ''
+function trimUrls(body) {
+  return body.map(s => (s && typeof s.url === 'string' ? { ...s, url: s.url.trim() } : s));
+}
+
+// A stub has a section and an empty URL: its stream is not published yet.
+// Any other URL must parse as http(s): the volunteer page builds video sources from it.
 function isStreamOrStub(s) {
-  return !!s && typeof s.url === 'string' &&
-    (s.url.trim() !== '' || (typeof s.section === 'string' && s.section.trim() !== ''));
+  if (!s || typeof s.url !== 'string') return false;
+  if (s.url.trim() === '') return typeof s.section === 'string' && s.section.trim() !== '';
+  try { return /^https?:$/.test(new URL(s.url).protocol); } catch { return false; }
 }
 
 function extractSection(url) {
@@ -448,7 +455,7 @@ async function handleStreamsUpload(req, res) {
   if (!Array.isArray(body)) {
     json(res, 400, { error: 'Expected JSON array [{url, label}]' }); return;
   }
-  const valid = body.filter(isStreamOrStub);
+  const valid = trimUrls(body).filter(isStreamOrStub);
   if (valid.length === 0) { json(res, 400, { error: 'No valid streams' }); return; }
 
   const inserted = txBulkUpload(valid);
@@ -464,7 +471,7 @@ async function handleStreamsUpsert(req, res) {
   if (!Array.isArray(body)) {
     json(res, 400, { error: 'Expected JSON array [{url, label}]' }); return;
   }
-  const valid = body.filter(s => isStreamOrStub(s) && typeof s.label === 'string' && s.label.trim());
+  const valid = trimUrls(body).filter(s => isStreamOrStub(s) && typeof s.label === 'string' && s.label.trim());
   if (valid.length === 0) { json(res, 400, { error: 'No valid streams' }); return; }
 
   const { inserted, updated } = txUpsertStreams(valid);

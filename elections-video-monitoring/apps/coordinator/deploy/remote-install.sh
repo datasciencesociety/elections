@@ -64,11 +64,16 @@ say "release $TS"
 REL=$APP_DIR/releases/$TS
 mkdir -p "$APP_DIR/releases" "$DB_DIR"
 rm -rf "$REL"; cp -a "$STAGE" "$REL"; chown -R root:root "$REL"
+# /hls/healthz names its release, so the checks below can wait for the reloaded config
+sed -i "s#@RELEASE@#$TS#g" "$REL/coordinator/deploy/nginx-hls.conf"
+grep -q "OK $TS\"" "$REL/coordinator/deploy/nginx-hls.conf" || die "nginx-hls.conf has no @RELEASE@ healthz line; the reload check would never pass"
 (cd "$REL/coordinator" && PATH="$(dirname "$NODE_BIN"):$PATH" npm ci --omit=dev --no-audit --no-fund --loglevel=error)
 chown "$SERVICE_USER" "$DB_DIR"
 
 if [ -f "$DB_PATH" ]; then
   BACKUP=$DB_DIR/backup-$TS.db
+  # A retried release has a backup already; VACUUM INTO refuses to overwrite it
+  [ -e "$BACKUP" ] && BACKUP=$DB_DIR/backup-$TS-$(date +%H%M%S).db
   "$NODE_BIN" -e 'new (require("node:sqlite").DatabaseSync)(process.argv[1]).exec(`VACUUM INTO ${JSON.stringify(process.argv[2]).replace(/"/g, "\x27")}`)' "$DB_PATH" "$BACKUP"
   say "database backup: $BACKUP"
 fi
@@ -86,6 +91,7 @@ restore_config() {
 }
 
 rollback() {
+  trap - ERR
   echo "ROLLBACK: $*" >&2
   restore_config
   if [ -n "$PREV" ] && [ -d "$PREV" ]; then
@@ -115,6 +121,8 @@ fi
 
 # ── Switch and verify ──
 ln -sfn "$REL" "$APP_DIR/current"
+# From here a failing command must not leave the switch half done
+trap 'rollback "unexpected error at line $LINENO"' ERR
 systemctl daemon-reload
 systemctl enable --quiet "$UNIT"
 systemctl restart "$UNIT"
@@ -124,6 +132,11 @@ curl -fsS -o /dev/null "http://127.0.0.1:$PORT/login" || rollback "app did not a
 systemctl reload nginx
 
 pub() { curl -sk -o /dev/null -w '%{http_code}' --resolve "$DOMAIN:443:127.0.0.1" "$@"; }
+# reload returns before the new workers serve; until then the old config answers every check
+for _ in $(seq 1 15); do
+  [ "$(curl -sk --resolve "$DOMAIN:443:127.0.0.1" "https://$DOMAIN/hls/healthz" || true)" = "OK $TS" ] && break
+  sleep 1
+done
 [ "$(pub "https://$DOMAIN/login")" = 200 ] || rollback "https://$DOMAIN/login did not return 200 through nginx"
 # Auth must deny by default: one admin route and one volunteer route, without a login
 for route in /api/streams/toggle /api/report; do
@@ -132,7 +145,8 @@ for route in /api/streams/toggle /api/report; do
 done
 [ "$(pub -H 'Cookie: session=abc.def' "https://$DOMAIN/admin")" = 302 ] || rollback "malformed cookie did not redirect to /login"
 # /hls proxy: answers, refuses requests without a login cookie and hosts other than evideo (none reach evideo)
-[ "$(pub "https://$DOMAIN/hls/healthz")" = 200 ] || rollback "/hls/healthz did not return 200"
+[ "$(curl -sk --resolve "$DOMAIN:443:127.0.0.1" "https://$DOMAIN/hls/healthz" || true)" = "OK $TS" ] \
+  || rollback "nginx did not serve this release's /hls/healthz within 15 s"
 [ "$(pub "https://$DOMAIN/hls/evideo.bg/x.m3u8")" = 401 ] || rollback "/hls without a login cookie was not refused"
 [ "$(pub -H 'Cookie: session=x' "https://$DOMAIN/hls/example.com/x.m3u8")" = 403 ] || rollback "/hls proxied a host other than evideo.bg"
 case $PROXY_URL in
@@ -140,6 +154,11 @@ case $PROXY_URL in
   *) echo "WARNING: PROXY_URL=$PROXY_URL; set PROXY_URL=/hls to use this server's proxy" >&2 ;;
 esac
 
-# keep the 5 newest releases
-ls -1dt "$APP_DIR"/releases/* | tail -n +6 | xargs -r rm -rf
+trap - ERR
+# Keep the 5 newest releases by name (date-sha; cp -a keeps old mtimes), never the live or previous one:
+# their nginx configs include files from the release directory
+ls -1d "$APP_DIR"/releases/* | sort -r | tail -n +6 | while read -r d; do
+  [ "$d" = "$REL" ] || [ "$d" = "$PREV" ] || rm -rf "$d"
+done
+# rollback-* directories are kept: a few small files each, and the first holds the old app's nginx site
 say "live: https://$DOMAIN (release $TS, service user $SERVICE_USER)"

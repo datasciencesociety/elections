@@ -274,6 +274,13 @@ describe('Stub streams (no URL yet)', () => {
     stubId = res.body.streams.find((s) => s.section === STUB).id;
   });
 
+  it('a URL must be http(s) or empty', async () => {
+    const res = await request('POST', '/api/streams/upsert', {
+      cookie: adminCookie, body: [{ section: '010100011', url: 'javascript:alert(1)', label: 'Bad' }, { section: '010100012', url: 'not a url', label: 'Bad 2' }],
+    });
+    assert.equal(res.status, 400);
+  });
+
   it('a stub needs a section', async () => {
     const res = await request('POST', '/api/streams/upsert', { cookie: adminCookie, body: [{ url: '', label: 'No section' }] });
     assert.equal(res.status, 400);
@@ -299,6 +306,12 @@ describe('Stub streams (no URL yet)', () => {
     });
     const hb = await request('POST', '/api/heartbeat', { cookie: vol4Cookie, body: { session_id: session } });
     assert.equal(hb.body.urls[stubId], 'https://example.test/live/index.m3u8');
+  });
+
+  it('a whitespace-only URL is a stub, and does not blank a known URL', async () => {
+    await request('POST', '/api/streams/upsert', { cookie: adminCookie, body: [{ section: STUB, url: '   ', label: 'Stub' }] });
+    const s = (await request('GET', '/api/streams', { cookie: adminCookie })).body.streams.find((x) => x.section === STUB);
+    assert.equal(s.url, 'https://example.test/live/index.m3u8');
   });
 
   it('re-uploading a stub does not blank a known URL', async () => {
