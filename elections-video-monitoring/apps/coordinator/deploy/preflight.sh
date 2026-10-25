@@ -17,6 +17,8 @@ exec > >(tee "$SNAP/summary.txt") 2>&1
 
 h() { printf '\n== %s\n' "$*"; }
 warn() { echo "!! $*"; }
+# The summary is read on screen and pasted into chats: hide passwords, tokens and URL credentials
+mask() { sed -E 's#(://[^/:@[:space:]]+:)[^@[:space:]]+@#\1***@#g; s/([A-Za-z_]*(PASS|SECRET|TOKEN|KEY|PWD)[A-Za-z_]*[=:][[:space:]]*)[^[:space:]]+/\1***/Ig'; }
 NODE=$(command -v node || ls /usr/local/bin/node /usr/bin/node 2>/dev/null | head -1)
 
 h "host"
@@ -39,7 +41,7 @@ for pid in $(ss -ltnpH "sport = :$PORT" | grep -o 'pid=[0-9]*' | cut -d= -f2) $(
   cwd=$(readlink -f "/proc/$pid/cwd")
   h "process $pid"
   echo "user=$(stat -c %U "/proc/$pid") started=$(ps -o lstart= -p "$pid") cwd=$cwd"
-  echo "cmd: $(tr '\0' ' ' < "/proc/$pid/cmdline")"
+  echo "cmd: $(tr '\0' ' ' < "/proc/$pid/cmdline" | mask)"
   echo "unit: $(grep -o '[^/]*\.service' "/proc/$pid/cgroup" | head -1 || echo none)"
   # Env holds secrets: keys on screen, full copy only in the snapshot
   tr '\0' '\n' < "/proc/$pid/environ" > "$SNAP/environ-$pid"; chmod 600 "$SNAP/environ-$pid"
@@ -55,12 +57,14 @@ n=0
 for root in "${!ROOTS[@]}"; do
   n=$((n + 1))
   h "app dir $n: $root (${ROOTS[$root]})"
-  if [ -d "$root/.git" ] || git -C "$root" rev-parse 2>/dev/null; then
-    { echo "HEAD $(git -C "$root" rev-parse HEAD) on $(git -C "$root" rev-parse --abbrev-ref HEAD)"
-      echo "remotes:"; git -C "$root" remote -v
-      echo "commits not on its upstream:"; git -C "$root" log --oneline '@{u}..HEAD' 2>&1
-      echo "uncommitted:"; git -C "$root" status --porcelain
-      echo "stashes:"; git -C "$root" stash list; } | tee "$SNAP/git-$n.txt"
+  # As the checkout's owner: root gets "dubious ownership" and must not run its hooks
+  g() { runuser -u "$(stat -c %U "$root")" -- git -C "$root" "$@"; }
+  if g rev-parse 2>/dev/null; then
+    { echo "HEAD $(g rev-parse HEAD) on $(g rev-parse --abbrev-ref HEAD)"
+      echo "remotes:"; g remote -v
+      echo "commits not on its upstream:"; g log --oneline '@{u}..HEAD' 2>&1
+      echo "uncommitted:"; g status --porcelain
+      echo "stashes:"; g stash list; } 2>&1 | mask | tee "$SNAP/git-$n.txt"
   else
     echo "not a git checkout (or git missing): the manifest below is the only record of its version"
   fi
@@ -123,12 +127,12 @@ c=/etc/letsencrypt/live/$DOMAIN/fullchain.pem
 
 h "other things that run the app or touch it"
 systemctl list-units --all --no-pager --plain 2>/dev/null | grep -iE 'election|coordinator|pm2' || echo "no matching systemd units"
-for u in $(cut -d: -f1 /etc/passwd); do crontab -l -u "$u" 2>/dev/null | grep -v '^#' | sed "s/^/cron $u: /"; done
-command -v pm2 >/dev/null && pm2 list 2>/dev/null
+for u in $(cut -d: -f1 /etc/passwd); do crontab -l -u "$u" 2>/dev/null | grep -v '^#' | mask | sed "s/^/cron $u: /"; done
+command -v pm2 >/dev/null && pm2 list 2>/dev/null | mask
 command -v docker >/dev/null && docker ps --format '{{.Names}} {{.Image}} {{.Ports}}' 2>/dev/null
 [ -f /etc/election-coordinator.env ] && echo "/etc/election-coordinator.env keys: $(grep -oE '^[A-Z_]+' /etc/election-coordinator.env | tr '\n' ' ')"
 [ -d /opt/election-coordinator/releases ] && echo "deploy.sh releases: $(ls /opt/election-coordinator/releases | tr '\n' ' ') current=$(readlink /opt/election-coordinator/current)"
 
 h "snapshot"
 ls -la "$SNAP"
-echo "Copy it off the server before deploying: scp -r root@<server>:$SNAP ."
+echo "Copy it off the server before deploying (RUNBOOK.md step 2): $SNAP"

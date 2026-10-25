@@ -2,7 +2,7 @@
 
 For whoever deploys the coordinator to the live server. Placeholders: `<live-domain>` (the volunteer site), `<server>` (SSH target over the WireGuard tunnel), `<commit>` (the reviewed commit). Never write the live domain into the repo.
 
-Every step ends with a check. If a check fails, stop and read **If something goes wrong** before going on.
+Local commands run from `elections-video-monitoring/` in your checkout. Every step ends with a check. If a check fails, stop and read **If something goes wrong** before going on.
 
 ## 0. Ground rules
 
@@ -15,10 +15,9 @@ Every step ends with a check. If a check fails, stop and read **If something goe
 
 ```sh
 git fetch && git checkout <commit> && git status          # clean tree
-cd elections-video-monitoring/apps/coordinator
-node --test integration.test.js auth.unit.test.js auth.property.test.js middleware.property.test.js
-node --test volunteer-waiting.e2e.test.js                  # needs Playwright Chromium
-cd ../.. && scripts/test-nginx-hls.sh                      # needs Docker; offline
+(cd apps/coordinator && node --test integration.test.js auth.unit.test.js auth.property.test.js middleware.property.test.js)
+(cd apps/coordinator && node --test volunteer-waiting.e2e.test.js)   # needs Playwright Chromium
+scripts/test-nginx-hls.sh                                  # needs Docker; offline
 ```
 
 Check: all pass, `all passed` from the nginx test.
@@ -28,7 +27,9 @@ Check: all pass, `all passed` from the nginx test.
 ```sh
 scp apps/coordinator/deploy/preflight.sh <server>:
 ssh <server> 'sudo bash preflight.sh <live-domain> 3000'
-scp -r '<server>:/root/predeploy-*' ./predeploy/     # keep it outside the repo: it holds secrets
+# The snapshot holds secrets and the DB: copy it to a private folder outside the repo
+mkdir -m 700 -p ~/predeploy
+ssh <server> 'sudo tar -C /root -cz predeploy-<ts>' | tar -xz -C ~/predeploy
 ```
 
 `preflight.sh` changes nothing (reading the DB updates its `-shm` file; that is normal). Read its summary and fill in:
@@ -49,25 +50,27 @@ scp -r '<server>:/root/predeploy-*' ./predeploy/     # keep it outside the repo:
 ### Drift: changes deployed but never pushed
 
 ```sh
-apps/coordinator/deploy/drift-check.sh predeploy/<snapshot>/manifest-1.tsv    # once per manifest
+apps/coordinator/deploy/drift-check.sh ~/predeploy/predeploy-<ts>/manifest-1.tsv    # once per manifest
 ```
 
-It compares every file on the server with every commit on every branch, after `git fetch`.
+It compares every file on the server with every pushed commit and tag, after `git fetch`.
 
-- `same as HEAD` / `pushed, differs from HEAD`: already in the repo. The last line says which commit the server's code is no newer than.
-- `NOT IN REPO`: changed or added on the server only. **Preserve it before going on:**
+- `same as HEAD` / `pushed, differs from HEAD`: already in the repo. The last line names the newest commit the server's code includes.
+- `NOT IN REPO`: changed or added on the server only. It is already preserved in the snapshot's `app-N.tar.gz`. **Keep it in git too, locally first:**
 
 ```sh
-mkdir -p /tmp/drift && tar -xzf predeploy/<snapshot>/app-1.tar.gz -C /tmp/drift
-git switch -c server-drift/<date> <commit the summary named>
-cp /tmp/drift/<each NOT IN REPO path> elections-video-monitoring/apps/<same path>
-git add -A elections-video-monitoring/apps && git commit -m "server drift found on <date>, preserved before deploy"
-git push -u origin server-drift/<date>
+mkdir -m 700 -p ~/predeploy/drift && tar -xzf ~/predeploy/predeploy-<ts>/app-1.tar.gz -C ~/predeploy/drift
+git switch -c server-drift/<date> <the commit the last line named>
+cp ~/predeploy/drift/<one NOT IN REPO path> apps/<same path>      # one file at a time
+git diff --cached --stat; git diff                                  # read every line
+git add apps/<same path> && git commit -m "server drift found on <date>, preserved before deploy"
 ```
+
+Copy only code. Never copy `.env` files, keys, certificates, databases, logs, user or contact lists: they stay in the snapshot. **The repo is public:** push the branch only after a second person has read the diff and found no secrets, phone numbers or usernames. Until then it lives on your laptop and in the snapshot.
 
 Then ask the author, by name in the team channel, whether the release needs it. Either merge it into the release and go back to step 1, or deploy without it and say so in the channel. Never discard it silently.
 
-Check: each manifest has exit 0, or its drift is on a pushed branch and the decision is written down.
+Check: each manifest has exit 0, or its drift is on a `server-drift/` branch and the decision is written down.
 
 ## 3. Settings the old app ran with
 
@@ -146,7 +149,7 @@ Then in a browser:
 | nginx limits | `sudo grep -c 'worker_connections are not enough' /var/log/nginx/error.log` |
 | App | `journalctl -u election-coordinator -f` |
 
-**Video proxy emergency switch, no reload:** `sudo touch /etc/nginx/coordinator-hls-off`. `/hls` then answers 410, and volunteer cards fall back to playing evideo directly from their own browsers, without detection. Use it if the server's bandwidth is full or evideo blocks its IP. Undo: `sudo rm /etc/nginx/coordinator-hls-off`; reloaded pages use the proxy again.
+**Video proxy emergency switch, no reload:** `sudo touch /etc/nginx/coordinator-hls-off`. `/hls` then answers 410, and volunteer cards fall back to playing evideo directly from their own browsers, without detection. Use it if the server's bandwidth is full or evideo blocks its IP. Undo: `sudo rm /etc/nginx/coordinator-hls-off`; reloaded pages use the proxy again. While it is on, every `/hls` request is a logged 410, so filter them out when tailing: `grep -v '" 410 '`.
 
 ## If something goes wrong
 
@@ -175,5 +178,5 @@ Then in a browser:
 
 ## Afterwards
 
-- Keep the snapshot until the next deploy. It holds secrets: delete it from laptops after that.
+- Keep the snapshot until the next deploy. It holds secrets: then delete `~/predeploy` from laptops and `/root/predeploy-*` from the server.
 - Decide how long volunteer usernames, contact phones and reports are kept, then purge them.
