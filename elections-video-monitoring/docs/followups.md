@@ -36,7 +36,8 @@ Late in the count most cards wait on streams that will not come back. Track a st
 never started → live → stalled (no new segment for 2 min) → ended
 ```
 
-- Ended on any of: `#EXT-X-ENDLIST` in the playlist; evideo's page shows an `archive.evideo.bg` link instead of the live one (scraper); CIK publishes the section's protocol; or, as a fallback, stalled for 15 min after it had played.
+- evideo does not send `#EXT-X-ENDLIST`. Checked on 25 Oct: an ended stream answers 200 with an empty body for both `index.m3u8` and `main_stream.m3u8`, while a live one lists segments with current `PROGRAM-DATE-TIME`.
+- Ended on any of: an empty 200 for both playlists for 10 min after the stream had played; evideo's page shows an `archive.evideo.bg` link instead of the live one (scraper); CIK publishes the section's protocol; `#EXT-X-ENDLIST` if evideo ever sends it; or, as a fallback, no new segment for 15 min.
 - Any new segment returns the section to live. Feeds drop and resume mid-count, so the timeout alone must never be final.
 - An ended card shows "Излъчването приключи – БЛАГОДАРИМ ВИ!" instead of frozen or waiting, stops probing the stream, and offers the volunteer the next high-risk section that is still live.
 
