@@ -1,5 +1,7 @@
 # nginx HLS Proxy
 
+> **Not part of the election-day setup.** The volunteer site now proxies video itself, same-origin at `/hls` on its own nginx (`apps/coordinator/deploy/nginx-hls.conf`). Keep this only as a reference for a separate proxy fleet.
+
 Caching reverse proxy for `evideo.bg` election video streams. Sits between viewers and the origin, reducing origin load and providing CORS headers for browser players.
 
 **Public endpoint:** your proxy domain (Cloudflare → EC2 port 80); set it as `PROXY_URL` on the coordinator.

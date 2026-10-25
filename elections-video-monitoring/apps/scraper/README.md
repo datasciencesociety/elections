@@ -73,7 +73,7 @@ File naming convention: `streams_<election-code>[_tour<N>][_<type>].json`
 Read today's evideo code from the "Гледай" link on the evideo.bg home page once, in a normal browser (it differs from the CIK code). Then start the scraper; it seeds the coordinator page by page and keeps it current:
 
 ```sh
-COORDINATOR_URL=https://stork-ai.com SEED_USER=admin SEED_PASS=… \
+COORDINATOR_URL=https://<live-domain> SEED_USER=admin SEED_PASS=… \
   node scrape-streams.js --discover --code=<evideo-code> --upsert --watch=120 --fast
 ```
 
