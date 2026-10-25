@@ -64,6 +64,23 @@ class TestParseArgs:
         assert args.output == "out.csv"
         assert args.db == "test.db"
 
+    def test_description_no_date_reference(self):
+        """CLI description should not contain a specific election date (Req 4.3)."""
+        import contextlib
+        import io
+
+        f = io.StringIO()
+        with pytest.raises(SystemExit):
+            with contextlib.redirect_stdout(f):
+                parse_args(["--help"])
+        help_text = f.getvalue()
+        assert "27.10.2024" not in help_text
+
+    def test_data_dir_positional_argument_works(self):
+        """data_dir positional argument is accepted and stored correctly (Req 4.3)."""
+        args = parse_args(["/election/data/2024"])
+        assert args.data_dir == "/election/data/2024"
+
     def test_unknown_argument_exits(self):
         """Unknown arguments should cause SystemExit."""
         with pytest.raises(SystemExit):

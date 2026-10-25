@@ -3,17 +3,23 @@
 import os
 import sqlite3
 import tempfile
+from unittest.mock import patch, MagicMock
 
 import pytest
 
-from loader import DataLoader, REQUIRED_FILES
+from loader import DataLoader, FILE_TYPE_PREFIXES
+
+
+def _make_files_for_dir(directory):
+    """Create one file per prefix in FILE_TYPE_PREFIXES using generic names."""
+    for prefix in FILE_TYPE_PREFIXES:
+        (directory / f"{prefix}_test.txt").write_text("", encoding="utf-8")
 
 
 @pytest.fixture
 def data_dir(tmp_path):
     """Create a temp data directory with all required (empty-content) files."""
-    for fname in REQUIRED_FILES:
-        (tmp_path / fname).write_text("", encoding="utf-8")
+    _make_files_for_dir(tmp_path)
     return str(tmp_path)
 
 
@@ -56,9 +62,9 @@ class TestDataLoaderInit:
         assert count == 0
 
     def test_missing_file_exits(self, tmp_path):
-        # Create only some of the required files
-        for fname in REQUIRED_FILES[:3]:
-            (tmp_path / fname).write_text("", encoding="utf-8")
+        # Create only a subset of the required file types
+        for prefix in FILE_TYPE_PREFIXES[:3]:
+            (tmp_path / f"{prefix}_test.txt").write_text("", encoding="utf-8")
         db = str(tmp_path / "test.db")
         with pytest.raises(SystemExit):
             DataLoader(db, str(tmp_path))
@@ -68,23 +74,55 @@ class TestDataLoaderInit:
         assert loader.db_path == db_path
         assert loader.data_dir == data_dir
 
+    def test_init_stores_files_dict(self, db_path, data_dir):
+        """DataLoader.__init__ stores self._files dict with correct keys."""
+        loader = DataLoader(db_path, data_dir)
+        assert hasattr(loader, "_files")
+        assert isinstance(loader._files, dict)
+
+    def test_files_dict_has_all_seven_keys(self, db_path, data_dir):
+        """The _files dict has all 7 file type keys from FILE_TYPE_PREFIXES."""
+        loader = DataLoader(db_path, data_dir)
+        assert set(loader._files.keys()) == set(FILE_TYPE_PREFIXES)
+
+    def test_files_dict_values_match_discovered_files(self, db_path, data_dir):
+        """Each value in _files should be the basename of a discovered file."""
+        loader = DataLoader(db_path, data_dir)
+        for prefix in FILE_TYPE_PREFIXES:
+            filename = loader._files[prefix]
+            assert filename == f"{prefix}_test.txt"
+
+    def test_init_calls_validate_folder_and_discover_files(self, tmp_path):
+        """DataLoader.__init__ calls validate_folder and discover_files."""
+        _make_files_for_dir(tmp_path)
+        db = str(tmp_path / "test.db")
+        data = str(tmp_path)
+
+        with patch("loader.validate_folder") as mock_vf, \
+             patch("loader.discover_files") as mock_df:
+            # discover_files must return a valid dict for __init__ to proceed
+            mock_df.return_value = {p: f"{p}_test.txt" for p in FILE_TYPE_PREFIXES}
+            loader = DataLoader(db, data)
+            mock_vf.assert_called_once_with(data)
+            mock_df.assert_called_once_with(data)
+
 
 # ── _read_file tests ───────────────────────────────────────────────
 
 
 class TestReadFile:
     def test_reads_utf8_semicolon_file(self, db_path, data_dir):
-        fpath = os.path.join(data_dir, REQUIRED_FILES[0])
+        fpath = os.path.join(data_dir, f"{FILE_TYPE_PREFIXES[0]}_test.txt")
         with open(fpath, "w", encoding="utf-8") as f:
             f.write("a;b;c\n")
             f.write("1;2;3\n")
 
         loader = DataLoader(db_path, data_dir)
-        rows = list(loader._read_file(REQUIRED_FILES[0]))
+        rows = list(loader._read_file(f"{FILE_TYPE_PREFIXES[0]}_test.txt"))
         assert rows == [["a", "b", "c"], ["1", "2", "3"]]
 
     def test_reads_windows1251_fallback(self, db_path, data_dir):
-        fpath = os.path.join(data_dir, REQUIRED_FILES[0])
+        fpath = os.path.join(data_dir, f"{FILE_TYPE_PREFIXES[0]}_test.txt")
         # Write a file that is valid Windows-1251 but NOT valid UTF-8
         with open(fpath, "wb") as f:
             # "Партия" in Windows-1251 bytes
@@ -92,28 +130,28 @@ class TestReadFile:
             f.write(text + b";42\n")
 
         loader = DataLoader(db_path, data_dir)
-        rows = list(loader._read_file(REQUIRED_FILES[0]))
+        rows = list(loader._read_file(f"{FILE_TYPE_PREFIXES[0]}_test.txt"))
         assert len(rows) == 1
         assert rows[0][0] == "Партия"
         assert rows[0][1] == "42"
 
     def test_skips_empty_lines(self, db_path, data_dir):
-        fpath = os.path.join(data_dir, REQUIRED_FILES[0])
+        fpath = os.path.join(data_dir, f"{FILE_TYPE_PREFIXES[0]}_test.txt")
         with open(fpath, "w", encoding="utf-8") as f:
             f.write("a;b\n\n\nc;d\n")
 
         loader = DataLoader(db_path, data_dir)
-        rows = list(loader._read_file(REQUIRED_FILES[0]))
+        rows = list(loader._read_file(f"{FILE_TYPE_PREFIXES[0]}_test.txt"))
         assert rows == [["a", "b"], ["c", "d"]]
 
     def test_returns_iterator(self, db_path, data_dir):
         """_read_file should return an iterator, not a list."""
-        fpath = os.path.join(data_dir, REQUIRED_FILES[0])
+        fpath = os.path.join(data_dir, f"{FILE_TYPE_PREFIXES[0]}_test.txt")
         with open(fpath, "w", encoding="utf-8") as f:
             f.write("x;y\n")
 
         loader = DataLoader(db_path, data_dir)
-        result = loader._read_file(REQUIRED_FILES[0])
+        result = loader._read_file(f"{FILE_TYPE_PREFIXES[0]}_test.txt")
         # Should be an iterator (generator)
         assert hasattr(result, "__next__")
 
@@ -123,7 +161,7 @@ class TestReadFile:
 
 class TestLoadCikParties:
     def test_loads_parties(self, db_path, data_dir):
-        fpath = os.path.join(data_dir, "cik_parties_27.10.2024.txt")
+        fpath = os.path.join(data_dir, "cik_parties_test.txt")
         with open(fpath, "w", encoding="utf-8") as f:
             f.write("1;Партия А\n")
             f.write("2;Партия Б\n")
@@ -146,7 +184,7 @@ class TestLoadCikParties:
 
 class TestLoadLocalParties:
     def test_loads_local_parties(self, db_path, data_dir):
-        fpath = os.path.join(data_dir, "local_parties_27.10.2024.txt")
+        fpath = os.path.join(data_dir, "local_parties_test.txt")
         with open(fpath, "w", encoding="utf-8") as f:
             f.write("01;София-град;5;Партия Х\n")
             f.write("02;Пловдив;10;Коалиция Y\n")
@@ -167,7 +205,7 @@ class TestLoadLocalParties:
 
 class TestLoadLocalCandidates:
     def test_loads_candidates(self, db_path, data_dir):
-        fpath = os.path.join(data_dir, "local_candidates_27.10.2024.txt")
+        fpath = os.path.join(data_dir, "local_candidates_test.txt")
         with open(fpath, "w", encoding="utf-8") as f:
             f.write("01;София-град;5;Партия Х;101;Иван Иванов\n")
             f.write("01;София-град;5;Партия Х;102;Мария Петрова\n")
@@ -189,7 +227,7 @@ class TestLoadLocalCandidates:
 
 class TestLoadSections:
     def test_loads_sections(self, db_path, data_dir):
-        fpath = os.path.join(data_dir, "sections_27.10.2024.txt")
+        fpath = os.path.join(data_dir, "sections_test.txt")
         with open(fpath, "w", encoding="utf-8") as f:
             f.write("010100001;101;София-град;12345;София;ул. Витоша 1;0;0;2\n")
             f.write("020200001;202;Пловдив;67890;Пловдив;бул. Марица 5;1;0;0\n")
@@ -210,7 +248,7 @@ class TestLoadSections:
 
     def test_section_code_stored_as_text(self, db_path, data_dir):
         """Section codes with leading zeros must be preserved as TEXT."""
-        fpath = os.path.join(data_dir, "sections_27.10.2024.txt")
+        fpath = os.path.join(data_dir, "sections_test.txt")
         with open(fpath, "w", encoding="utf-8") as f:
             f.write("010100001;101;Test;00000;Town;Addr;0;0;1\n")
 
@@ -232,19 +270,13 @@ def _create_data_dir_with_votes(tmp_path, votes_lines: list[str]) -> str:
     data_dir = str(tmp_path / "data")
     os.makedirs(data_dir, exist_ok=True)
 
-    stub_files = [
-        "cik_parties_27.10.2024.txt",
-        "local_parties_27.10.2024.txt",
-        "local_candidates_27.10.2024.txt",
-        "sections_27.10.2024.txt",
-        "protocols_27.10.2024.txt",
-        "preferences_27.10.2024.txt",
-    ]
-    for fname in stub_files:
-        (tmp_path / "data" / fname).write_text("", encoding="utf-8")
+    # Create stub files for all types except votes
+    for prefix in FILE_TYPE_PREFIXES:
+        if prefix != "votes":
+            (tmp_path / "data" / f"{prefix}_test.txt").write_text("", encoding="utf-8")
 
     content = "\n".join(votes_lines)
-    (tmp_path / "data" / "votes_27.10.2024.txt").write_text(
+    (tmp_path / "data" / "votes_test.txt").write_text(
         content, encoding="utf-8"
     )
     return data_dir
@@ -349,19 +381,13 @@ def _create_data_dir_with_preferences(tmp_path, pref_lines: list[str]) -> str:
     data_dir = str(tmp_path / "pdata")
     os.makedirs(data_dir, exist_ok=True)
 
-    stub_files = [
-        "cik_parties_27.10.2024.txt",
-        "local_parties_27.10.2024.txt",
-        "local_candidates_27.10.2024.txt",
-        "sections_27.10.2024.txt",
-        "protocols_27.10.2024.txt",
-        "votes_27.10.2024.txt",
-    ]
-    for fname in stub_files:
-        (tmp_path / "pdata" / fname).write_text("", encoding="utf-8")
+    # Create stub files for all types except preferences
+    for prefix in FILE_TYPE_PREFIXES:
+        if prefix != "preferences":
+            (tmp_path / "pdata" / f"{prefix}_test.txt").write_text("", encoding="utf-8")
 
     content = "\n".join(pref_lines)
-    (tmp_path / "pdata" / "preferences_27.10.2024.txt").write_text(
+    (tmp_path / "pdata" / "preferences_test.txt").write_text(
         content, encoding="utf-8"
     )
     return data_dir
@@ -459,13 +485,13 @@ class TestLoadPreferences:
 def _populate_all_files(data_dir: str) -> None:
     """Write minimal valid content into every required data file."""
     files = {
-        "cik_parties_27.10.2024.txt": "1;Партия А\n2;Партия Б\n",
-        "local_parties_27.10.2024.txt": "01;София-град;1;Партия А\n",
-        "local_candidates_27.10.2024.txt": "01;София-град;1;Партия А;101;Иван Иванов\n",
-        "sections_27.10.2024.txt": "010100001;101;София-град;12345;София;ул. Витоша 1;0;0;2\n",
-        "protocols_27.10.2024.txt": "26;010100001;01;pages;;; 500;400;;;10;350;50;20;280;30;15;235;200;10;190\n",
-        "votes_27.10.2024.txt": "26;010100001;101;1;150;90;60;2;130;80;50\n",
-        "preferences_27.10.2024.txt": "26;010100001;1;101;80;50;30\n26;010100001;1;Без;70;40;30\n",
+        "cik_parties_test.txt": "1;Партия А\n2;Партия Б\n",
+        "local_parties_test.txt": "01;София-град;1;Партия А\n",
+        "local_candidates_test.txt": "01;София-град;1;Партия А;101;Иван Иванов\n",
+        "sections_test.txt": "010100001;101;София-град;12345;София;ул. Витоша 1;0;0;2\n",
+        "protocols_test.txt": "26;010100001;01;pages;;; 500;400;;;10;350;50;20;280;30;15;235;200;10;190\n",
+        "votes_test.txt": "26;010100001;101;1;150;90;60;2;130;80;50\n",
+        "preferences_test.txt": "26;010100001;1;101;80;50;30\n26;010100001;1;Без;70;40;30\n",
     }
     for fname, content in files.items():
         with open(os.path.join(data_dir, fname), "w", encoding="utf-8") as f:
@@ -519,10 +545,10 @@ class TestLoadAll:
         ).fetchall()
         index_names = [row[0] for row in indexes]
 
-        assert "idx_votes_section" in index_names
+        assert "idx_votes_section_party" in index_names
         assert "idx_votes_party" in index_names
+        assert "idx_preferences_section_party" in index_names
         assert "idx_preferences_section" in index_names
-        assert "idx_preferences_party" in index_names
         assert "idx_protocols_form" in index_names
 
     def test_logs_counts(self, db_path, data_dir, caplog):
@@ -542,3 +568,41 @@ class TestLoadAll:
 
         for table, count in counts.items():
             assert count == 0, f"Table {table} should have 0 rows with empty files"
+
+    def test_loading_order_preserved(self, db_path, data_dir):
+        """load_all() loads tables in the correct order:
+        cik_parties, local_parties, local_candidates, sections, protocols, votes, preferences.
+        """
+        _populate_all_files(data_dir)
+        loader = DataLoader(db_path, data_dir)
+
+        call_order = []
+        original_load_cik = loader._load_cik_parties
+        original_load_lp = loader._load_local_parties
+        original_load_lc = loader._load_local_candidates
+        original_load_sec = loader._load_sections
+        original_load_prot = loader._load_protocols
+        original_load_votes = loader._load_votes
+        original_load_pref = loader._load_preferences
+
+        def wrap(name, original):
+            def wrapper():
+                call_order.append(name)
+                return original()
+            return wrapper
+
+        loader._load_cik_parties = wrap("cik_parties", original_load_cik)
+        loader._load_local_parties = wrap("local_parties", original_load_lp)
+        loader._load_local_candidates = wrap("local_candidates", original_load_lc)
+        loader._load_sections = wrap("sections", original_load_sec)
+        loader._load_protocols = wrap("protocols", original_load_prot)
+        loader._load_votes = wrap("votes", original_load_votes)
+        loader._load_preferences = wrap("preferences", original_load_pref)
+
+        loader.load_all()
+
+        expected_order = [
+            "cik_parties", "local_parties", "local_candidates",
+            "sections", "protocols", "votes", "preferences",
+        ]
+        assert call_order == expected_order

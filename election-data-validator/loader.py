@@ -6,7 +6,10 @@ import sqlite3
 import sys
 from collections.abc import Iterator
 
-from .validator import SQLITE_SCHEMA
+try:
+    from .validator import SQLITE_SCHEMA
+except ImportError:
+    from validator import SQLITE_SCHEMA
 
 logger = logging.getLogger(__name__)
 
@@ -24,15 +27,90 @@ def _safe_int(value: str) -> int | None:
     return int(value)
 
 
-REQUIRED_FILES = [
-    "cik_parties_27.10.2024.txt",
-    "local_parties_27.10.2024.txt",
-    "local_candidates_27.10.2024.txt",
-    "sections_27.10.2024.txt",
-    "protocols_27.10.2024.txt",
-    "votes_27.10.2024.txt",
-    "preferences_27.10.2024.txt",
+def validate_folder(data_dir: str) -> None:
+    """Validate that data_dir exists, is a directory, and is readable.
+
+    Raises:
+        SystemExit: If validation fails.
+    """
+    if not os.path.exists(data_dir):
+        msg = f"Пътят не съществува: {data_dir}"
+        logger.error(msg)
+        sys.exit(msg)
+    if not os.path.isdir(data_dir):
+        msg = f"Пътят не е директория: {data_dir}"
+        logger.error(msg)
+        sys.exit(msg)
+    if not os.access(data_dir, os.R_OK):
+        msg = f"Директорията не е достъпна: {data_dir}"
+        logger.error(msg)
+        sys.exit(msg)
+
+
+FILE_TYPE_PREFIXES = [
+    "cik_parties",
+    "local_parties",
+    "local_candidates",
+    "sections",
+    "protocols",
+    "votes",
+    "preferences",
 ]
+
+
+def discover_files(data_dir: str) -> dict[str, str]:
+    """Scan data_dir and return {file_type: filename} mapping.
+
+    Matches files whose name starts with a prefix from FILE_TYPE_PREFIXES
+    followed by '_', any characters, and ending with '.txt'.
+    Matching is case-insensitive on the prefix.
+
+    Raises:
+        SystemExit: If a required file type is missing or ambiguous.
+    """
+    # Collect all .txt files in the directory
+    try:
+        entries = os.listdir(data_dir)
+    except OSError as exc:
+        msg = f"Грешка при четене на директорията: {data_dir} ({exc})"
+        logger.error(msg)
+        sys.exit(msg)
+
+    txt_files = [e for e in entries if e.lower().endswith(".txt") and os.path.isfile(os.path.join(data_dir, e))]
+
+    # For each prefix, find matching files
+    matches: dict[str, list[str]] = {prefix: [] for prefix in FILE_TYPE_PREFIXES}
+
+    for filename in txt_files:
+        name_lower = filename.lower()
+        for prefix in FILE_TYPE_PREFIXES:
+            if name_lower.startswith(prefix + "_"):
+                matches[prefix].append(filename)
+                break  # a file matches at most one prefix
+
+    # Validate: check for ambiguous matches first, then missing
+    for prefix in FILE_TYPE_PREFIXES:
+        found = matches[prefix]
+        if len(found) > 1:
+            filelist = ", ".join(sorted(found))
+            msg = (
+                f"Намерени са няколко файла за тип '{prefix}' "
+                f"в {data_dir}: {filelist}"
+            )
+            logger.error(msg)
+            sys.exit(msg)
+
+    for prefix in FILE_TYPE_PREFIXES:
+        found = matches[prefix]
+        if len(found) == 0:
+            msg = (
+                f"Липсва файл за тип '{prefix}' "
+                f"в директория: {data_dir}"
+            )
+            logger.error(msg)
+            sys.exit(msg)
+
+    return {prefix: matches[prefix][0] for prefix in FILE_TYPE_PREFIXES}
 
 
 class DataLoader:
@@ -42,18 +120,9 @@ class DataLoader:
         self.db_path = db_path
         self.data_dir = data_dir
 
-        # Check all required files exist before touching the database
-        missing = [
-            f for f in REQUIRED_FILES
-            if not os.path.isfile(os.path.join(data_dir, f))
-        ]
-        if missing:
-            msg = (
-                "Липсващи файлове в директорията с данни "
-                f"({data_dir}): {', '.join(missing)}"
-            )
-            logger.error(msg)
-            sys.exit(msg)
+        # Validate folder and discover files
+        validate_folder(data_dir)
+        self._files = discover_files(data_dir)
 
         # Connect and (re)create all tables
         self.conn = sqlite3.connect(db_path)
@@ -112,13 +181,13 @@ class DataLoader:
     # ------------------------------------------------------------------
 
     def _load_cik_parties(self) -> int:
-        """Parse cik_parties_27.10.2024.txt and INSERT into cik_parties table.
+        """Parse cik_parties file and INSERT into cik_parties table.
 
         File format: party_number;party_name
         """
         rows = [
             (int(fields[0]), fields[1])
-            for fields in self._read_file("cik_parties_27.10.2024.txt")
+            for fields in self._read_file(self._files["cik_parties"])
             if len(fields) >= 2
         ]
         self.conn.executemany(
@@ -129,13 +198,13 @@ class DataLoader:
         return len(rows)
 
     def _load_local_parties(self) -> int:
-        """Parse local_parties_27.10.2024.txt and INSERT into local_parties table.
+        """Parse local_parties file and INSERT into local_parties table.
 
         File format: rik_code;admin_unit_name;party_number;party_name
         """
         rows = [
             (int(fields[0]), fields[1], int(fields[2]), fields[3])
-            for fields in self._read_file("local_parties_27.10.2024.txt")
+            for fields in self._read_file(self._files["local_parties"])
             if len(fields) >= 4
         ]
         self.conn.executemany(
@@ -147,13 +216,13 @@ class DataLoader:
         return len(rows)
 
     def _load_local_candidates(self) -> int:
-        """Parse local_candidates_27.10.2024.txt and INSERT into local_candidates table.
+        """Parse local_candidates file and INSERT into local_candidates table.
 
         File format: rik_code;admin_unit_name;party_number;party_name;candidate_number;candidate_name
         """
         rows = [
             (int(fields[0]), fields[1], int(fields[2]), fields[3], int(fields[4]), fields[5])
-            for fields in self._read_file("local_candidates_27.10.2024.txt")
+            for fields in self._read_file(self._files["local_candidates"])
             if len(fields) >= 6
         ]
         self.conn.executemany(
@@ -166,37 +235,66 @@ class DataLoader:
         return len(rows)
 
     def _load_sections(self) -> int:
-        """Parse sections_27.10.2024.txt and INSERT into sections table.
+        """Parse sections file and INSERT into sections table.
 
-        File format: section_code;admin_unit_id;admin_unit_name;ekatte;settlement_name;address;is_mobile;is_ship;num_machines
+        Supports two formats (auto-detected from first data row):
+        - 9 cols (2024):  section_code;admin_unit_id;admin_unit_name;ekatte;settlement;address;is_mobile;is_ship;num_machines
+        - 11 cols (2026): section_code;admin_unit_id;admin_unit_name;ekatte;settlement;address;longitude;latitude;is_mobile;is_ship;num_machines
         """
-        rows = [
-            (
-                fields[0],          # section_code (TEXT, 9-digit)
-                int(fields[1]),     # admin_unit_id
-                fields[2],          # admin_unit_name
-                fields[3],          # ekatte
-                fields[4],          # settlement_name
-                fields[5],          # address
-                int(fields[6]) if fields[6] else 0,     # is_mobile
-                int(fields[7]) if fields[7] else 0,     # is_ship
-                int(fields[8]) if fields[8] else 0,     # num_machines
-            )
-            for fields in self._read_file("sections_27.10.2024.txt")
-            if len(fields) >= 9
-        ]
+        rows: list[tuple] = []
+        has_coords: bool | None = None  # detected from first row
+
+        for fields in self._read_file(self._files["sections"]):
+            if len(fields) < 9:
+                continue
+
+            # Detect format once from the first row
+            if has_coords is None:
+                has_coords = len(fields) >= 11
+
+            if has_coords:
+                if len(fields) < 11:
+                    continue
+                rows.append((
+                    fields[0],                                        # section_code
+                    int(fields[1]),                                   # admin_unit_id
+                    fields[2],                                        # admin_unit_name
+                    fields[3],                                        # ekatte
+                    fields[4],                                        # settlement_name
+                    fields[5],                                        # address
+                    float(fields[6]) if fields[6].strip() else None,  # longitude
+                    float(fields[7]) if fields[7].strip() else None,  # latitude
+                    int(fields[8]) if fields[8] else 0,               # is_mobile
+                    int(fields[9]) if fields[9] else 0,               # is_ship
+                    int(fields[10]) if fields[10] else 0,             # num_machines
+                ))
+            else:
+                rows.append((
+                    fields[0],                                        # section_code
+                    int(fields[1]),                                   # admin_unit_id
+                    fields[2],                                        # admin_unit_name
+                    fields[3],                                        # ekatte
+                    fields[4],                                        # settlement_name
+                    fields[5],                                        # address
+                    None,                                             # longitude
+                    None,                                             # latitude
+                    int(fields[6]) if fields[6] else 0,               # is_mobile
+                    int(fields[7]) if fields[7] else 0,               # is_ship
+                    int(fields[8]) if fields[8] else 0,               # num_machines
+                ))
+
         self.conn.executemany(
             "INSERT INTO sections "
             "(section_code, admin_unit_id, admin_unit_name, ekatte, settlement_name, "
-            "address, is_mobile, is_ship, num_machines) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "address, longitude, latitude, is_mobile, is_ship, num_machines) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             rows,
         )
         self.conn.commit()
         return len(rows)
 
     def _load_protocols(self) -> int:
-        """Parse protocols_27.10.2024.txt and INSERT into protocols table.
+        """Parse protocols file and INSERT into protocols table.
 
         Column mapping:
           0: form_number, 1: section_code, 2: rik_code, 3: page_numbers,
@@ -211,7 +309,7 @@ class DataLoader:
         Paper-only forms (24/28) have no columns 18-20; those fields are set to NULL.
         """
         rows: list[tuple] = []
-        for fields in self._read_file("protocols_27.10.2024.txt"):
+        for fields in self._read_file(self._files["protocols"]):
             if len(fields) < 16:
                 logger.warning("Пропуснат ред с недостатъчно колони: %s", fields)
                 continue
@@ -277,7 +375,7 @@ class DataLoader:
         return len(rows)
 
     def _load_votes(self) -> int:
-        """Parse votes_27.10.2024.txt and INSERT into votes table.
+        """Parse votes file and INSERT into votes table.
 
         File format: form;section;admin_unit;party1;votes1;paper1;machine1;party2;votes2;paper2;machine2;...
 
@@ -287,7 +385,7 @@ class DataLoader:
         Incomplete trailing groups are skipped with a warning.
         """
         rows: list[tuple] = []
-        for fields in self._read_file("votes_27.10.2024.txt"):
+        for fields in self._read_file(self._files["votes"]):
             if len(fields) < 3:
                 logger.warning("Пропуснат ред с недостатъчно колони: %s", fields)
                 continue
@@ -335,7 +433,7 @@ class DataLoader:
         return len(rows)
 
     def _load_preferences(self) -> int:
-        """Parse preferences_27.10.2024.txt and INSERT into preferences table.
+        """Parse preferences file and INSERT into preferences table.
 
         File format: form_number;section_code;party_number;candidate_number;total_votes;paper_votes;machine_votes
 
@@ -346,7 +444,7 @@ class DataLoader:
         batch: list[tuple] = []
         total = 0
 
-        for fields in self._read_file("preferences_27.10.2024.txt"):
+        for fields in self._read_file(self._files["preferences"]):
             if len(fields) < 7:
                 logger.warning("Пропуснат ред с недостатъчно колони в preferences: %s", fields)
                 continue

@@ -4,7 +4,10 @@ import csv
 import os
 from collections import Counter, defaultdict
 
-from .validator import Violation
+try:
+    from .validator import Violation
+except ImportError:
+    from validator import Violation
 
 
 class ReportGenerator:

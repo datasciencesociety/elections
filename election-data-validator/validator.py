@@ -49,6 +49,8 @@ CREATE TABLE sections (
     ekatte TEXT NOT NULL,
     settlement_name TEXT NOT NULL,
     address TEXT NOT NULL,
+    longitude REAL,
+    latitude REAL,
     is_mobile INTEGER NOT NULL,
     is_ship INTEGER NOT NULL,
     num_machines INTEGER NOT NULL

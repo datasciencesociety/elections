@@ -62,7 +62,7 @@
         <div class="video-overlay" id="video-overlay">
           <button id="btn-maximize-video" class="vid-btn maximize-btn" title="Maximize">⛶</button>
           <a id="btn-signal-video" class="vid-btn signal-btn" href="https://tally.so/r/ODB8oY" target="_blank" rel="noopener noreferrer" data-i18n="btn.signal">Подай сигнал</a>
-          <button id="btn-call-video" class="vid-btn call-btn" data-i18n="btn.call">Позвъни</button>
+          <button id="btn-call-video" class="vid-btn call-btn" data-i18n="btn.call" hidden>Позвъни</button>
           <div id="phone-popup-video" class="phone-popup">
             <h4 data-i18n="btn.call.title">Телефони за контакт</h4>
             <ul><li class="no-contacts" data-i18n="call.nodata">Няма налични контакти</li></ul>
@@ -72,8 +72,8 @@
       <canvas id="canvas" width="320" height="180"></canvas>
     </section>
 
-    <!-- Config Panel -->
-    <details class="card config-panel" id="config-panel">
+    <!-- Config Panel (hidden from UI; inputs remain in DOM so app.js settings logic keeps working) -->
+    <details class="card config-panel" id="config-panel" hidden>
       <summary data-i18n="config.title">Configuration</summary>
       <div class="config-grid">
         <label><span data-i18n="config.interval">Check Interval (s)</span>

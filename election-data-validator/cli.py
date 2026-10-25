@@ -4,9 +4,14 @@ import argparse
 import logging
 import sys
 
-from .loader import DataLoader
-from .reporter import ReportGenerator
-from .validator import ValidationEngine
+try:
+    from .loader import DataLoader
+    from .reporter import ReportGenerator
+    from .validator import ValidationEngine
+except ImportError:
+    from loader import DataLoader
+    from reporter import ReportGenerator
+    from validator import ValidationEngine
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -19,7 +24,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         Parsed namespace with data_dir, rules, output, db.
     """
     parser = argparse.ArgumentParser(
-        description="Валидатор на данни от парламентарни избори в България (27.10.2024)",
+        description="Валидатор на данни от парламентарни избори в България",
     )
     parser.add_argument(
         "data_dir",
