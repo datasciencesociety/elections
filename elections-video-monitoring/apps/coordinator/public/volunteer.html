@@ -389,6 +389,9 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
 /* Error = no picture to judge, not an alarm: neutral and dashed, never red. */
 .stream-card.error   { border-color: var(--card-err-border); background: var(--card-err-bg); border-style: dashed; }
 .stream-card.error .status-text { color: var(--text-muted); }
+/* Waiting = the stream is not published yet (no URL, or an empty playlist before counting starts). */
+.stream-card.waiting { border-style: dashed; }
+.stream-card.waiting .status-text { color: var(--text-muted); white-space: normal; }
 /* One-word Bulgarian labels ("Инициализиране") cannot wrap; clip them inside narrow cards. */
 .status-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -435,6 +438,7 @@ video.card-thumb-video { pointer-events: none; object-fit: cover; }
 .dot-dark    { background: #3b82f6; }
 .dot-error   { background: #6b7280; }
 .dot-loading { background: #a855f7; }
+.dot-waiting { background: #d97706; }
 
 .card-metrics { font-size: 12px; color: var(--text-metrics); }
 
@@ -767,12 +771,54 @@ function isAssignedToMe(stream) {
 // Runtime proxy failures still fall through the video.error path below.
 const NO_PROXY = !(typeof window !== 'undefined' && typeof window.PROXY_BASE === 'string' && window.PROXY_BASE.length > 0);
 
-function setupStream(stream) {
-  let video = null, canvas = null, ctx = null;
+// A live HLS playlist exists before counting starts but has no segments yet.
+// Card shows "not yet started" and checks again on each detection tick.
+function isPlaylist(url) {
+  try { return new URL(url).pathname.endsWith('.m3u8'); } catch (_) { return false; }
+}
 
-  if (!NO_PROXY) {
+// true once the playlist lists a segment; false while it is missing or empty.
+// Proxy or network failure → true, so the video error path decides (fallback).
+async function playlistHasSegments(playlistUrl) {
+  try {
+    let res = await fetch(playlistUrl, { cache: 'no-store' });
+    if (!res.ok) return res.status >= 500;
+    let text = await res.text();
+    if (text.includes('#EXT-X-STREAM-INF')) {
+      // Master playlist: look at the first variant
+      const variant = text.split('\n').map(l => l.trim()).find(l => l && !l.startsWith('#'));
+      if (!variant) return false;
+      res = await fetch(new URL(variant, new URL(playlistUrl, location.href)), { cache: 'no-store' });
+      if (!res.ok) return res.status >= 500;
+      text = await res.text();
+    }
+    return text.includes('#EXTINF');
+  } catch (_) {
+    return true;
+  }
+}
+
+async function probeWaiting(state) {
+  if (state.probing || !state.proxiedUrl) return;
+  state.probing = true;
+  const started = await playlistHasSegments(state.proxiedUrl);
+  state.probing = false;
+  if (!streamStates.includes(state) || !started) return;
+  state.status = 'loading';
+  state.video.src = state.proxiedUrl;
+  if (!autoplayBlocked) state.video.play().catch(() => {});
+  updateCard(state);
+}
+
+function setupStream(stream) {
+  let video = null, canvas = null, ctx = null, proxiedUrl = null;
+  // Stub: the section is known but its stream is not published yet
+  const isStub = !stream.url;
+  const waitForPlaylist = !isStub && !NO_PROXY && isPlaylist(stream.url);
+
+  if (!NO_PROXY && !isStub) {
     const _u = new URL(stream.url);
-    const proxiedUrl = window.PROXY_BASE + '/' + _u.hostname + _u.pathname + _u.search;
+    proxiedUrl = window.PROXY_BASE + '/' + _u.hostname + _u.pathname + _u.search;
 
     video = document.createElement('video');
     video.muted = true;
@@ -780,7 +826,7 @@ function setupStream(stream) {
     video.playsInline = true;
     video.preload = 'auto';
     video.crossOrigin = 'anonymous';
-    video.src = proxiedUrl;
+    if (!waitForPlaylist) video.src = proxiedUrl;
     document.getElementById('video-container').appendChild(video);
 
     canvas = document.createElement('canvas');
@@ -792,6 +838,8 @@ function setupStream(stream) {
 
   const isManual = !!stream._manual;
   const state = {
+    stream,
+    proxiedUrl,
     id: stream.id,
     section: stream.section,
     url: stream.url,
@@ -801,11 +849,11 @@ function setupStream(stream) {
     video,
     canvas,
     ctx,
-    fallback: NO_PROXY,
+    fallback: NO_PROXY && !isStub,
     lastFrameData: null,
     lastChangeTime: null,
     coverStartTime: null,
-    status: 'initializing',
+    status: isStub || waitForPlaylist ? 'waiting' : 'initializing',
     coverRatio: 0,
     frozenSec: 0,
     luma: 0,
@@ -821,7 +869,9 @@ function setupStream(stream) {
   }
 
   const assigned = isAssignedToMe(stream);
-  const thumbMarkup = NO_PROXY
+  const thumbMarkup = isStub
+    ? `<canvas class="card-thumb" width="192" height="108"></canvas>`
+    : NO_PROXY
     ? `<video class="card-thumb card-thumb-video" src="${escHtml(stream.url)}" muted autoplay playsinline preload="auto"></video>`
     : `<canvas class="card-thumb" width="192" height="108"></canvas>`;
 
@@ -862,12 +912,12 @@ function setupStream(stream) {
     document.getElementById('stream-count').textContent =
       tf('monitoring.count', { n: streamStates.length });
   });
-  if (!NO_PROXY) {
+  if (!NO_PROXY || isStub) {
     state.thumbCanvas = card.querySelector('.card-thumb');
     state.thumbCtx    = state.thumbCanvas.getContext('2d', { willReadFrequently: true });
 
     // Draw placeholder until first real video frame arrives
-    (function(ctx, w, h) {
+    (function(ctx, w, h, label) {
       ctx.fillStyle = '#111';
       ctx.fillRect(0, 0, w, h);
       const cx = w / 2, cy = h / 2 - 6;
@@ -884,14 +934,15 @@ function setupStream(stream) {
       ctx.font = '10px system-ui';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      ctx.fillText('waiting for stream…', cx, cy + 20);
-    })(state.thumbCtx, 192, 108);
+      ctx.fillText(label, cx, cy + 20);
+    })(state.thumbCtx, 192, 108, state.status === 'waiting' ? t('status.waiting') : 'waiting for stream…');
   } else {
     // Seed status from last-seen metrics so the iframe card isn't blank-statused.
     applyMetricsToCard(state);
   }
 
   card.addEventListener('click', function () {
+    if (!stream.url) return; // stub: nothing to inspect yet
     const t = state.video ? (Math.floor(state.video.currentTime) || 0) : 0;
     const direct = state.fallback ? '&direct=1' : '';
     const url = `${DETECTOR_URL}?url=${encodeURIComponent(stream.url)}&t=${t}&audio=1${direct}`;
@@ -920,6 +971,17 @@ function setupStream(stream) {
 
   state.card = card;
   document.getElementById('stream-grid').appendChild(card);
+  if (state.status === 'waiting') { updateCard(state); probeWaiting(state); }
+  return state;
+}
+
+// The scrape filled a stub (or changed a URL): rebuild the card in the same grid slot
+function replaceStreamUrl(state, url) {
+  const next = state.card?.nextSibling || null;
+  teardownStream(state);
+  const fresh = setupStream({ ...state.stream, url });
+  document.getElementById('stream-grid').insertBefore(fresh.card, next);
+  if (fresh.video && fresh.status !== 'waiting' && !autoplayBlocked) fresh.video.play().catch(() => {});
 }
 
 function teardownStream(state) {
@@ -949,7 +1011,7 @@ function updateThumbnails() {
 // own browser hits evideo directly — CSP frame-ancestors blocks iframing the
 // MP4, but a <video> element doesn't trigger that check.
 function promoteToFallback(state) {
-  if (state.fallback) return;
+  if (state.fallback || !state.url) return;
   try { state.video.pause(); state.video.src = ''; state.video.load(); state.video.remove(); } catch (_) {}
   if (state.canvas) state.canvas.remove();
   state.video = null;
@@ -1007,6 +1069,7 @@ function checkAllStreams() {
   const now = Date.now();
   for (const state of streamStates) {
     if (state.fallback) continue; // iframe cards → status comes from pollMetrics
+    if (state.status === 'waiting') { probeWaiting(state); continue; }
     checkStream(state, now);
   }
 }
@@ -1090,6 +1153,7 @@ function updateCard(state) {
     dark:     'dot-dark',
     error:    'dot-error',
     unknown:  'dot-init',
+    waiting:  'dot-waiting',
   }[state.status] || 'dot-init';
 
   const statusLabel = {
@@ -1101,6 +1165,7 @@ function updateCard(state) {
     dark:     t('status.dark'),
     error:    t('status.error'),
     unknown:  t('status.unknown'),
+    waiting:  t('status.waiting'),
   }[state.status] || state.status;
 
   card.querySelector('.status-dot').className = `status-dot ${dotClass}`;
@@ -1170,6 +1235,12 @@ async function sendHeartbeat() {
           body: JSON.stringify({ session_id: SESSION_ID, stream_id: s.id }),
         }).catch(() => {});
         teardownStream(s);
+      }
+      if (data.urls) {
+        for (const s of streamStates.slice()) {
+          const url = data.urls[s.id];
+          if (typeof url === 'string' && url && url !== s.url) replaceStreamUrl(s, url);
+        }
       }
       if (toRemove.length || data.assigned_streams.some(s => !currentIds.has(s.id))) {
         document.getElementById('stream-count').textContent =

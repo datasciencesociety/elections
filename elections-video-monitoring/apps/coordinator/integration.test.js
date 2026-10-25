@@ -251,3 +251,71 @@ describe('Volunteer sessions', () => {
     assert.deepEqual(ids, [vol1Streams[0].id]);
   });
 });
+
+// ── Stubs: sections whose stream is not published yet ───────────────────────
+
+describe('Stub streams (no URL yet)', () => {
+  const STUB = '010100009';
+  let vol4Cookie, session, stubId;
+
+  before(async () => {
+    const created = await request('POST', '/api/users', {
+      cookie: adminCookie, body: { username: 'vol4', password: 'volpass123', role: 'volunteer' },
+    });
+    assert.equal(created.status, 201);
+    vol4Cookie = await login('vol4', 'volpass123');
+    const up = await request('POST', '/api/streams/upsert', {
+      cookie: adminCookie, body: [{ section: STUB, url: '', label: 'Stub', assigned_users: 'vol4' }],
+    });
+    assert.equal(up.status, 200);
+    assert.equal(up.body.inserted, 1);
+    const res = await request('POST', '/api/session', { cookie: vol4Cookie, body: {} });
+    session = res.body.session_id;
+    stubId = res.body.streams.find((s) => s.section === STUB).id;
+  });
+
+  it('a stub needs a section', async () => {
+    const res = await request('POST', '/api/streams/upsert', { cookie: adminCookie, body: [{ url: '', label: 'No section' }] });
+    assert.equal(res.status, 400);
+  });
+
+  it('the volunteer session gets the stub with an empty URL', async () => {
+    const res = await request('POST', '/api/session', { cookie: vol4Cookie, body: { session_id: session } });
+    assert.equal(res.body.streams.find((s) => s.id === stubId).url, '');
+  });
+
+  it('a waiting report does not flag', async () => {
+    const rep = await request('POST', '/api/report', {
+      cookie: vol4Cookie, body: { session_id: session, results: [{ stream_id: stubId, status: 'waiting' }] },
+    });
+    assert.equal(rep.status, 200);
+    const flagged = await request('GET', '/api/flagged', { cookie: adminCookie });
+    assert.ok(!flagged.body.flagged.some((f) => f.stream_id === stubId));
+  });
+
+  it('heartbeat returns the URL once the scrape fills the stub', async () => {
+    await request('POST', '/api/streams/upsert', {
+      cookie: adminCookie, body: [{ section: STUB, url: 'https://example.test/live/index.m3u8', label: 'Stub' }],
+    });
+    const hb = await request('POST', '/api/heartbeat', { cookie: vol4Cookie, body: { session_id: session } });
+    assert.equal(hb.body.urls[stubId], 'https://example.test/live/index.m3u8');
+  });
+
+  it('re-uploading a stub does not blank a known URL', async () => {
+    await request('POST', '/api/streams/upsert', {
+      cookie: adminCookie, body: [{ section: STUB, url: '', label: 'Stub again' }],
+    });
+    const s = (await request('GET', '/api/streams', { cookie: adminCookie })).body.streams.find((x) => x.section === STUB);
+    assert.equal(s.url, 'https://example.test/live/index.m3u8');
+    assert.equal(s.label, 'Stub again');
+  });
+
+  // Last: replacing wipes every stream and session
+  it('replace accepts stubs', async () => {
+    const res = await request('POST', '/api/streams', {
+      cookie: adminCookie, body: [{ section: STUB, url: '', label: 'Stub' }, { section: '010100010', url: '', label: 'Stub 2' }],
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.inserted, 2);
+  });
+});

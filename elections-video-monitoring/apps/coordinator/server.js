@@ -108,6 +108,7 @@ const stmt = {
   deleteAssignments: db.prepare('DELETE FROM assignments WHERE session_id = ?'),
   sessionOwned:      db.prepare('SELECT 1 FROM sessions WHERE id = ? AND user_id = ?'),
   sessionAssigned:   db.prepare('SELECT 1 FROM assignments WHERE session_id = ? AND stream_id = ?'),
+  sessionUrls:       db.prepare('SELECT s.id, s.url FROM streams s JOIN assignments a ON a.stream_id = s.id WHERE a.session_id = ?'),
   userRole:          db.prepare('SELECT role FROM users WHERE username = ?'),
   preAssignedForUser: db.prepare(`
     SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
@@ -136,6 +137,7 @@ const stmt = {
       AND r.status != 'loading'
       AND r.status != 'initializing'
       AND r.status != 'error'
+      AND r.status != 'waiting'
     GROUP BY s.id, r.status
     ORDER BY report_count DESC, first_seen ASC
   `),
@@ -143,7 +145,9 @@ const stmt = {
   insertStream:      db.prepare('INSERT INTO streams (section, url, label, assigned_users) VALUES (?, ?, ?, ?)'),
   upsertStream:      db.prepare(`
     INSERT INTO streams (section, url, label, assigned_users) VALUES (?, ?, ?, ?)
-    ON CONFLICT(section) DO UPDATE SET url = excluded.url, label = excluded.label, last_checked = NULL,
+    ON CONFLICT(section) DO UPDATE SET label = excluded.label, last_checked = NULL,
+      -- A stub (empty URL) never blanks a URL the scrape already found
+      url = CASE WHEN excluded.url = '' THEN streams.url ELSE excluded.url END,
       -- Scraper batches carry no assigned_users (NULL) and must keep existing assignments; '' clears them
       assigned_users = COALESCE(excluded.assigned_users, streams.assigned_users)
   `),
@@ -231,6 +235,12 @@ function txReport(sessionId, results, now) {
 }
 
 // Extract section number from URL path: .../real/102700005/...
+// A stub has a section and an empty URL: its stream is not published yet
+function isStreamOrStub(s) {
+  return !!s && typeof s.url === 'string' &&
+    (s.url.trim() !== '' || (typeof s.section === 'string' && s.section.trim() !== ''));
+}
+
 function extractSection(url) {
   const m = url.match(/\/([0-9]{9})\//);  return m ? m[1] : null;
 }
@@ -272,7 +282,7 @@ function txUpsertStreams(streams) {
       const section = s.section || extractSection(s.url) || String(s.label);
       const existing = stmt.streamBySection.get(section);
       stmt.upsertStream.run(section, s.url, String(s.label), s.assigned_users ?? null);
-      if (existing) { if (existing.url !== s.url) updated++; }
+      if (existing) { if (s.url && existing.url !== s.url) updated++; }
       else inserted++;
       if (s.contacts) {
         const row = existing || stmt.streamBySection.get(section);
@@ -405,7 +415,9 @@ async function handleHeartbeat(req, res) {
   const preAssigned = stmt.preAssignedForUser.all(userId);
   for (const s of preAssigned) stmt.insertAssignment.run(session_id, s.id, now);
 
-  json(res, 200, { ok: true, assigned_streams: enrichWithContacts(preAssigned) });
+  // Current URL of every stream in the session, so open cards notice when a stub gets its stream
+  const urls = Object.fromEntries(stmt.sessionUrls.all(session_id).map(s => [s.id, s.url]));
+  json(res, 200, { ok: true, assigned_streams: enrichWithContacts(preAssigned), urls });
 }
 
 async function handleReport(req, res) {
@@ -436,7 +448,7 @@ async function handleStreamsUpload(req, res) {
   if (!Array.isArray(body)) {
     json(res, 400, { error: 'Expected JSON array [{url, label}]' }); return;
   }
-  const valid = body.filter(s => s && typeof s.url === 'string' && s.url.trim());
+  const valid = body.filter(isStreamOrStub);
   if (valid.length === 0) { json(res, 400, { error: 'No valid streams' }); return; }
 
   const inserted = txBulkUpload(valid);
@@ -452,7 +464,7 @@ async function handleStreamsUpsert(req, res) {
   if (!Array.isArray(body)) {
     json(res, 400, { error: 'Expected JSON array [{url, label}]' }); return;
   }
-  const valid = body.filter(s => s && typeof s.url === 'string' && s.url.trim() && typeof s.label === 'string' && s.label.trim());
+  const valid = body.filter(s => isStreamOrStub(s) && typeof s.label === 'string' && s.label.trim());
   if (valid.length === 0) { json(res, 400, { error: 'No valid streams' }); return; }
 
   const { inserted, updated } = txUpsertStreams(valid);
