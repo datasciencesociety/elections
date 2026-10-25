@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const { DatabaseSync } = require('node:sqlite');
 const { initUserStore, authenticate, hashPassword, hashPasswordAsync, addUser, removeUser, listUsers, validateUserInput, createSessionCookie, buildSetCookie, buildClearCookie } = require('./auth');
 const { authMiddleware } = require('./middleware');
+const { createAudit, clientIp } = require('./audit');
 
 // ── DB ────────────────────────────────────────────────────────────────────────
 
@@ -13,6 +14,10 @@ const DB_PATH      = process.env.DB_PATH      || path.join(__dirname, 'data', 's
 const DETECTOR_DIR = process.env.DETECTOR_DIR || path.join(__dirname, '../detector');
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 const db = new DatabaseSync(DB_PATH);
+// Hourly files next to the DB by default (data/ is not in git and *.log is ignored); the oldest
+// are deleted once they pass AUDIT_MAX_MB in total
+const AUDIT_DIR = process.env.AUDIT_DIR || path.join(path.dirname(DB_PATH), 'audit');
+const { audit, auditReports } = createAudit(AUDIT_DIR, { maxBytes: (Number(process.env.AUDIT_MAX_MB) || 500) * 1024 * 1024 });
 db.exec('PRAGMA journal_mode = WAL');
 db.exec('PRAGMA foreign_keys = ON');
 
@@ -222,7 +227,9 @@ function txCreateSession(sessionId, streams, userId = null) {
   });
 }
 
+// Returns the results it stored
 function txReport(sessionId, results, now) {
+  const accepted = [];
   transaction(() => {
     for (const r of results) {
       // Only accept reports for streams this session is actually watching
@@ -230,8 +237,10 @@ function txReport(sessionId, results, now) {
       stmt.insertReport.run(sessionId, r.stream_id, now, r.status,
         r.cover_ratio ?? null, r.frozen_sec ?? null, r.luma ?? null);
       stmt.touchStream.run(now, r.stream_id);
+      accepted.push(r);
     }
   });
+  return accepted;
 }
 
 // Extract section number from URL path: .../real/102700005/...
@@ -382,12 +391,14 @@ async function handleSession(req, res) {
       WHERE a.session_id = ?
     `).all(body.session_id);
 
+    audit(req, 'session.resume', { session: body.session_id.slice(0, 8), streams: streams.map(s => s.id) });
     json(res, 200, { session_id: body.session_id, streams: enrichWithContacts(streams), resumed: true });
     return;
   }
 
   // All sections pre-assigned to this user; if none, pick 2 random enabled streams
   let streams = stmt.preAssignedForUser.all(userId);
+  const mode = streams.length ? 'assigned' : 'random';
 
   if (streams.length === 0) {
     streams = db.prepare(`
@@ -399,6 +410,7 @@ async function handleSession(req, res) {
 
   const sessionId = crypto.randomUUID();
   txCreateSession(sessionId, streams, userId);
+  audit(req, 'session.new', { session: sessionId.slice(0, 8), mode, streams: streams.map(s => s.id) });
   json(res, 200, { session_id: sessionId, streams: enrichWithContacts(streams) });
 }
 
@@ -436,7 +448,7 @@ async function handleReport(req, res) {
   if (!stmt.sessionOwned.get(session_id, req.user.username)) {
     json(res, 400, { error: 'unknown session', reinit: true }); return;
   }
-  txReport(session_id, results, Date.now());
+  auditReports(req, session_id, txReport(session_id, results, Date.now()));
   json(res, 200, { ok: true });
 }
 
@@ -460,6 +472,7 @@ async function handleStreamsUpload(req, res) {
 
   const inserted = txBulkUpload(valid);
   console.log(`Uploaded ${inserted} streams`);
+  audit(req, 'streams.replace', { rows: body.length, valid: valid.length, inserted });
   json(res, 200, { inserted });
 }
 
@@ -476,6 +489,7 @@ async function handleStreamsUpsert(req, res) {
 
   const { inserted, updated } = txUpsertStreams(valid);
   console.log(`Upserted streams: ${inserted} new, ${updated} updated URLs`);
+  audit(req, 'streams.upsert', { rows: body.length, valid: valid.length, inserted, updated });
   json(res, 200, { inserted, updated });
 }
 
@@ -523,6 +537,7 @@ async function handleAddStreams(req, res) {
       added.push(enrichWithContacts([stream])[0]);
     }
   });
+  audit(req, 'session.add', { session: session_id.slice(0, 8), requested: stream_ids.length, added: added.map(s => s.id) });
   json(res, 200, { added });
 }
 
@@ -536,6 +551,7 @@ async function handleRemoveStream(req, res) {
     json(res, 404, { error: 'session not found' }); return;
   }
   stmt.deleteOneAssignment.run(session_id, stream_id);
+  audit(req, 'session.remove', { session: session_id.slice(0, 8), stream_id });
   json(res, 200, { ok: true });
 }
 
@@ -546,6 +562,7 @@ async function handleStreamToggle(req, res) {
     json(res, 400, { error: 'id (number) and enabled (0|1) required' }); return;
   }
   stmt.toggleStream.run(enabled, id);
+  audit(req, 'streams.toggle', { stream_id: id, enabled });
   json(res, 200, { ok: true });
 }
 
@@ -659,11 +676,13 @@ const server = http.createServer(async (req, res) => {
       const result = authenticate(db, username, password);
       if (!result) {
         // nginx sets X-Real-IP; journalctl -u election-coordinator | grep 'login failed'
-        console.warn(`login failed user=${JSON.stringify(String(username).slice(0, 64))} ip=${req.headers['x-real-ip'] || req.socket.remoteAddress}`);
+        console.warn(`login failed user=${JSON.stringify(String(username).slice(0, 64))} ip=${clientIp(req)}`);
+        audit(req, 'login.fail', { as: String(username).slice(0, 64) });
         json(res, 401, { error: 'Invalid credentials' });
         return;
       }
       const cookie = createSessionCookie(username, result.role);
+      audit(req, 'login.ok', { as: username, as_role: result.role });
       res.writeHead(200, {
         'Content-Type': 'application/json',
         'Set-Cookie': buildSetCookie(cookie),
@@ -672,6 +691,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (req.method === 'POST' && url === '/api/logout') {
+      audit(req, 'logout');
       res.writeHead(200, {
         'Content-Type': 'application/json',
         'Set-Cookie': buildClearCookie(),
@@ -695,6 +715,8 @@ const server = http.createServer(async (req, res) => {
       }
       let created = 0;
       const skipped = [];
+      const started = Date.now();
+      audit(req, 'users.bulk.start', { rows: body.length });
       // Hash passwords asynchronously first to avoid blocking the event loop
       const prepared = [];
       for (const entry of body) {
@@ -726,6 +748,8 @@ const server = http.createServer(async (req, res) => {
         db.exec('ROLLBACK');
         throw e;
       }
+      // Logged even when nginx has already timed out the request (504): the work still finished
+      audit(req, 'users.bulk.done', { rows: body.length, created, skipped: skipped.length, ms: Date.now() - started });
       if (skipped.length > 0) {
         json(res, 200, { ok: true, created, skipped });
       } else {
@@ -758,6 +782,7 @@ const server = http.createServer(async (req, res) => {
         }
         throw e;
       }
+      audit(req, 'users.create', { target: username, target_role: role });
       json(res, 201, { ok: true, username, role });
       return;
     }
@@ -773,6 +798,7 @@ const server = http.createServer(async (req, res) => {
         json(res, 404, { error: 'User not found' });
         return;
       }
+      audit(req, 'users.delete', { target: targetUsername });
       json(res, 200, { ok: true });
       return;
     }

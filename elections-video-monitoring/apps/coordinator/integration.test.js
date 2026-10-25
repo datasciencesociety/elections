@@ -51,11 +51,12 @@ async function login(username, password) {
 
 let child;
 let adminCookie, vol1Cookie, vol2Cookie;
+let tmpDir;
 
 before(async () => {
   const port = await freePort();
   base = `http://127.0.0.1:${port}`;
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'coord-test-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'coord-test-'));
 
   child = spawn(process.execPath, [path.join(__dirname, 'server.js')], {
     env: {
@@ -330,5 +331,58 @@ describe('Stub streams (no URL yet)', () => {
     });
     assert.equal(res.status, 200);
     assert.equal(res.body.inserted, 2);
+  });
+});
+
+// ── Audit log ────────────────────────────────────────────────────────────────
+
+describe('Audit log', () => {
+  // All hourly files, oldest first
+  function auditRaw() {
+    const dir = path.join(tmpDir, 'audit');
+    if (!fs.existsSync(dir)) return '';
+    return fs.readdirSync(dir).filter((f) => /^audit-.*\.log$/.test(f)).sort()
+      .map((f) => fs.readFileSync(path.join(dir, f), 'utf8')).join('');
+  }
+
+  // Lines are written through a stream: wait until the expected one is on disk
+  async function auditLines(until) {
+    for (let i = 0; i < 40; i++) {
+      const lines = auditRaw().trim().split('\n').filter(Boolean).map((l) => JSON.parse(l));
+      if (lines.some(until)) return lines;
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    assert.fail('expected audit line never appeared');
+  }
+
+  it('records logins, admin changes and volunteer actions next to the DB, without passwords', async () => {
+    assert.equal((await request('POST', '/api/login', { body: { username: 'vol1', password: 'wrong-pass-1' } })).status, 401);
+    const s = await request('POST', '/api/session', { cookie: vol2Cookie, body: {} });
+    const sid = s.body.session_id;
+    const streamId = s.body.streams[0].id;
+    for (let i = 0; i < 2; i++) {
+      await request('POST', '/api/report', { cookie: vol2Cookie, body: { session_id: sid, results: [{ stream_id: streamId, status: 'covered' }] } });
+    }
+    await request('POST', '/api/report', { cookie: vol2Cookie, body: { session_id: sid, results: [{ stream_id: streamId, status: 'ok' }] } });
+
+    const lines = await auditLines((l) => l.action === 'report.status' && l.to === 'ok' && l.user === 'vol2');
+    const has = (pred, what) => assert.ok(lines.some(pred), what);
+    has((l) => l.action === 'login.ok' && l.as === 'testadmin' && l.as_role === 'admin', 'admin login');
+    has((l) => l.action === 'login.fail' && l.as === 'vol1' && l.ip, 'failed login with ip');
+    has((l) => l.action === 'users.create' && l.user === 'testadmin' && l.target === 'vol1' && l.target_role === 'volunteer', 'user created by admin');
+    has((l) => l.action === 'streams.upsert' && l.user === 'testadmin' && l.rows === 3, 'upsert with row count');
+    has((l) => l.action === 'session.new' && l.user === 'vol1' && l.mode === 'assigned', 'pre-assigned session');
+    has((l) => l.action === 'session.new' && l.user === 'vol2' && ['assigned', 'random'].includes(l.mode), 'session with its mode');
+
+    // A status is logged when it changes, not on every report
+    const vol2Reports = lines.filter((l) => l.action === 'report.status' && l.user === 'vol2');
+    assert.deepEqual(vol2Reports.map((l) => [l.from, l.to]), [[undefined, 'covered'], ['covered', 'ok']]);
+    // Reports on streams outside the session are dropped by the server and not logged
+    assert.ok(!lines.some((l) => l.action === 'report.status' && l.user === 'vol1' && l.to === 'covered'));
+
+    const raw = auditRaw();
+    for (const secret of ['testadminpass', 'volpass123', 'wrong-pass-1', 'test-secret']) {
+      assert.ok(!raw.includes(secret), `audit log must not contain ${secret}`);
+    }
   });
 });
