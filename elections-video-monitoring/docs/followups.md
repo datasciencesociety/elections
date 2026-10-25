@@ -38,6 +38,7 @@ never started → live → stalled (no new segment for 2 min) → ended
 
 - evideo does not send `#EXT-X-ENDLIST`. Checked on 25 Oct: an ended stream answers 200 with an empty body for both `index.m3u8` and `main_stream.m3u8`, while a live one lists segments with current `PROGRAM-DATE-TIME`.
 - Only a stream that has streamed at least once (a playlist that listed segments) can end. One that never streamed stays "never started".
+- Keep the state per section, not per link. When evideo moves a section to another stream server (the scraper uploads a new link), that is not an end: the empty-playlist timer restarts on the new link.
 - Never mark a stream ended before 21:00 local time (a setting, since the count's start moves); earlier gaps are restarts.
 - Ended on any of: an empty 200 for both playlists for at least 15 min after the stream had played; evideo's page shows an `archive.evideo.bg` link instead of the live one (scraper); CIK publishes the section's protocol; `#EXT-X-ENDLIST` if evideo ever sends it; or, as a fallback, no new segment for 15 min.
 - Any new segment returns the section to live. Feeds drop and resume mid-count, so the timeout alone must never be final.
