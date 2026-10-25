@@ -161,9 +161,18 @@ node scripts/inspect-db.js
 | `contacts` | `id`, `name`, `phone`, `role`. Unique on `(name, phone)`. |
 | `stream_contacts` | Join table: `stream_id`, `contact_id`. Cascades on delete. |
 
-## CORS proxy
+## Video proxy
 
-The coordinator does not proxy video. Set `PROXY_URL` to a CORS proxy (`apps/proxy` locally, `apps/proxy-nginx` in production) so the volunteer page can read canvas pixels from cross-origin HLS streams. Without it, cards play evideo directly and detection does not run.
+The coordinator does not proxy video; nginx does, on the same site. `deploy/nginx-hls.conf` serves `/hls/{host}/{path}` → `https://{host}/{path}` for `*.evideo.bg` only, to pages with a login cookie, rate-limited per IP. Same origin, so the volunteer page can read canvas pixels without CORS. Without `PROXY_URL`, cards play evideo directly and detection does not run.
+
+- Live: `PROXY_URL=https://video.promeni.bg/hls`. `nginx-site.conf` includes the file from the release, and `remote-install.sh` checks `/hls` after the reload.
+- Local: `scripts/dev-nginx.sh` runs the same file in nginx 1.18 (Docker) on port 8080 in front of the coordinator. Start the coordinator with `PROXY_URL=http://localhost:8080/hls` and open `http://localhost:8080`. `apps/proxy` (node, port 8788) is only a fallback.
+
+## Test streams and stubs
+
+- `node scripts/seed.js` loads the 4 dev test videos (`scripts/dev-streams.json`, old archive recordings). It refuses any coordinator other than localhost.
+- `--stubs` uploads sections without URLs: their cards say "Излъчването не е започнало" (Stream not yet started). A later scrape upsert fills the URL, and open volunteer pages switch to video on the next heartbeat. A stub never blanks a URL that is already set.
+- A card with an `.m3u8` URL also says "not yet started" while the playlist is missing or has no segments, and checks again every 30 s.
 
 ## Deploy
 

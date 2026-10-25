@@ -39,6 +39,8 @@ NODE_BIN=${NODE_BIN:-$(sudo -u "$SERVICE_USER" -i bash -c 'command -v node' || t
 PROXY_URL=$(env_get PROXY_URL)
 if [ -z "$PROXY_URL" ]; then
   echo "WARNING: PROXY_URL is empty; cards will play without detection" >&2
+elif [ "$PROXY_URL" = "https://$DOMAIN/hls" ]; then
+  :  # this release's nginx serves it; checked after the reload
 else
   pcode=$(curl -s -o /dev/null -m 5 -w '%{http_code}' "$PROXY_URL/healthz" || true)
   case $pcode in
@@ -99,7 +101,7 @@ rollback() {
 
 render() {
   sed -e "s#@SERVICE_USER@#$SERVICE_USER#g" -e "s#@APP_DIR@#$APP_DIR#g" -e "s#@NODE_BIN@#$NODE_BIN#g" \
-      -e "s#@DB_DIR@#$DB_DIR#g" -e "s#@DOMAIN@#$DOMAIN#g" -e "s#@PORT@#$PORT#g" "$1"
+      -e "s#@DB_DIR@#$DB_DIR#g" -e "s#@DOMAIN@#$DOMAIN#g" -e "s#@PORT@#$PORT#g" -e "s#@REL@#$REL#g" "$1"
 }
 render "$REL/coordinator/deploy/$UNIT.service" > "/etc/systemd/system/$UNIT.service"
 render "$REL/coordinator/deploy/nginx-site.conf" > "$SITE"
@@ -129,6 +131,14 @@ for route in /api/streams/toggle /api/report; do
   [ "$code" = 401 ] || rollback "unauthenticated POST $route returned $code, expected 401"
 done
 [ "$(pub -H 'Cookie: session=abc.def' "https://$DOMAIN/admin")" = 302 ] || rollback "malformed cookie did not redirect to /login"
+# /hls proxy: answers, refuses requests without a login cookie and hosts other than evideo (none reach evideo)
+[ "$(pub "https://$DOMAIN/hls/healthz")" = 200 ] || rollback "/hls/healthz did not return 200"
+[ "$(pub "https://$DOMAIN/hls/evideo.bg/x.m3u8")" = 401 ] || rollback "/hls without a login cookie was not refused"
+[ "$(pub -H 'Cookie: session=x' "https://$DOMAIN/hls/example.com/x.m3u8")" = 403 ] || rollback "/hls proxied a host other than evideo.bg"
+case $PROXY_URL in
+  "https://$DOMAIN/hls") ;;
+  *) echo "WARNING: PROXY_URL=$PROXY_URL; set PROXY_URL=https://$DOMAIN/hls to use this server's proxy" >&2 ;;
+esac
 
 # keep the 5 newest releases
 ls -1dt "$APP_DIR"/releases/* | tail -n +6 | xargs -r rm -rf
