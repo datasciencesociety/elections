@@ -15,13 +15,13 @@ const DIRECT_MODE = typeof location !== 'undefined'
 // "Номер на секцията" (number field). Tally fills a question from the URL only through a
 // hidden field: the form owner adds hidden fields named as below and sets each one as the
 // matching question's "Default answer". Names are case-sensitive. The hidden field
-// "доброволец" carries the login name of every volunteer, email or not.
+// "volunteer" carries the login name of every volunteer, email or not.
 const TALLY_FORM_URL = 'https://tally.so/r/labENX';
-const TALLY_PARAMS = { email: 'email', section: 'section', volunteer: 'доброволец' };
+const TALLY_PARAMS = { email: 'email', section: 'section', volunteer: 'volunteer' };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SECTION_RE = /^\d{9}$/;
 
-// The login always goes into "доброволец". It goes into the email question only if it is an
+// The login always goes into "volunteer". It goes into the email question only if it is an
 // email: that question is an email field and would reject a plain username.
 function buildReportUrl({ section, user } = {}) {
   const params = new URLSearchParams();

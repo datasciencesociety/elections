@@ -112,7 +112,7 @@ describe('Section number on the volunteer card and the prefilled report form', (
     const href = new URL(await reportHref(v.page));
     assert.equal(href.origin + href.pathname, 'https://tally.so/r/labENX');
     assert.equal(href.searchParams.get('email'), 'volunteer.one@example.org');
-    assert.equal(href.searchParams.get('доброволец'), 'volunteer.one@example.org');
+    assert.equal(href.searchParams.get('volunteer'), 'volunteer.one@example.org');
     assert.equal(href.searchParams.get('section'), v.section);
     await v.context.close();
   });
@@ -121,8 +121,7 @@ describe('Section number on the volunteer card and the prefilled report form', (
     const v = await openVolunteer('vol' + 'x'.repeat(9));
     const href = new URL(await reportHref(v.page));
     assert.equal(href.searchParams.get('email'), null);
-    assert.equal(href.searchParams.get('доброволец'), 'vol' + 'x'.repeat(9));
-    assert.match(href.search, /%D0%B4%D0%BE%D0%B1/, 'the Cyrillic name is percent-encoded in the URL');
+    assert.equal(href.searchParams.get('volunteer'), 'vol' + 'x'.repeat(9));
     assert.equal(href.searchParams.get('section'), v.section);
     await v.context.close();
   });
