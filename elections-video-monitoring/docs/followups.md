@@ -4,12 +4,19 @@ Collected after the 25 Oct 2026 count. Highest value first.
 
 ## Push to refresh
 
-Volunteers keep the page open for hours, so a page-only deploy (`volunteer.html`, `i18n.js`) reaches them only when they reload.
+Built on 1 Nov 2026. Volunteers keep the page open for hours, so a page-only deploy (`volunteer.html`, `i18n.js`) used to reach them only when they reloaded.
 
-- The server reports the release it serves, for example the git commit read at startup, in every heartbeat response.
-- The page remembers the release it loaded with. When a heartbeat reports a different one, it shows a banner ("Има нова версия – презареди") or reloads by itself when no inspect panel is open.
-- A reload must keep the cards: the session id is in `localStorage`, so the page resumes the same session.
-- Test: e2e that changes the reported release and checks the banner and the resumed cards.
+- The server reads its release once at startup: `RELEASE` if set, else the git commit of the checkout, else the `releases/<name>` directory that `deploy.sh` installs, else the start time. It is injected into the page (`window.RELEASE`) and returned in every heartbeat.
+- When a heartbeat reports another release, the page shows a banner ("Има нова версия – презареди") with a reload button, and reloads by itself once no card is open in the inspect panel, the section picker is closed and no field has focus. It reloads at most once per release, so a cached old page cannot loop.
+- The reload resumes the same session (session id in `localStorage`) and the same cards. Test: last case of `volunteer-waiting.e2e.test.js`.
+- A page-only change reaches open pages only after a server restart, because the release is read at startup. Pages opened before this feature was deployed have no release check and still need one manual reload.
+- With the start-time fallback every restart, a crash too, reloads every open page.
+
+## Test card and distribution time (1 Nov 2026)
+
+- `assigned_users = '*'` gives a section to every volunteer (the test card, section 999000001). It takes no slot of `LOGIN_CARDS`, is never a backup-cover section and is not listed in the section picker.
+- `TOPUP_AFTER`: before it a volunteer gets only own and `*` sections, or an empty session with "Още нямате секции" (no random cards). From it on, the next heartbeat (60–90 s) adds 3 sections by risk to open pages.
+- Disabling the test card (`enabled = 0`): the next heartbeat leaves it out and the page removes the card and its assignment; the slot was never counted, so no 4th section comes in its place. Its URL in the heartbeat reads `''`, so a page loaded before this release, which cannot remove it, turns the card into "not yet started" and stops playing it. A resume (reload) drops it too. Enabling it again hands it back on the next heartbeat.
 
 ## Distribution
 
