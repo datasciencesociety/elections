@@ -7,6 +7,7 @@ const { DatabaseSync } = require('node:sqlite');
 const { initUserStore, authenticate, hashPassword, hashPasswordAsync, addUser, removeUser, listUsers, validateUserInput, createSessionCookie, buildSetCookie, buildClearCookie } = require('./auth');
 const { authMiddleware } = require('./middleware');
 const { createAudit, clientIp } = require('./audit');
+const { endedAfterMs } = require('./ended-after');
 
 // ── DB ────────────────────────────────────────────────────────────────────────
 
@@ -109,6 +110,11 @@ try { db.exec('ALTER TABLE streams ADD COLUMN assigned_users TEXT'); } catch {}
 // rename old column if it exists from a previous run
 try { db.exec('ALTER TABLE streams RENAME COLUMN allowed_users TO assigned_users'); } catch {}
 try { db.exec('ALTER TABLE sessions ADD COLUMN user_id TEXT'); } catch {}
+// When a page last reported the section's stream as ended (ms); NULL = not ended. Only a value at or
+// after the current ENDED_AFTER counts (endedSince()), so a mark from an earlier night is ignored.
+try { db.exec('ALTER TABLE streams ADD COLUMN ended_at INTEGER'); } catch {}
+// When that page's playlist first went empty (ms): the time every page shows ("Не излъчва от HH:MM")
+try { db.exec('ALTER TABLE streams ADD COLUMN stopped_at INTEGER'); } catch {}
 
 // ── Prepared statements ───────────────────────────────────────────────────────
 
@@ -158,7 +164,11 @@ const stmt = {
       AND r.status != 'initializing'
       AND r.status != 'error'
       AND r.status != 'waiting'
+      AND r.status != 'ended'
+      AND r.status != 'live'
       AND s.url != ''
+      -- An ended section's last frozen or dark reports are its end, not an alarm
+      AND (s.ended_at IS NULL OR s.ended_at < ?)
     GROUP BY s.id, r.status
     ORDER BY report_count DESC, first_seen ASC
   `),
@@ -169,6 +179,9 @@ const stmt = {
     ON CONFLICT(section) DO UPDATE SET label = excluded.label, last_checked = NULL,
       -- A stub (empty URL) never blanks a URL the scrape already found
       url = CASE WHEN excluded.url = '' THEN streams.url ELSE excluded.url END,
+      -- A new link is not an end: the section starts over as not ended
+      ended_at = CASE WHEN excluded.url != '' AND excluded.url != streams.url THEN NULL ELSE streams.ended_at END,
+      stopped_at = CASE WHEN excluded.url != '' AND excluded.url != streams.url THEN NULL ELSE streams.stopped_at END,
       -- Scraper batches carry no assigned_users (NULL) and must keep existing assignments; '' clears them
       assigned_users = COALESCE(excluded.assigned_users, streams.assigned_users)
   `),
@@ -176,7 +189,8 @@ const stmt = {
     SELECT
       COUNT(*) AS total,
       SUM(CASE WHEN s.enabled = 1 THEN 1 ELSE 0 END) AS enabled,
-      SUM(CASE WHEN a.stream_id IS NOT NULL THEN 1 ELSE 0 END) AS covered
+      SUM(CASE WHEN a.stream_id IS NOT NULL THEN 1 ELSE 0 END) AS covered,
+      SUM(CASE WHEN s.ended_at >= ? THEN 1 ELSE 0 END) AS ended
     FROM streams s
     LEFT JOIN (
       SELECT DISTINCT a2.stream_id
@@ -185,7 +199,7 @@ const stmt = {
     ) a ON a.stream_id = s.id
   `),
   toggleStream:      db.prepare('UPDATE streams SET enabled = ? WHERE id = ?'),
-  allStreams:        db.prepare('SELECT id, section, label, url, enabled, assigned_users FROM streams ORDER BY section'),
+  allStreams:        db.prepare('SELECT id, section, label, url, enabled, assigned_users, COALESCE(ended_at >= ?, 0) AS ended FROM streams ORDER BY section'),
   upsertContact:     db.prepare(`
     INSERT INTO contacts (name, phone, role) VALUES (?, ?, ?)
     ON CONFLICT(name, phone) DO UPDATE SET role = excluded.role
@@ -230,6 +244,7 @@ const stmt = {
     SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
     WHERE s.enabled = 1
       AND s.assigned_users IS NOT NULL AND s.assigned_users != '' AND s.assigned_users != '*'
+      AND (s.ended_at IS NULL OR s.ended_at < ?)
       AND s.id NOT IN (
         SELECT a.stream_id FROM assignments a
         JOIN sessions se ON se.id = a.session_id AND se.last_heartbeat > ?
@@ -248,6 +263,7 @@ const stmt = {
       GROUP BY a.stream_id
     ) w ON w.stream_id = s.id
     WHERE s.enabled = 1 AND (s.assigned_users IS NULL OR s.assigned_users = '')
+      AND (s.ended_at IS NULL OR s.ended_at < ?)
       AND COALESCE(w.n, 0) < COALESCE(r.eyes, ?)
       AND s.id NOT IN (SELECT stream_id FROM assignments WHERE session_id = ?)
     ORDER BY (r.risk IS NULL), r.risk DESC, COALESCE(w.n, 0), s.section
@@ -266,7 +282,15 @@ const stmt = {
     ) w ON w.stream_id = s.id
     WHERE s.enabled = 1 AND COALESCE(w.n, 0) < COALESCE(r.eyes, ?)
       AND COALESCE(s.assigned_users, '') != '*'
+      AND (s.ended_at IS NULL OR s.ended_at < ?)
     ORDER BY (r.risk IS NULL), r.risk DESC, watchers, s.section
+  `),
+  // Ended state per section, set and cleared by reports (txReport)
+  setEnded:          db.prepare("UPDATE streams SET ended_at = ?, stopped_at = ? WHERE id = ? AND url != '' AND (ended_at IS NULL OR ended_at < ?)"),
+  clearEnded:        db.prepare('UPDATE streams SET ended_at = NULL, stopped_at = NULL WHERE id = ? AND ended_at IS NOT NULL'),
+  sessionEnded:      db.prepare(`
+    SELECT s.id, s.stopped_at FROM streams s JOIN assignments a ON a.stream_id = s.id
+    WHERE a.session_id = ? AND s.ended_at >= ?
   `),
 };
 
@@ -305,10 +329,23 @@ function txReport(sessionId, results, now) {
       stmt.insertReport.run(sessionId, r.stream_id, now, r.status,
         r.cover_ratio ?? null, r.frozen_sec ?? null, r.luma ?? null);
       stmt.touchStream.run(now, r.stream_id);
+      // Shared ended state: 'ended' sets it (only from ENDED_AFTER on); 'live' (the page saw segments
+      // again) or 'ok' (moving, bright frames) clears it. frozen, dark and covered do not: a stalled
+      // video after the end reads as frozen or dark.
+      if (r.status === 'ended') { const since = endedSince(now); if (now >= since) stmt.setEnded.run(now, stoppedAt(r.stopped_at, now), r.stream_id, since); }
+      else if (r.status === 'live' || r.status === 'ok') stmt.clearEnded.run(r.stream_id);
       accepted.push(r);
     }
   });
   return accepted;
+}
+
+// When the reporting page saw the playlist go empty. A missing, future or implausibly old value
+// (more than 2 h back) becomes now − 15 min, the page's own wait before it marks a card ended.
+const STOPPED_MAX_AGE_MS = 2 * 60 * 60_000;
+function stoppedAt(v, now) {
+  const ms = Number(v);
+  return Number.isFinite(ms) && v !== null && ms <= now && ms >= now - STOPPED_MAX_AGE_MS ? Math.round(ms) : now - 15 * 60_000;
 }
 
 // Extract section number from URL path: .../real/102700005/...
@@ -443,6 +480,11 @@ if (process.env.TOPUP_AFTER && Number.isNaN(TOPUP_AFTER)) {
 }
 const topUpOn = (now) => Number.isNaN(TOPUP_AFTER) || now >= TOPUP_AFTER;
 
+// ENDED_AFTER: the same value and parsing as the page (ended-after.js); unset or invalid → 21:00 Sofia.
+// A section counts as ended only with ended_at at or after it: before it nothing is ended.
+const ENDED_AFTER = process.env.ENDED_AFTER || '';
+const endedSince = (now) => endedAfterMs(ENDED_AFTER, now);
+
 // Release this process serves, read once at startup; the page reloads when a heartbeat reports another
 const RELEASE = readRelease();
 function readRelease() {
@@ -465,7 +507,7 @@ function topUp(sessionId, now) {
   const need = LOGIN_CARDS - stmt.sessionStreamCount.get(sessionId).n;
   if (need <= 0) return [];
   const skip = declined.get(sessionId) || new Set();
-  const picked = stmt.priorityStreams.all(now - ACTIVE_MS, DEFAULT_EYES, sessionId, need + skip.size)
+  const picked = stmt.priorityStreams.all(now - ACTIVE_MS, endedSince(now), DEFAULT_EYES, sessionId, need + skip.size)
     .filter(s => !skip.has(s.id)).slice(0, need);
   for (const s of picked) stmt.insertAssignment.run(sessionId, s.id, now);
   return picked;
@@ -477,7 +519,7 @@ function autofill(sessionId, now) {
   const need = AUTOFILL_MAX - stmt.sessionStreamCount.get(sessionId).n;
   if (need <= 0) return [];
   const skip = declined.get(sessionId) || new Set();
-  const picked = stmt.orphanedStreams.all(now - ACTIVE_MS, need + skip.size)
+  const picked = stmt.orphanedStreams.all(endedSince(now), now - ACTIVE_MS, need + skip.size)
     .filter(s => !skip.has(s.id)).slice(0, need);
   for (const s of picked) stmt.insertAssignment.run(sessionId, s.id, now);
   return picked;
@@ -530,13 +572,13 @@ async function handleSession(req, res) {
   let streams = stmt.preAssignedForUser.all(userId);
   let mode = streams.length ? 'assigned' : topUpOn(Date.now()) ? 'priority' : 'waiting';
 
-  if (streams.length === 0 && mode === 'priority' && stmt.priorityStreams.all(Date.now() - ACTIVE_MS, DEFAULT_EYES, '', 1).length === 0) {
+  if (streams.length === 0 && mode === 'priority' && stmt.priorityStreams.all(Date.now() - ACTIVE_MS, endedSince(Date.now()), DEFAULT_EYES, '', 1).length === 0) {
     mode = 'random';
     streams = db.prepare(`
       SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
-      WHERE s.enabled = 1
+      WHERE s.enabled = 1 AND (s.ended_at IS NULL OR s.ended_at < ?)
       ORDER BY RANDOM() LIMIT 2
-    `).all();
+    `).all(endedSince(Date.now()));
   }
 
   const sessionId = crypto.randomUUID();
@@ -578,7 +620,10 @@ async function handleHeartbeat(req, res) {
 
   // Current URL of every stream in the session, so open cards notice when a stub gets its stream
   const urls = Object.fromEntries(stmt.sessionUrls.all(session_id).map(s => [s.id, s.url]));
-  json(res, 200, { ok: true, assigned_streams: enrichWithContacts([...preAssigned, ...filled, ...backups]), urls, release: RELEASE });
+  // Sections of this session that a page reported ended, {id: stopped_at ms}: the page shows them
+  // ended at once, with that time. Pages from before this field ignore it.
+  const ended = Object.fromEntries(stmt.sessionEnded.all(session_id, endedSince(now)).map(s => [s.id, s.stopped_at]));
+  json(res, 200, { ok: true, assigned_streams: enrichWithContacts([...preAssigned, ...filled, ...backups]), urls, ended, release: RELEASE });
 }
 
 async function handleReport(req, res) {
@@ -596,7 +641,7 @@ async function handleReport(req, res) {
 
 function handleFlagged(req, res) {
   const cutoff = Date.now() - 300_000; // 5 min
-  const flagged = stmt.flagged.all(cutoff);
+  const flagged = stmt.flagged.all(cutoff, endedSince(Date.now()));
   const { count } = stmt.volunteerCount.get(Date.now() - 120_000);
   json(res, 200, { flagged, volunteer_count: count });
 }
@@ -637,13 +682,13 @@ async function handleStreamsUpsert(req, res) {
 
 function handleStreamStats(req, res) {
   const cutoff = Date.now() - 120_000;
-  const stats = stmt.streamStats.get(cutoff);
+  const stats = stmt.streamStats.get(endedSince(Date.now()), cutoff);
   const { count } = stmt.volunteerCount.get(cutoff);
-  json(res, 200, { total: stats.total, enabled: stats.enabled, covered: stats.covered, volunteers: count });
+  json(res, 200, { total: stats.total, enabled: stats.enabled, covered: stats.covered, ended: stats.ended ?? 0, volunteers: count });
 }
 
 function handleStreamsList(req, res) {
-  const streams = stmt.allStreams.all().map(s => ({
+  const streams = stmt.allStreams.all(endedSince(Date.now())).map(s => ({
     ...s,
     contacts: stmt.streamContacts.all(s.id),
   }));
@@ -654,7 +699,7 @@ function handleAvailableStreams(req, res) {
   // The section picker waits for TOPUP_AFTER too: before it volunteers have only the test card
   if (!topUpOn(Date.now())) { json(res, 200, { streams: [] }); return; }
   const cutoff = Date.now() - 120_000;
-  const rows = stmt.availableStreams.all(DEFAULT_EYES, cutoff, DEFAULT_EYES);
+  const rows = stmt.availableStreams.all(DEFAULT_EYES, cutoff, DEFAULT_EYES, endedSince(Date.now()));
   json(res, 200, { streams: rows });
 }
 
@@ -755,7 +800,7 @@ const server = http.createServer(async (req, res) => {
       const proxyBase = process.env.PROXY_URL || '';
       // ENDED_AFTER: when the page may start marking ended streams (ISO date-time with offset,
       // or HH:MM Sofia). Unset → the page uses 21:00 Sofia.
-      const endedAfter = process.env.ENDED_AFTER || '';
+      const endedAfter = ENDED_AFTER;
       const proxyScript = `<script>window.PROXY_BASE = ${JSON.stringify(proxyBase)}; window.CURRENT_USER = ${JSON.stringify(req.user.username)}; window.RELEASE = ${JSON.stringify(RELEASE)}; window.ENDED_AFTER = ${JSON.stringify(endedAfter)};</script>`;
       fs.readFile(path.join(__dirname, 'public', 'volunteer.html'), 'utf8', (err, html) => {
         if (err) { res.writeHead(404); res.end('Not found'); return; }
@@ -1030,5 +1075,5 @@ const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || undefined;
 initUserStore(db);
 if (!process.env.COOKIE_SECRET) console.warn('COOKIE_SECRET not set — all logins are invalidated on every restart');
-console.log(`release ${RELEASE}; distribution by risk ${Number.isNaN(TOPUP_AFTER) ? 'always on' : 'from ' + new Date(TOPUP_AFTER).toISOString()}`);
+console.log(`release ${RELEASE}; ended from ${new Date(endedSince(Date.now())).toISOString()}; distribution by risk ${Number.isNaN(TOPUP_AFTER) ? 'always on' : 'from ' + new Date(TOPUP_AFTER).toISOString()}`);
 server.listen(PORT, HOST, () => console.log(`Election monitor: http://${HOST || 'localhost'}:${PORT}`));

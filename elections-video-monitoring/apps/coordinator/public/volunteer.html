@@ -930,7 +930,8 @@ async function probeWaiting(state) {
   state.probing = false;
   if (r.kind === 'segments') { state.hadSegments = true; state.variantUrl = r.variant; }
   const started = r.kind === 'segments' || r.kind === 'fail';
-  if (!streamStates.includes(state) || !started) return;
+  // Ended by the server meanwhile: probeEnded rechecks it from now on
+  if (!streamStates.includes(state) || !started || state.status === 'ended') return;
   state.status = 'loading';
   state.video.src = state.proxiedUrl;
   if (!autoplayBlocked) state.video.play().catch(() => {});
@@ -944,6 +945,10 @@ async function probeWaiting(state) {
 // Errors (429, 5xx, network) are no evidence either way: they neither start nor reset the timer.
 // Ended is not final: feeds drop and resume mid-count, so an ended card is still probed every
 // ENDED_RECHECK_MS and goes back to live on the first segment.
+// Shared with other pages through the server: the page reports 'ended' when it marks a card ended
+// and 'live' when segments come back (sendReport). Each heartbeat lists the session's sections some
+// page reported ended (applyServerEnded): the card ends at once, without its own 15 min, and is
+// still rechecked. When the server clears a section this page had seen ended, the card plays again.
 const ENDED_EMPTY_MS = 15 * 60_000;
 const ENDED_PROBE_MS = 60_000;
 const ENDED_RECHECK_MS = 2 * 60_000;
@@ -956,6 +961,11 @@ function sofiaParts(ms) {
     year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
   }).formatToParts(ms)) p[type] = Number(value);
   return p;
+}
+
+// "21:07": Sofia wall-clock time, 24 h, zero-padded
+function sofiaHHMM(ms) {
+  return new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Sofia', hourCycle: 'h23', hour: '2-digit', minute: '2-digit' }).format(ms);
 }
 
 // The instant of a Sofia wall-clock time (Date.UTC normalises day 0 to the previous month)
@@ -992,8 +1002,9 @@ function checkEndedAll() {
 }
 
 async function probeEnded(state, now = Date.now()) {
-  if (state.fallback || !state.hadSegments || state.endProbing || !state.proxiedUrl) return;
   const wasEnded = state.status === 'ended';
+  // A card ended by the server may never have played here; it is rechecked all the same
+  if (state.fallback || (!state.hadSegments && !wasEnded) || state.endProbing || !state.proxiedUrl) return;
   if (wasEnded && now - (state.endedProbeAt || 0) < ENDED_RECHECK_MS) return;
   state.endProbing = true;
   if (wasEnded) state.endedProbeAt = now;
@@ -1001,17 +1012,58 @@ async function probeEnded(state, now = Date.now()) {
   state.endProbing = false;
   if (!streamStates.includes(state) || state.fallback || (state.status === 'ended') !== wasEnded) return;
   if (r.variant) state.variantUrl = r.variant;
-  if (r.kind === 'segments') { state.emptySince = null; if (wasEnded) resumeEnded(state); return; }
+  if (r.kind === 'segments') {
+    state.hadSegments = true;
+    state.emptySince = null;
+    if (wasEnded) { resumeEnded(state); state.liveAt = now; reportTransition(state, 'live'); }
+    return;
+  }
   if (wasEnded) return;
   if (r.kind !== 'empty') return;
   if (!state.emptySince) state.emptySince = now;
-  if (now >= endedAfterMs(now) && now - state.emptySince >= ENDED_EMPTY_MS) markEnded(state);
+  if (now >= endedAfterMs(now) && now - state.emptySince >= ENDED_EMPTY_MS) { markEnded(state, state.emptySince); reportTransition(state, 'ended'); }
+}
+
+// Tells the server at once (the next sendReport carries it again until one succeeds)
+function reportTransition(state, status) {
+  state.transition = status;
+  state.endedConfirmed = false;
+  sendReport();
+}
+
+// The heartbeat's ended sections, {id: ms the stream stopped}. A card in it ends now (from
+// ENDED_AFTER on, never earlier, and not right after this page saw it live again); an ended card
+// the server has confirmed and no longer lists was revived by another page, so it plays again.
+function applyServerEnded(ended, now = Date.now()) {
+  if (!ended || typeof ended !== 'object' || Array.isArray(ended)) return; // an older server
+  for (const s of streamStates) {
+    if (s.fallback || !s.proxiedUrl) continue;
+    if (Object.prototype.hasOwnProperty.call(ended, s.id)) {
+      const stoppedAt = Number(ended[s.id]) || null;
+      if (s.status === 'ended') {
+        if (s.transition) continue;
+        s.endedConfirmed = true;
+        // Every page shows the time the server keeps
+        if (stoppedAt && stoppedAt !== s.stoppedAt) { s.stoppedAt = stoppedAt; updateCard(s); }
+        continue;
+      }
+      if (now < endedAfterMs(now) || s.transition === 'live' || now - (s.liveAt || 0) < ENDED_RECHECK_MS) continue;
+      markEnded(s, stoppedAt);
+      s.endedConfirmed = true;
+    } else if (s.status === 'ended' && s.endedConfirmed && !s.transition) {
+      s.endedConfirmed = false;
+      if (s.hadSegments) resumeEnded(s);
+      else { s.status = 'waiting'; s.endedProbeAt = null; updateCard(s); probeWaiting(s); }
+    }
+  }
 }
 
 // Stops the video, detection and reports; the card stays on the page and is rechecked every
 // ENDED_RECHECK_MS (probeEnded) in case the feed resumes
-function markEnded(state) {
+// stoppedAt: when the playlist went empty, shown as "Не излъчва от HH:MM"
+function markEnded(state, stoppedAt) {
   state.status = 'ended';
+  state.stoppedAt = stoppedAt || null;
   state.endedProbeAt = Date.now();
   if (state.video) {
     // removeAttribute + load() aborts the download without an 'error' event (src = '' fires one)
@@ -1024,6 +1076,7 @@ function markEnded(state) {
 function resumeEnded(state) {
   state.emptySince = null;
   state.endedProbeAt = null;
+  state.stoppedAt = null;
   state.lastFrameData = null;
   state.lastChangeTime = null;
   state.coverStartTime = null;
@@ -1409,7 +1462,7 @@ function updateCard(state) {
     error:    t('status.error'),
     unknown:  t('status.unknown'),
     waiting:  t('status.waiting'),
-    ended:    t('status.ended'),
+    ended:    state.stoppedAt ? tf('status.ended.since', { time: sofiaHHMM(state.stoppedAt) }) : t('status.ended'),
   }[state.status] || state.status;
 
   card.querySelector('.status-dot').className = `status-dot ${dotClass}`;
@@ -1426,14 +1479,19 @@ async function sendReport() {
   // Skip fallback cards — their status is just echoing karta's /video/metrics.
   // Reporting it back would double-count karta-side observations and flood the
   // admin's flagged list with 'unknown' when the metrics endpoint is unreachable.
-  // Skip ended cards too: a stopped video is not a frozen or dark one
-  const results = streamStates.filter(s => !s.fallback && s.status !== 'ended').map(s => ({
+  // Ended cards send only the change to ended or live (reportTransition): a stopped video is not a
+  // frozen or dark one
+  const sent = streamStates.filter(s => !s.fallback && (s.transition || s.status !== 'ended'))
+    .map(s => [s, s.transition]);
+  const results = sent.map(([s, transition]) => transition ? {
+    stream_id: s.id, status: transition, ...(transition === 'ended' && s.stoppedAt ? { stopped_at: s.stoppedAt } : {}),
+  } : {
     stream_id: s.id,
     status: s.status,
     cover_ratio: s.coverRatio,
     frozen_sec: s.frozenSec,
     luma: s.luma,
-  }));
+  });
   try {
     const res = await fetch('/api/report', {
       method: 'POST',
@@ -1444,6 +1502,7 @@ async function sendReport() {
       const err = await res.json().catch(() => ({}));
       if (err.reinit) { reinitSession(); return; }
     } else {
+      for (const [s, transition] of sent) if (transition && s.transition === transition) s.transition = null;
       document.getElementById('last-report-label').textContent =
         t('last.report') + ' ' + new Date().toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/Sofia' });
     }
@@ -1490,6 +1549,7 @@ async function sendHeartbeat() {
           if (typeof url === 'string' && url !== s.url) replaceStreamUrl(s, url);
         }
       }
+      applyServerEnded(data.ended);
       if (toRemove.length || data.assigned_streams.some(s => !currentIds.has(s.id))) {
         document.getElementById('stream-count').textContent =
           tf('monitoring.count', { n: streamStates.length });

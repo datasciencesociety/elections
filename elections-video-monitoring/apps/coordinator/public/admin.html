@@ -114,6 +114,7 @@ button {
 .section-row .s-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .section-row .s-url { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; font-size: 10px; color: #888; }
 .section-row .s-users { font-size: 10px; color: #818cf8; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; flex-shrink: 0; }
+.section-row .s-ended { font-size: 10px; color: #a3a3a3; border: 1px solid #555; border-radius: 3px; padding: 0 6px; white-space: nowrap; flex-shrink: 0; }
 .section-row .s-toggle { cursor: pointer; background: none; border: 1px solid #444; color: #888; padding: 2px 8px; border-radius: 3px; font-size: 10px; }
 .section-row .s-toggle:hover { border-color: #666; color: #ccc; }
 .section-row.disabled { opacity: 0.4; }
@@ -294,6 +295,7 @@ textarea#bulk-users-json {
       <span><span data-i18n="stat.total">Total</span>: <strong id="stat-total">–</strong></span>
       <span><span data-i18n="stat.enabled">Enabled</span>: <strong id="stat-enabled">–</strong></span>
       <span><span data-i18n="stat.covered">Covered</span>: <strong id="stat-covered">–</strong></span>
+      <span><span data-i18n="stat.ended">Ended</span>: <strong id="stat-ended">–</strong></span>
       <span><span data-i18n="stat.volunteers">Volunteers</span>: <strong id="stat-volunteers">–</strong></span>
     </div>
   </section>
@@ -498,6 +500,7 @@ async function refreshStats() {
     document.getElementById('stat-total').textContent = d.total;
     document.getElementById('stat-enabled').textContent = d.enabled;
     document.getElementById('stat-covered').textContent = d.covered;
+    document.getElementById('stat-ended').textContent = d.ended ?? 0;
     document.getElementById('stat-volunteers').textContent = d.volunteers;
     const pct = d.enabled > 0 ? Math.round(100 * d.covered / d.enabled) : 0;
     document.getElementById('coverage-bar-inner').style.width = pct + '%';
@@ -537,6 +540,7 @@ function renderSections() {
     div.innerHTML = `
       <span class="s-label" title="${escHtml(s.label)}">${escHtml(s.section)} — ${escHtml(s.label)}</span>
       <span class="s-url" title="${escHtml(s.url)}">${escHtml(s.url)}</span>
+      ${s.ended ? `<span class="s-ended">${escHtml(t('stat.ended'))}</span>` : ''}
       ${s.assigned_users ? `<span class="s-users" title="Pre-assigned: ${escHtml(s.assigned_users)}">${escHtml(s.assigned_users)}</span>` : ''}
       <button class="s-toggle" data-id="${s.id}" data-enabled="${s.enabled}">${s.enabled ? t('toggle.disable') : t('toggle.enable')}</button>
     `;

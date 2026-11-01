@@ -23,7 +23,7 @@ const SECTION = '010100001';
 const URL_LIVE = `https://live-0001.evideo.bg/pvr2026/${SECTION}/index.m3u8`;
 // 1 Nov 2026 is winter time in Sofia (UTC+2)
 const sofia = (hhmm, ss = '00') => new Date(`2026-11-01T${hhmm}:${ss}+02:00`);
-const ENDED_BG = 'Излъчването приключи – БЛАГОДАРИМ ВИ!';
+const ENDED_BG = /^Не излъчва от \d\d:\d\d$/;
 
 function freePort() {
   return new Promise((resolve, reject) => {
@@ -174,7 +174,7 @@ describe('Volunteer card for a stream that has ended', () => {
     await v.probeAt(sofia('21:21'));
     const s = await v.state();
     assert.equal(s.status, 'ended');
-    assert.equal(s.text, ENDED_BG);
+    assert.equal(s.text, 'Не излъчва от 21:06', 'the time the playlist went empty, not when the card ended');
     assert.equal(s.src, null, 'video stopped');
     assert.equal(s.onPage, true, 'the card stays on the page');
     assert.equal(s.fallback, false, 'stopping the video does not switch to direct playback');
@@ -201,13 +201,14 @@ describe('Volunteer card for a stream that has ended', () => {
     assert.equal((await v.state()).status, 'ended');
     assert.equal((await v.state()).src, null);
 
+    await v.page.waitForFunction(() => !streamStates[0].transition); // the change to ended has been sent
     v.reports.length = 0;
     await v.page.evaluate(() => sendReport());
     assert.equal(v.reports.length, 1);
     assert.deepEqual(v.reports[0].results, [], 'an ended card sends no frozen/dark reports');
 
     await v.page.evaluate(() => setLang('en'));
-    assert.equal((await v.state()).text, 'The stream has ended – THANK YOU!');
+    assert.equal((await v.state()).text, 'Not broadcasting since 21:06');
     await v.page.evaluate(() => setLang('bg'));
     await v.page.close();
   });
@@ -236,6 +237,10 @@ describe('Volunteer card for a stream that has ended', () => {
     await v.probeAt(sofia('21:00'));
     await v.probeAt(sofia('21:15'));
     assert.equal((await v.state()).status, 'ended');
+    await v.page.waitForFunction(() => !streamStates[0].transition); // the change to ended has been sent
+    const id = await v.page.evaluate(() => streamStates[0].id);
+    assert.deepEqual(v.reports.flatMap((r) => r.results).filter((r) => r.status === 'ended'),
+      [{ stream_id: id, status: 'ended', stopped_at: sofia('21:00').getTime() }], 'the change to ended is sent once, with the stop time');
     v.reports.length = 0;
     await v.page.evaluate(() => sendReport());
     assert.deepEqual(v.reports[0].results, [], 'no reports while ended');
@@ -247,12 +252,14 @@ describe('Volunteer card for a stream that has ended', () => {
     assert.notEqual(s.status, 'ended');
     assert.equal(s.emptySince, null);
     assert.match(s.src || '', /^\/hls\/live-0001\.evideo\.bg\/pvr2026\/\d+\/index\.m3u8$/, 'video source set again');
-    assert.notEqual(s.text, ENDED_BG);
+    assert.doesNotMatch(s.text, ENDED_BG);
     await new Promise((r) => setTimeout(r, 300));
     assert.ok(v.hls.filter((r) => r.type === 'media').length > mediaBefore, 'the video requests the playlist again');
 
     await v.page.evaluate(() => checkAllStreams()); // detection runs again
     assert.equal((await v.state()).status, 'loading');
+    await v.page.waitForFunction(() => !streamStates[0].transition); // the change to live has been sent
+    assert.ok(v.reports.flatMap((r) => r.results).some((r) => r.stream_id === id && r.status === 'live'), "'live' sent on resume");
     v.reports.length = 0;
     await v.page.evaluate(() => sendReport());
     assert.equal(v.reports[0].results.length, 1, 'reports resume');

@@ -38,6 +38,8 @@ Ideas from a peer site that monitored the same count, evideo.iaz.bg (wall view `
 
 ## Detect a stream that has ended
 
+Done so far (1 Nov 2026): the page ends a card after 15 min of empty playlists from `ENDED_AFTER` on and reports 'ended' (with the time the playlist went empty) and 'live' through `/api/report`. The coordinator keeps `streams.ended_at`/`stopped_at`; a 'live' or 'ok' report or a new link clears it; heartbeats return `ended: {id: stopped_at}`, and distribution, the section picker, autofill and the flagged list skip ended sections. Still open: detection on the coordinator itself, the scraper's archive link, and offering the next section.
+
 Late in the count most cards wait on streams that will not come back. Track a state per section on the coordinator, reading the playlist through the proxy cache so evideo gets no extra requests:
 
 ```text
