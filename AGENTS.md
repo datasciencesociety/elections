@@ -6,6 +6,7 @@ Tools for monitoring Bulgarian elections. Each top-level folder is its own proje
 - The repo is public. Never commit secrets, `.env` files, volunteer contacts or new username lists.
 - A fix for a hole in a live site must not be pushed before it is deployed. Ask first.
 - Never load-test or probe `evideo.bg` (third party, behind Cloudflare). It blocks the IP after about 10 quick requests. Use a local fake origin for tests.
+- `elections-video-monitoring/` is a pnpm workspace. Never run `npm` in it: npm rewrites the stale `package-lock.json` files and breaks the pnpm `node_modules` layout. Use `pnpm install --frozen-lockfile`, `pnpm audit` and `pnpm outdated -r`. (`apps/coordinator/package-lock.json` stays: the server install runs `npm ci` with it.)
 - UI changes follow [elections-video-monitoring/docs/mobile-ui.md](elections-video-monitoring/docs/mobile-ui.md). Above all, the on-screen keyboard must never cover a submit button.
 
 ## Live systems

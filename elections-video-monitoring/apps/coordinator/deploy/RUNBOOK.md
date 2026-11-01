@@ -152,11 +152,36 @@ Only when all of this passes, stop the old app so it no longer writes to the DB 
   `COORDINATOR_URL=https://<live-domain> SEED_USER=… SEED_PASS=… node scripts/load-risk.js <risk.csv>`
 - Scraper: from an operator laptop, never the server. See `apps/scraper/README.md`, Election day.
 
+### A second round (runoff)
+
+evideo uses a new election code for each round, so the first round's links stop working.
+
+- Back up the DB first: `sqlite3 <db> "VACUUM INTO '<backup>'"` (single quotes: double quotes name an identifier and fail), then compare row counts of every table with the live DB before changing anything.
+- Load stubs with the batched replace above. It keeps users, contacts and the risk table; load a new risk CSV only if there is one for this round.
+- Scraper: leave `--code` off. `--discover` waits on its own for the new code (on 1 Nov 2026 it appeared around 19:00 Bulgarian time); nobody needs to look it up.
+
+### Settings for the day
+
+In the coordinator's env file; a restart applies them. After every restart, check the startup line, which prints the effective values: `release <commit>; ended from <time> by <N> volunteers; distribution by risk from <time>`.
+
+| Setting | Example | Effect |
+|---|---|---|
+| `TOPUP_AFTER` | `2026-11-01T16:00:00+02:00` | Before it, volunteers get only their own and `*` cards: no risk sections at login, on heartbeat or in "Добави секция". From it, each heartbeat tops open pages up to `LOGIN_CARDS` without a reload. Unset: always on. An unparsable value stops the server at startup. Always give the offset. |
+| `LOGIN_CARDS` | `3` | Risk sections per volunteer. `*` cards do not count. |
+| `ENDED_AFTER` | `21:00` or an ISO time with offset | From when a stream can count as ended. Default 21:00 Sofia. |
+| `ENDED_MIN_VOTERS` | `2` | Different volunteers who must report a section ended before every page shows "Не излъчва от HH:MM" and distribution skips it. One volunteer alone sees it only on their own card. Default 2. |
+
+### Test card for every volunteer
+
+- An archive recording that everyone sees: upsert it with `assigned_users: '*'`. It takes no `LOGIN_CARDS` slot.
+- Warm the cache before volunteers arrive: play it once, start to end, in one browser. Replays then answer `X-Cache-Status: HIT`, and evideo gets no requests for it.
+- Switch it off on the admin page before counting (or at `TOPUP_AFTER`). Open pages drop it on their next heartbeat.
+
 ### Before counting (about 30 minutes before polls close)
 
 Volunteers who get random streams see every enabled stream, so a test video can reach them as if it were live.
 
-- Admin page, streams list: switch off every test stream (archive recordings, `archive.evideo.bg`, dev videos). Switching off hides a stream from distribution and keeps its row; the stub load above removes them instead, but also wipes sessions and reports.
+- Admin page, streams list: switch off every test stream (archive recordings, `archive.evideo.bg`, dev videos, the `*` test card). Switching off hides a stream from distribution and keeps its row; the stub load above removes them instead, but also wipes sessions and reports.
 - Clear test assignments to operators' own accounts, unless they are meant to watch real sections tonight.
 - Check: `/api/streams/stats` counts only real sections as enabled, and a test volunteer login shows no archive video.
 
@@ -168,6 +193,7 @@ Volunteers who get random streams see every enabled stream, so a test video can 
 | Proxy errors, 429s, 5xx | `sudo tail -f /var/log/nginx/access.log` (only failures are logged for `/hls`) |
 | nginx limits | `sudo grep -c 'worker_connections are not enough' /var/log/nginx/error.log` |
 | App | `journalctl -u election-coordinator -f` |
+| Disk | `df -h /`; space held by deleted files: `sudo lsof -nP +L1 \| awk '$7 > 50e6'`. After an nginx reload, old workers keep their temp files until their last connections close. A full MP4 download through the site's video location writes the whole file to a temp file unless that location has `proxy_max_temp_file_size 0`. |
 
 **Video proxy emergency switch, no reload:** `sudo touch /etc/nginx/coordinator-hls-off`. `/hls` then answers 410, and volunteer cards fall back to playing evideo directly from their own browsers, without detection. Use it if the server's bandwidth is full or evideo blocks its IP. Undo: `sudo rm /etc/nginx/coordinator-hls-off`; reloaded pages use the proxy again. While it is on, every `/hls` request is a logged 410, so filter them out when tailing: `grep -v '" 410 '`.
 
