@@ -144,6 +144,13 @@ echo "ok: non-evideo path 403"
 code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 -X OPTIONS "$PROXY/archive.evideo.bg/x.mp4")
 [ "$code" = 204 ] || die "archive preflight answered $code, want 204"
 echo "ok: archive preflight 204"
+# From a non-loopback address the proxy must refuse everything (answered by nginx itself, never forwarded)
+EXT=$(ip -4 -o addr show scope global | awk '{print $4}' | cut -d/ -f1 | head -1)
+if [ -n "$EXT" ]; then
+  body=$(curl -s --max-time 5 "http://$EXT:8666/healthz")
+  [ "$body" = "local only" ] || die "proxy answered '$body' from $EXT, want 'local only'"
+  echo "ok: refused from a non-loopback address"
+fi
 
 echo
 echo "DONE. Backup: $BACKUP"

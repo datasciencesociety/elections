@@ -149,6 +149,14 @@ check "segment: one Access-Control-Allow-Origin" "$(echo "$hdr" | grep -ci '^acc
 hdr=$(req "curl -s -D - -o /dev/null -H 'Range: bytes=0-9' $P/live-1.evideo.bg/v/test.mp4")
 check "passthrough: one Access-Control-Allow-Origin" "$(echo "$hdr" | grep -ci '^access-control-allow-origin:' || true)" 1
 
+# Local only: any other source address is refused before a location runs, and nothing is forwarded
+before=$(req "wc -l < /tmp/origin.log")
+check "other address: healthz refused"  "$(req "curl -s --interface 127.0.0.2 $P/healthz")" "local only"
+check "other address: archive → 403"    "$(code --interface 127.0.0.2 $P$MP4)" 403
+check "other address: playlist → 403"   "$(code --interface 127.0.0.2 $P/live-1.evideo.bg/n/index.m3u8)" 403
+check "other address: preflight → 403"  "$(code --interface 127.0.0.2 -X OPTIONS $P$MP4)" 403
+check "other address: nothing forwarded" "$(req "wc -l < /tmp/origin.log")" "$before"
+
 errors=$(docker logs "$name" 2>&1 | grep -E '\[(error|crit|alert|emerg)\]' || true)
 check "no errors in the nginx log"      "$(echo -n "$errors" | grep -c . || true)" 0
 [ -n "$errors" ] && echo "$errors" | head -5
