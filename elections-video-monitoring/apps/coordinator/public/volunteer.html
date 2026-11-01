@@ -394,6 +394,10 @@ header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
 /* Waiting = the stream is not published yet (no URL, or an empty playlist before counting starts). */
 .stream-card.waiting { border-style: dashed; }
 .stream-card.waiting .status-text { color: var(--text-muted); white-space: normal; }
+/* Ended = the stream played and stopped after the count. A calm thank-you, not an alarm; the text wraps. */
+.stream-card.ended .status-text { white-space: normal; }
+.stream-card.ended .hg-icon { display: none; }
+.stream-card.ended .card-thumb { opacity: 0.5; }
 /* One-word Bulgarian labels ("Инициализиране") cannot wrap; clip them inside narrow cards. */
 .status-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -843,7 +847,8 @@ async function init() {
     setInterval(checkAllStreams, CHECK_INTERVAL_MS),
     setInterval(updateThumbnails, 1_000),
     setInterval(sendReport, REPORT_INTERVAL_MS),
-    setInterval(pollMetrics, METRICS_POLL_INTERVAL_MS)
+    setInterval(pollMetrics, METRICS_POLL_INTERVAL_MS),
+    setInterval(checkEndedAll, ENDED_PROBE_MS)
   );
   scheduleHeartbeat();
   pollMetrics(); // seed immediately so fallback cards don't wait 5s for status
@@ -885,37 +890,148 @@ function proxiedUrlFor(url) {
 // the proxy rate limit (429) or a gateway blip (502-504).
 const PLAYLIST_RETRY = new Set([404, 429, 502, 503, 504]);
 
-// Should the card start its video? Yes once the playlist lists a segment. Also yes on any
-// other failure (401 login gone, 403 blocked, 410 proxy switched off, network error): the
-// video then errors and promoteToFallback plays evideo directly instead of waiting forever.
-async function shouldStartPlaylist(upstreamUrl) {
+// Reads the playlist through the proxy. kind: 'segments' (lists a segment), 'empty' (200
+// without segments), 'retry' (a PLAYLIST_RETRY status) or 'fail' (any other error).
+// A master playlist is followed to its first variant, resolved on evideo's side and proxied.
+// knownVariant: a variant seen earlier, read too when the master comes back empty (evideo
+// then empties both), so 'empty' means every playlist we know of is empty.
+async function readPlaylist(upstreamUrl, knownVariant) {
+  const get = async (u) => {
+    const res = await fetch(proxiedUrlFor(u), { cache: 'no-store' });
+    if (!res.ok) return { kind: PLAYLIST_RETRY.has(res.status) ? 'retry' : 'fail' };
+    return { text: await res.text() };
+  };
   try {
-    let res = await fetch(proxiedUrlFor(upstreamUrl), { cache: 'no-store' });
-    if (!res.ok) return !PLAYLIST_RETRY.has(res.status);
-    let text = await res.text();
-    if (text.includes('#EXT-X-STREAM-INF')) {
-      // Master playlist: look at the first variant, resolved on evideo's side and proxied
-      const variant = text.split('\n').map(l => l.trim()).find(l => l && !l.startsWith('#'));
-      if (!variant) return false;
-      res = await fetch(proxiedUrlFor(new URL(variant, upstreamUrl).href), { cache: 'no-store' });
-      if (!res.ok) return !PLAYLIST_RETRY.has(res.status);
-      text = await res.text();
+    let r = await get(upstreamUrl);
+    if (r.kind) return r;
+    let variant = knownVariant || null;
+    if (r.text.includes('#EXT-X-STREAM-INF')) {
+      const line = r.text.split('\n').map(l => l.trim()).find(l => l && !l.startsWith('#'));
+      if (!line) return { kind: 'empty', variant };
+      variant = new URL(line, upstreamUrl).href;
+    } else if (r.text.includes('#EXTINF') || !variant) {
+      return { kind: r.text.includes('#EXTINF') ? 'segments' : 'empty', variant };
     }
-    return text.includes('#EXTINF');
+    r = await get(variant);
+    if (r.kind) return { kind: r.kind, variant };
+    return { kind: r.text.includes('#EXTINF') ? 'segments' : 'empty', variant };
   } catch (_) {
-    return true;
+    return { kind: 'fail' };
   }
 }
 
+// Should the card start its video? Yes once the playlist lists a segment. Also yes on any
+// other failure (401 login gone, 403 blocked, 410 proxy switched off, network error): the
+// video then errors and promoteToFallback plays evideo directly instead of waiting forever.
 async function probeWaiting(state) {
   if (state.probing || !state.proxiedUrl) return;
   state.probing = true;
-  const started = await shouldStartPlaylist(state.url);
+  const r = await readPlaylist(state.url);
   state.probing = false;
+  if (r.kind === 'segments') { state.hadSegments = true; state.variantUrl = r.variant; }
+  const started = r.kind === 'segments' || r.kind === 'fail';
   if (!streamStates.includes(state) || !started) return;
   state.status = 'loading';
   state.video.src = state.proxiedUrl;
   if (!autoplayBlocked) state.video.play().catch(() => {});
+  updateCard(state);
+}
+
+// ── Ended streams ─────────────────────────────────────────────────────────────
+// evideo never sends #EXT-X-ENDLIST: an ended stream answers 200 with an empty playlist.
+// A card is ended once its playlist (and variant) has been empty for ENDED_EMPTY_MS after it
+// listed segments on this page, and only from endedAfterMs() on. Earlier gaps are restarts.
+// Errors (429, 5xx, network) are no evidence either way: they neither start nor reset the timer.
+// Ended is not final: feeds drop and resume mid-count, so an ended card is still probed every
+// ENDED_RECHECK_MS and goes back to live on the first segment.
+const ENDED_EMPTY_MS = 15 * 60_000;
+const ENDED_PROBE_MS = 60_000;
+const ENDED_RECHECK_MS = 2 * 60_000;
+
+// Wall-clock parts in Sofia for an instant
+function sofiaParts(ms) {
+  const p = {};
+  for (const { type, value } of new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Sofia', hourCycle: 'h23',
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }).formatToParts(ms)) p[type] = Number(value);
+  return p;
+}
+
+// The instant of a Sofia wall-clock time (Date.UTC normalises day 0 to the previous month)
+function sofiaToMs(y, m, d, hh, mm) {
+  const wall = Date.UTC(y, m - 1, d, hh, mm);
+  let ms = wall;
+  for (let i = 0; i < 2; i++) {
+    const p = sofiaParts(ms);
+    ms = wall - (Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(ms / 1000) * 1000);
+  }
+  return ms;
+}
+
+// window.ENDED_AFTER (injected by the server): an ISO date-time with offset, or "HH:MM" in
+// Sofia. Unset or invalid: 21:00 Sofia. "Today" before 06:00 Sofia is the previous day, so a
+// page reloaded during the night count keeps the evening's limit.
+function endedAfterMs(now = Date.now()) {
+  const cfg = typeof window.ENDED_AFTER === 'string' ? window.ENDED_AFTER.trim() : '';
+  let hh = 21, mm = 0;
+  const hm = /^(\d{1,2}):(\d{2})$/.exec(cfg);
+  if (hm) { hh = Number(hm[1]); mm = Number(hm[2]); }
+  else if (cfg) {
+    const ms = Date.parse(cfg);
+    if (!Number.isNaN(ms)) return ms;
+  }
+  const p = sofiaParts(now);
+  return sofiaToMs(p.year, p.month, p.day - (p.hour < 6 ? 1 : 0), hh, mm);
+}
+
+function checkEndedAll() {
+  const now = Date.now();
+  if (now < endedAfterMs(now) - ENDED_EMPTY_MS) return; // no extra requests before then
+  for (const state of streamStates) probeEnded(state, now);
+}
+
+async function probeEnded(state, now = Date.now()) {
+  if (state.fallback || !state.hadSegments || state.endProbing || !state.proxiedUrl) return;
+  const wasEnded = state.status === 'ended';
+  if (wasEnded && now - (state.endedProbeAt || 0) < ENDED_RECHECK_MS) return;
+  state.endProbing = true;
+  if (wasEnded) state.endedProbeAt = now;
+  const r = await readPlaylist(state.url, state.variantUrl);
+  state.endProbing = false;
+  if (!streamStates.includes(state) || state.fallback || (state.status === 'ended') !== wasEnded) return;
+  if (r.variant) state.variantUrl = r.variant;
+  if (r.kind === 'segments') { state.emptySince = null; if (wasEnded) resumeEnded(state); return; }
+  if (wasEnded) return;
+  if (r.kind !== 'empty') return;
+  if (!state.emptySince) state.emptySince = now;
+  if (now >= endedAfterMs(now) && now - state.emptySince >= ENDED_EMPTY_MS) markEnded(state);
+}
+
+// Stops the video, detection and reports; the card stays on the page and is rechecked every
+// ENDED_RECHECK_MS (probeEnded) in case the feed resumes
+function markEnded(state) {
+  state.status = 'ended';
+  state.endedProbeAt = Date.now();
+  if (state.video) {
+    // removeAttribute + load() aborts the download without an 'error' event (src = '' fires one)
+    try { state.video.pause(); state.video.removeAttribute('src'); state.video.load(); } catch (_) {}
+  }
+  updateCard(state);
+}
+
+// Segments are back: play again and restart detection (from a clean slate) and reporting
+function resumeEnded(state) {
+  state.emptySince = null;
+  state.endedProbeAt = null;
+  state.lastFrameData = null;
+  state.lastChangeTime = null;
+  state.coverStartTime = null;
+  state.status = 'loading';
+  if (state.video) {
+    state.video.src = state.proxiedUrl;
+    if (!autoplayBlocked) state.video.play().catch(() => {});
+  }
   updateCard(state);
 }
 
@@ -1136,7 +1252,7 @@ function updateThumbnails() {
 // own browser hits evideo directly — CSP frame-ancestors blocks iframing the
 // MP4, but a <video> element doesn't trigger that check.
 function promoteToFallback(state) {
-  if (state.fallback || !state.url) return;
+  if (state.fallback || !state.url || state.status === 'ended') return;
   try { state.video.pause(); state.video.src = ''; state.video.load(); state.video.remove(); } catch (_) {}
   if (state.canvas) state.canvas.remove();
   state.video = null;
@@ -1194,6 +1310,7 @@ function checkAllStreams() {
   const now = Date.now();
   for (const state of streamStates) {
     if (state.fallback) continue; // iframe cards → status comes from pollMetrics
+    if (state.status === 'ended') continue;
     if (state.status === 'waiting') { probeWaiting(state); continue; }
     checkStream(state, now);
   }
@@ -1279,6 +1396,7 @@ function updateCard(state) {
     error:    'dot-error',
     unknown:  'dot-init',
     waiting:  'dot-waiting',
+    ended:    'dot-init',
   }[state.status] || 'dot-init';
 
   const statusLabel = {
@@ -1291,6 +1409,7 @@ function updateCard(state) {
     error:    t('status.error'),
     unknown:  t('status.unknown'),
     waiting:  t('status.waiting'),
+    ended:    t('status.ended'),
   }[state.status] || state.status;
 
   card.querySelector('.status-dot').className = `status-dot ${dotClass}`;
@@ -1307,7 +1426,8 @@ async function sendReport() {
   // Skip fallback cards — their status is just echoing karta's /video/metrics.
   // Reporting it back would double-count karta-side observations and flood the
   // admin's flagged list with 'unknown' when the metrics endpoint is unreachable.
-  const results = streamStates.filter(s => !s.fallback).map(s => ({
+  // Skip ended cards too: a stopped video is not a frozen or dark one
+  const results = streamStates.filter(s => !s.fallback && s.status !== 'ended').map(s => ({
     stream_id: s.id,
     status: s.status,
     cover_ratio: s.coverRatio,
