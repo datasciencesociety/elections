@@ -121,13 +121,19 @@ const stmt = {
   deleteAssignments: db.prepare('DELETE FROM assignments WHERE session_id = ?'),
   sessionOwned:      db.prepare('SELECT 1 FROM sessions WHERE id = ? AND user_id = ?'),
   sessionAssigned:   db.prepare('SELECT 1 FROM assignments WHERE session_id = ? AND stream_id = ?'),
-  sessionUrls:       db.prepare('SELECT s.id, s.url FROM streams s JOIN assignments a ON a.stream_id = s.id WHERE a.session_id = ?'),
+  // A disabled '*' card (the test card, switched off before counting) reads as withdrawn (''), so a page
+  // that cannot remove it at least stops playing it
+  sessionUrls:       db.prepare(`
+    SELECT s.id, CASE WHEN s.enabled = 0 AND s.assigned_users = '*' THEN '' ELSE s.url END AS url
+    FROM streams s JOIN assignments a ON a.stream_id = s.id WHERE a.session_id = ?
+  `),
   userRole:          db.prepare('SELECT role FROM users WHERE username = ?'),
+  // assigned_users '*' means every volunteer (the test card)
   preAssignedForUser: db.prepare(`
     SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
     WHERE s.enabled = 1
       AND s.assigned_users IS NOT NULL
-      AND (',' || s.assigned_users || ',') LIKE ('%,' || ? || ',%')
+      AND (s.assigned_users = '*' OR (',' || s.assigned_users || ',') LIKE ('%,' || ? || ',%'))
     ORDER BY s.section ASC
   `),
   insertReport:      db.prepare(`
@@ -208,13 +214,22 @@ const stmt = {
   `),
   sectionEyes:       db.prepare('SELECT r.eyes FROM streams s JOIN section_risk r ON r.section = s.section WHERE s.id = ?'),
   deleteOneAssignment: db.prepare('DELETE FROM assignments WHERE session_id = ? AND stream_id = ?'),
-  sessionStreamCount: db.prepare('SELECT COUNT(*) AS n FROM assignments WHERE session_id = ?'),
+  // Cards that count toward LOGIN_CARDS and AUTOFILL_MAX: a '*' card (for everyone) takes no slot
+  sessionStreamCount: db.prepare(`
+    SELECT COUNT(*) AS n FROM assignments a LEFT JOIN streams s ON s.id = a.stream_id
+    WHERE a.session_id = ? AND COALESCE(s.assigned_users, '') != '*'
+  `),
+  // A '*' card the operator disabled leaves the session; nobody has to watch it any more
+  dropDisabledEveryone: db.prepare(`
+    DELETE FROM assignments WHERE session_id = ?
+      AND stream_id IN (SELECT id FROM streams WHERE enabled = 0 AND assigned_users = '*')
+  `),
   // Assigned sections no active session watches: their volunteer never came or dropped.
   // Sections that already have video first.
   orphanedStreams:   db.prepare(`
     SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
     WHERE s.enabled = 1
-      AND s.assigned_users IS NOT NULL AND s.assigned_users != ''
+      AND s.assigned_users IS NOT NULL AND s.assigned_users != '' AND s.assigned_users != '*'
       AND s.id NOT IN (
         SELECT a.stream_id FROM assignments a
         JOIN sessions se ON se.id = a.session_id AND se.last_heartbeat > ?
@@ -250,6 +265,7 @@ const stmt = {
       GROUP BY a.stream_id
     ) w ON w.stream_id = s.id
     WHERE s.enabled = 1 AND COALESCE(w.n, 0) < COALESCE(r.eyes, ?)
+      AND COALESCE(s.assigned_users, '') != '*'
     ORDER BY (r.risk IS NULL), r.risk DESC, watchers, s.section
   `),
 };
@@ -417,10 +433,32 @@ const AUTOFILL_MAX = parseInt(process.env.AUTOFILL_MAX, 10) || 4;
 const ACTIVE_MS = 120_000; // a session without a heartbeat for this long no longer covers its cards
 const DEFAULT_EYES = 1;    // watchers a section needs when the priority list does not say
 const LOGIN_CARDS = parseInt(process.env.LOGIN_CARDS, 10) || 3; // sessions are kept filled to this many cards
+// Distribution by risk starts at TOPUP_AFTER (ISO time, e.g. 2026-11-01T16:00:00+02:00). Before it, volunteers get
+// only their own and '*' sections, and the first heartbeat after it fills open pages without a reload.
+// Unset or unparsable: always on.
+const TOPUP_AFTER = process.env.TOPUP_AFTER ? Date.parse(process.env.TOPUP_AFTER) : NaN;
+if (process.env.TOPUP_AFTER && Number.isNaN(TOPUP_AFTER)) console.warn(`TOPUP_AFTER=${JSON.stringify(process.env.TOPUP_AFTER)} is not a date; distribution by risk is always on`);
+const topUpOn = (now) => Number.isNaN(TOPUP_AFTER) || now >= TOPUP_AFTER;
+
+// Release this process serves, read once at startup; the page reloads when a heartbeat reports another
+const RELEASE = readRelease();
+function readRelease() {
+  if (process.env.RELEASE) return String(process.env.RELEASE).slice(0, 64);
+  try {
+    const sha = require('child_process').execFileSync('git', ['rev-parse', '--short', 'HEAD'],
+      { cwd: __dirname, timeout: 2000, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    if (/^[0-9a-f]{4,40}$/.test(sha)) return sha;
+  } catch {}
+  // deploy.sh installs releases/<date-sha>/coordinator, without .git
+  const rel = fs.realpathSync(__dirname).split(path.sep);
+  if (rel.length >= 3 && rel[rel.length - 3] === 'releases') return rel[rel.length - 2];
+  return 'started-' + new Date().toISOString();
+}
 
 // Tops the session up to LOGIN_CARDS with the highest-risk unassigned sections that still need
-// watchers. Never hands back a card the volunteer closed.
+// watchers. Never hands back a card the volunteer closed. Nothing before TOPUP_AFTER.
 function topUp(sessionId, now) {
+  if (!topUpOn(now)) return [];
   const need = LOGIN_CARDS - stmt.sessionStreamCount.get(sessionId).n;
   if (need <= 0) return [];
   const skip = declined.get(sessionId) || new Set();
@@ -463,6 +501,7 @@ async function handleSession(req, res) {
   if (body.session_id && stmt.sessionOwned.get(body.session_id, userId)) {
     const now = Date.now();
     stmt.heartbeat.run(now, body.session_id);
+    stmt.dropDisabledEveryone.run(body.session_id);
 
     // Ensure pre-assigned streams are in the session, but keep manually-added ones too
     for (const s of stmt.preAssignedForUser.all(userId)) {
@@ -478,16 +517,17 @@ async function handleSession(req, res) {
     `).all(body.session_id);
 
     audit(req, 'session.resume', { session: body.session_id.slice(0, 8), streams: streams.map(s => s.id) });
-    json(res, 200, { session_id: body.session_id, streams: enrichWithContacts(streams), resumed: true });
+    json(res, 200, { session_id: body.session_id, streams: enrichWithContacts(streams), resumed: true, release: RELEASE });
     return;
   }
 
   // All sections pre-assigned to this user; topped up by risk once the session exists (below);
-  // with nothing to give at all, 2 random enabled streams
+  // with nothing to give at all, 2 random enabled streams. Before TOPUP_AFTER neither: a volunteer
+  // without own or '*' sections gets an empty session, and the first heartbeat after it fills it.
   let streams = stmt.preAssignedForUser.all(userId);
-  let mode = streams.length ? 'assigned' : 'priority';
+  let mode = streams.length ? 'assigned' : topUpOn(Date.now()) ? 'priority' : 'waiting';
 
-  if (streams.length === 0 && stmt.priorityStreams.all(Date.now() - ACTIVE_MS, DEFAULT_EYES, '', 1).length === 0) {
+  if (streams.length === 0 && mode === 'priority' && stmt.priorityStreams.all(Date.now() - ACTIVE_MS, DEFAULT_EYES, '', 1).length === 0) {
     mode = 'random';
     streams = db.prepare(`
       SELECT s.id, s.url, s.label, s.section, s.assigned_users FROM streams s
@@ -500,7 +540,7 @@ async function handleSession(req, res) {
   txCreateSession(sessionId, streams, userId);
   if (mode !== 'random') streams = streams.concat(topUp(sessionId, Date.now()));
   audit(req, 'session.new', { session: sessionId.slice(0, 8), mode, streams: streams.map(s => s.id) });
-  json(res, 200, { session_id: sessionId, streams: enrichWithContacts(streams) });
+  json(res, 200, { session_id: sessionId, streams: enrichWithContacts(streams), release: RELEASE });
 }
 
 async function handleHeartbeat(req, res) {
@@ -511,7 +551,7 @@ async function handleHeartbeat(req, res) {
   const userId = req.user.username;
   if (!stmt.sessionOwned.get(session_id, userId)) {
     // Session expired, never created, or belongs to another user — tell client to reinitialise
-    json(res, 200, { ok: false, reinit: true });
+    json(res, 200, { ok: false, reinit: true, release: RELEASE });
     return;
   }
 
@@ -535,7 +575,7 @@ async function handleHeartbeat(req, res) {
 
   // Current URL of every stream in the session, so open cards notice when a stub gets its stream
   const urls = Object.fromEntries(stmt.sessionUrls.all(session_id).map(s => [s.id, s.url]));
-  json(res, 200, { ok: true, assigned_streams: enrichWithContacts([...preAssigned, ...filled, ...backups]), urls });
+  json(res, 200, { ok: true, assigned_streams: enrichWithContacts([...preAssigned, ...filled, ...backups]), urls, release: RELEASE });
 }
 
 async function handleReport(req, res) {
@@ -707,7 +747,7 @@ const server = http.createServer(async (req, res) => {
       // Empty/unset → client boots every card straight into iframe fallback
       // (user's own IP hits evideo directly, metrics from karta endpoint).
       const proxyBase = process.env.PROXY_URL || '';
-      const proxyScript = `<script>window.PROXY_BASE = ${JSON.stringify(proxyBase)}; window.CURRENT_USER = ${JSON.stringify(req.user.username)};</script>`;
+      const proxyScript = `<script>window.PROXY_BASE = ${JSON.stringify(proxyBase)}; window.CURRENT_USER = ${JSON.stringify(req.user.username)}; window.RELEASE = ${JSON.stringify(RELEASE)};</script>`;
       fs.readFile(path.join(__dirname, 'public', 'volunteer.html'), 'utf8', (err, html) => {
         if (err) { res.writeHead(404); res.end('Not found'); return; }
         const injected = html.replace('</head>', proxyScript + '\n</head>');
@@ -981,4 +1021,5 @@ const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || undefined;
 initUserStore(db);
 if (!process.env.COOKIE_SECRET) console.warn('COOKIE_SECRET not set — all logins are invalidated on every restart');
+console.log(`release ${RELEASE}; distribution by risk ${Number.isNaN(TOPUP_AFTER) ? 'always on' : 'from ' + new Date(TOPUP_AFTER).toISOString()}`);
 server.listen(PORT, HOST, () => console.log(`Election monitor: http://${HOST || 'localhost'}:${PORT}`));

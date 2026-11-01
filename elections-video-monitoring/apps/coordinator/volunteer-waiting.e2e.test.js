@@ -26,7 +26,21 @@ function freePort() {
   });
 }
 
-let child, browser, base, adminCookie;
+let child, browser, base, adminCookie, port, dbPath;
+
+// Starts server.js on the shared port and DB; a restart keeps users, sessions and login cookies
+async function startServer(env = {}) {
+  child = spawn(process.execPath, [path.join(__dirname, 'server.js')], {
+    env: { ...process.env, PORT: String(port), DB_PATH: dbPath, ADMIN_USER: 'admin', ADMIN_PASS: 'adminpass123', COOKIE_SECRET: 'e2e', PROXY_URL: '/hls', ...env },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let stderr = '';
+  child.stderr.on('data', (d) => { stderr += d; });
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`server did not start:\n${stderr}`)), 10_000);
+    child.stdout.on('data', (d) => { if (d.toString().includes('Election monitor')) { clearTimeout(timer); resolve(); } });
+  });
+}
 
 async function api(method, urlPath, body, cookie) {
   const res = await fetch(base + urlPath, {
@@ -38,19 +52,11 @@ async function api(method, urlPath, body, cookie) {
 }
 
 before(async () => {
-  const port = await freePort();
+  port = await freePort();
   base = `http://localhost:${port}`;
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'coord-e2e-'));
-  child = spawn(process.execPath, [path.join(__dirname, 'server.js')], {
-    env: { ...process.env, PORT: String(port), DB_PATH: path.join(tmp, 'e2e.db'), ADMIN_USER: 'admin', ADMIN_PASS: 'adminpass123', COOKIE_SECRET: 'e2e', PROXY_URL: '/hls' },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  let stderr = '';
-  child.stderr.on('data', (d) => { stderr += d; });
-  await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`server did not start:\n${stderr}`)), 10_000);
-    child.stdout.on('data', (d) => { if (d.toString().includes('Election monitor')) { clearTimeout(timer); resolve(); } });
-  });
+  dbPath = path.join(tmp, 'e2e.db');
+  await startServer({ RELEASE: 'e2e-a' });
   adminCookie = (await api('POST', '/api/login', { username: 'admin', password: 'adminpass123' })).cookie;
   browser = await chromium.launch();
 });
@@ -221,6 +227,91 @@ describe('Volunteer heartbeat keeps the cards it did not pre-assign', () => {
     await new Promise((r) => setTimeout(r, 200));
     await page.evaluate(() => sendHeartbeat());
     assert.ok(!(await cards(page)).dom.includes(own), 'and not handed back');
+    await page.close();
+  });
+});
+
+// 1 Nov 2026 runoff: a test card for every volunteer (assigned_users '*') until counting starts,
+// sections by risk from TOPUP_AFTER on open pages, and push to refresh after a deploy.
+// Restarts the server, so it runs last.
+describe('Test card, sections from TOPUP_AFTER and push to refresh', () => {
+  const restart = async (env) => {
+    await new Promise((resolve) => { child.once('exit', resolve); child.kill(); });
+    await startServer(env);
+  };
+  const byId = (a, b) => a - b;
+  const cardIds = (page) => page.evaluate(() => ({
+    states: streamStates.map((s) => s.id),
+    dom: [...document.querySelectorAll('#stream-grid .stream-card')].map((c) => Number(c.dataset.streamId)),
+  })).then(({ states, dom }) => ({ states: states.sort(byId), dom: dom.sort(byId) }));
+
+  it('an open page gets its sections at TOPUP_AFTER, drops a disabled test card, and reloads into the same session on a new release', async () => {
+    const topupAt = Date.now() + 10_000;
+    await restart({ RELEASE: 'e2e-a', TOPUP_AFTER: new Date(topupAt).toISOString() });
+    const rows = [{ section: '999000001', url: 'https://archive.example.test/test.mp4', label: 'Test card', assigned_users: '*' }];
+    for (let i = 1; i <= 4; i++) rows.push({ section: `08000000${i}`, url: '', label: `R${i}` });
+    assert.equal((await api('POST', '/api/streams', rows, adminCookie)).status, 200);
+    assert.equal((await api('POST', '/api/streams/risk', [1, 2, 3, 4].map((i) => ({ section: `08000000${i}`, risk: i })), adminCookie)).status, 200);
+    const all = await (await fetch(base + '/api/streams', { headers: { Cookie: adminCookie } })).json();
+    const id = Object.fromEntries(all.streams.map((s) => [s.label, s.id]));
+
+    const user = `vol${++userSeq}`;
+    assert.equal((await api('POST', '/api/users', { username: user, password: 'volpass123', role: 'volunteer' }, adminCookie)).status, 201);
+    const page = await browser.newPage();
+    await page.route('**/*', (route) => {
+      const u = new URL(route.request().url());
+      if (u.hostname !== 'localhost') return route.abort();
+      if (!u.pathname.startsWith('/hls/')) return route.continue();
+      return route.fulfill({ status: 200, contentType: 'application/vnd.apple.mpegurl', body: EMPTY });
+    });
+    await page.goto(base + '/login');
+    await page.fill('#username', user);
+    await page.fill('#password', 'volpass123');
+    await page.click('#submit-btn');
+    await page.waitForURL(base + '/');
+    await page.waitForFunction(() => intervals.length > 0, null, { timeout: 5000 });
+
+    // Before TOPUP_AFTER: the test card only
+    assert.ok(Date.now() < topupAt, 'test ran too slowly: TOPUP_AFTER already passed');
+    assert.deepEqual((await cardIds(page)).dom, [id['Test card']]);
+
+    // After it, the next heartbeat adds the 3 highest-risk sections without a reload
+    await new Promise((r) => setTimeout(r, Math.max(0, topupAt - Date.now() + 200)));
+    await page.evaluate(() => { window.__notReloaded = true; });
+    await page.evaluate(() => sendHeartbeat());
+    const filled = [id['Test card'], id.R2, id.R3, id.R4].sort(byId);
+    assert.deepEqual(await cardIds(page), { states: filled, dom: filled });
+
+    // The operator disables the test card: the page drops it, keeps the 3 sections, gets no 4th
+    assert.equal((await api('POST', '/api/streams/toggle', { id: id['Test card'], enabled: 0 }, adminCookie)).status, 200);
+    await page.evaluate(() => sendHeartbeat());
+    const three = [id.R2, id.R3, id.R4].sort(byId);
+    assert.deepEqual(await cardIds(page), { states: three, dom: three });
+    const sessionId = await page.evaluate(() => SESSION_ID);
+
+    // A deploy: the server now reports another release. With the section picker open the page only
+    // shows the banner; once it closes, the page reloads by itself into the same session.
+    await restart({ RELEASE: 'e2e-b' });
+    assert.equal(await page.evaluate(() => document.getElementById('release-banner').hidden), true);
+    await page.click('#add-section-btn');
+    await page.evaluate(() => sendHeartbeat());
+    await page.waitForFunction(() => !document.getElementById('release-banner').hidden, null, { timeout: 5000 });
+    assert.equal(
+      await page.evaluate(() => document.querySelector('#release-banner span').textContent),
+      await page.evaluate(() => t('release.new')),
+    );
+    assert.ok(await page.evaluate(() => document.getElementById('release-reload').offsetHeight > 0), 'reload button visible');
+    await new Promise((r) => setTimeout(r, 2500));
+    assert.equal(await page.evaluate(() => window.__notReloaded), true, 'no reload while the picker is open');
+
+    await page.click('#section-modal-close');
+    await page.waitForFunction(() => window.__notReloaded === undefined && typeof intervals !== 'undefined' && intervals.length > 0,
+      null, { timeout: 10_000 });
+    assert.equal(await page.evaluate(() => SESSION_ID), sessionId, 'same session after the reload');
+    assert.equal(await page.evaluate(() => window.RELEASE), 'e2e-b');
+    assert.deepEqual(await cardIds(page), { states: three, dom: three }, 'same cards after the reload');
+    await page.evaluate(() => sendHeartbeat());
+    assert.equal(await page.evaluate(() => document.getElementById('release-banner').hidden), true, 'no banner for the release it runs');
     await page.close();
   });
 });

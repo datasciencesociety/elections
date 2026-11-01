@@ -629,6 +629,25 @@ video.card-thumb-video { pointer-events: none; object-fit: cover; }
   #hg polygon { animation: none !important; }
   #inspect-panel { transition: none !important; }
 }
+/* Push to refresh: a new release is live. A row at the foot of the page (body is a flex column), so it
+   shrinks the layout instead of covering a button */
+#release-banner {
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: #1e3a8a; color: #fff; font-size: 14px;
+  box-shadow: 0 -2px 8px rgba(0,0,0,.3);
+}
+#release-banner[hidden] { display: none; }
+#release-banner button {
+  font: inherit; font-weight: 600; padding: 6px 16px; border-radius: 4px; cursor: pointer;
+  background: #fff; color: #1e3a8a; border: 0;
+}
+#release-banner button:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+@media (pointer: coarse) { #release-banner button { min-height: 44px; } }
+@media (max-width: 480px) { #release-banner button { flex: 1 1 100%; } }
+#empty-hint { padding: 24px 14px; text-align: center; color: var(--text-muted); font-size: 14px; }
+#empty-hint[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -650,6 +669,7 @@ video.card-thumb-video { pointer-events: none; object-fit: cover; }
 <div id="main-layout">
   <div id="stream-panel">
     <div id="stream-grid"><p id="loading-msg" data-i18n="loading.connecting">Connecting to coordinator…</p></div>
+    <p id="empty-hint" data-i18n="empty.hint" hidden>No sections yet.</p>
     <button id="add-section-btn" data-i18n="add.section" style="display:none">+ Add section</button>
   </div>
 
@@ -682,6 +702,11 @@ video.card-thumb-video { pointer-events: none; object-fit: cover; }
       <iframe id="inspect-frame" allow="autoplay"></iframe>
     </div>
   </div>
+</div>
+
+<div id="release-banner" role="status" hidden>
+  <span data-i18n="release.new">A new version is available – reload</span>
+  <button type="button" id="release-reload" data-i18n="release.reload">Reload</button>
 </div>
 
 <div id="overlay">
@@ -833,6 +858,7 @@ document.getElementById('start-btn').addEventListener('click', () => {
 // ── Stream setup ──────────────────────────────────────────────────────────────
 function isAssignedToMe(stream) {
   if (!stream.assigned_users || !USER_ID) return false;
+  if (stream.assigned_users === '*') return true; // for every volunteer: goes away when the operator disables it
   return (',' + stream.assigned_users + ',').includes(',' + USER_ID + ',');
 }
 
@@ -1313,6 +1339,7 @@ async function sendHeartbeat() {
       body: JSON.stringify({ session_id: SESSION_ID }),
     });
     const data = await res.json().catch(() => ({}));
+    checkRelease(data.release);
     if (data.reinit) { reinitSession(); return; }
     document.getElementById('vol-indicator').classList.add('active');
     if (USER_ID && data.assigned_streams) {
@@ -1622,6 +1649,51 @@ document.addEventListener('fullscreenchange', () => {
     closeModal();
   });
 })();
+
+// ── Push to refresh ───────────────────────────────────────────────────────────
+// The server names its release in every heartbeat. When it differs from the one this page was served
+// with, show a banner and reload by itself once the volunteer is not inspecting a card, using the
+// section picker or typing. The session id is in localStorage, so the reload resumes the same cards.
+const PAGE_RELEASE = typeof window.RELEASE === 'string' ? window.RELEASE : null;
+const LS_RELOADED_FOR = 'volunteer_reloaded_for';
+let _newRelease = null;
+let _releaseTimer = null;
+
+function checkRelease(release) {
+  if (!PAGE_RELEASE || typeof release !== 'string' || !release || release === PAGE_RELEASE) return;
+  _newRelease = release;
+  document.getElementById('release-banner').hidden = false;
+  // Reloaded for this release already and still served the old page (a cache?): only the banner, no loop
+  let reloadedFor = null;
+  try { reloadedFor = sessionStorage.getItem(LS_RELOADED_FOR); } catch (_) {}
+  if (reloadedFor === release) return;
+  if (!_releaseTimer) _releaseTimer = setInterval(reloadWhenIdle, 2_000);
+  reloadWhenIdle();
+}
+
+function busyForReload() {
+  if (document.getElementById('inspect-panel').classList.contains('sheet-open')) return true;
+  if (document.querySelector('.stream-card.selected')) return true;
+  if (document.getElementById('section-modal-overlay').classList.contains('open')) return true;
+  if (document.body.classList.contains('maximized') || document.fullscreenElement) return true;
+  const a = document.activeElement; // ignored once hidden, e.g. the picker's filter after the picker closes
+  return !!(a && a.getClientRects().length && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable));
+}
+
+function reloadForRelease() {
+  try { sessionStorage.setItem(LS_RELOADED_FOR, _newRelease || ''); } catch (_) {}
+  location.reload();
+}
+
+function reloadWhenIdle() {
+  if (_newRelease && !busyForReload()) reloadForRelease();
+}
+document.getElementById('release-reload').addEventListener('click', reloadForRelease);
+
+// "No sections yet" while the session has no cards (before distribution starts)
+setInterval(() => {
+  document.getElementById('empty-hint').hidden = !(SESSION_ID && streamStates.length === 0);
+}, 1_000);
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 document.getElementById('lang-toggle').addEventListener('click', () => {
