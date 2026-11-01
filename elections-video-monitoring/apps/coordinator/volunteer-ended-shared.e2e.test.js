@@ -191,6 +191,7 @@ describe('Ended state shared between pages', () => {
 
     // A follows on its next heartbeat, before its own recheck
     await a.heartbeatAt(sofia('21:23', '30'));
+    await a.page.waitForFunction(() => streamStates[0].status !== 'ended' && !streamStates[0].endProbing); // checks the playlist first
     const sa = await a.state();
     assert.notEqual(sa.status, 'ended', 'A follows the server');
     assert.match(sa.src || '', /^\/hls\//, 'A plays again');
@@ -198,6 +199,36 @@ describe('Ended state shared between pages', () => {
     // B's next heartbeat does not end it again
     await b.heartbeatAt(sofia('21:25'));
     assert.notEqual((await b.state()).status, 'ended');
+    assert.deepEqual([...a.errors, ...b.errors], []);
+    await a.page.close();
+    await b.page.close();
+  });
+
+  it('the server stops listing the card while its playlist is still empty: the card stays ended, never direct playback', async () => {
+    body = LIVE;
+    const a = await openVolunteer('vola', sofia('21:28'));
+    const b = await openVolunteer('volb', sofia('21:28'));
+    body = EMPTY_BODY;
+    await a.probeAt(sofia('21:30'));
+    await a.probeAt(sofia('21:45'));
+    assert.equal((await a.state()).status, 'ended');
+    await a.settled();
+    await a.heartbeatAt(sofia('21:45', '30')); // A learns that the server has its end
+    // A stray 'live' from B while the playlist is still empty clears the server's mark
+    await b.page.evaluate(() => reportTransition(streamStates[0], 'live'));
+    await b.settled();
+    await a.heartbeatAt(sofia('21:46'));
+    await a.page.waitForFunction(() => !streamStates[0].endProbing);
+    const sa = await a.state();
+    assert.equal(sa.status, 'ended', 'an empty playlist keeps the card ended');
+    assert.equal(sa.src, null, 'no video started on an empty playlist');
+    assert.equal(await a.page.evaluate(() => !!streamStates[0].fallback), false, 'not in direct playback');
+    // Segments really return: the 2-min recheck plays it again
+    body = LIVE;
+    await a.probeAt(sofia('21:48', '30'));
+    const sa2 = await a.state();
+    assert.notEqual(sa2.status, 'ended');
+    assert.match(sa2.src || '', /^\/hls\//, 'plays again once segments are back');
     assert.deepEqual([...a.errors, ...b.errors], []);
     await a.page.close();
     await b.page.close();

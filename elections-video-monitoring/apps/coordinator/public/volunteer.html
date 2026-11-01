@@ -1052,7 +1052,9 @@ function applyServerEnded(ended, now = Date.now()) {
       s.endedConfirmed = true;
     } else if (s.status === 'ended' && s.endedConfirmed && !s.transition) {
       s.endedConfirmed = false;
-      if (s.hadSegments) resumeEnded(s);
+      // Check the playlist before playing: starting a video on an empty playlist errors and
+      // would drop the card into direct playback for good. Segments → resumeEnded; empty → stays ended.
+      if (s.hadSegments) { s.endedProbeAt = 0; probeEnded(s, now); }
       else { s.status = 'waiting'; s.endedProbeAt = null; updateCard(s); probeWaiting(s); }
     }
   }
