@@ -16,7 +16,7 @@ const DIRECT_MODE = typeof location !== 'undefined'
 // hidden field: the form owner adds hidden fields named as below and sets each one as the
 // matching question's "Default answer". Names are case-sensitive. The hidden field
 // "volunteer" carries the login name of every volunteer, email or not.
-const TALLY_FORM_URL = 'https://tally.so/r/labENX';
+const TALLY_FORM_URL = 'https://tally.so/r/vXMDx0';
 const TALLY_PARAMS = { email: 'email', section: 'section', volunteer: 'volunteer' };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SECTION_RE = /^\d{9}$/;
@@ -311,6 +311,8 @@ function startMonitoring() {
   stopMonitoring();
   retryCount  = 0;
   monitoring  = true;
+  lastDiagnosis = null;
+  document.getElementById('btn-open-url').classList.remove('attention');
   lastFrameData  = null;
   lastChangeTime = null;
   coverStartTime = null;
@@ -368,6 +370,8 @@ function loadStream(url) {
 }
 
 function onVideoReady() {
+  lastDiagnosis = null;
+  document.getElementById('btn-open-url').classList.remove('attention');
   addLog(t('log.loaded'), 'ok');
   setStatus('ok', '✅', t('stream.ok'), t('stream.ok.active'));
   lastCheckTime = 0;
@@ -392,21 +396,126 @@ function onVideoError() {
   handleStreamError(tf('log.video.error', { msg }));
 }
 
-function handleStreamError(msg) {
-  if (!monitoring) return;
+// ── Why did playback fail? ─────────────────────────────────────────────────
+// 'waiting': evideo answered through our proxy with 404 or a playlist without segments, so the
+//            stream has not started (known for sure, not a fault of ours).
+// 'ours':    our proxy failed but this browser plays the stream straight from evideo.
+// 'unknown': anything else (evideo down too, an MP4, a browser without native HLS).
+const WAITING_RECHECK_S = 30;
+const DIRECT_CHECK_MS = 12_000;
+let diagnosing = false;
+let lastDiagnosis = null;
+
+function proxiedFor(u) {
+  const p = new URL(u);
+  return PROXY_BASE + '/' + p.hostname + p.pathname + p.search;
+}
+
+// 'segments' | 'empty' | 'missing' (404) | 'fail'; a master playlist is followed to its first variant
+async function probePlaylist(upstream) {
+  try {
+    let res = await fetch(proxiedFor(upstream), { cache: 'no-store' });
+    if (res.status === 404) return 'missing';
+    if (!res.ok) return 'fail';
+    let text = await res.text();
+    if (text.includes('#EXT-X-STREAM-INF')) {
+      const line = text.split('\n').map(l => l.trim()).find(l => l && !l.startsWith('#'));
+      if (!line) return 'empty';
+      res = await fetch(proxiedFor(new URL(line, upstream).href), { cache: 'no-store' });
+      if (res.status === 404) return 'missing';
+      if (!res.ok) return 'fail';
+      text = await res.text();
+    }
+    return text.includes('#EXTINF') ? 'segments' : 'empty';
+  } catch (_) {
+    return 'fail';
+  }
+}
+
+// Plays the stream straight from evideo in a hidden <video> (no CORS needed): true once it loads
+function playsDirect(upstream) {
+  return new Promise((resolve) => {
+    const v = document.createElement('video');
+    const hlsUrl = new URL(upstream).pathname.endsWith('.m3u8');
+    if (hlsUrl && !v.canPlayType('application/vnd.apple.mpegurl')) { resolve(false); return; }
+    let done = false;
+    const finish = (ok) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      try { v.removeAttribute('src'); v.load(); } catch (_) {}
+      resolve(ok);
+    };
+    const timer = setTimeout(() => finish(false), DIRECT_CHECK_MS);
+    v.muted = true;
+    v.preload = 'metadata';
+    v.addEventListener('loadedmetadata', () => finish(true), { once: true });
+    v.addEventListener('error', () => finish(false), { once: true });
+    v.src = upstream;
+  });
+}
+
+async function diagnose(upstream) {
+  if (DIRECT_MODE) return 'unknown';
+  let isPlaylist = false;
+  try { isPlaylist = new URL(upstream).pathname.endsWith('.m3u8'); } catch (_) { return 'unknown'; }
+  if (isPlaylist) {
+    const kind = await probePlaylist(upstream);
+    if (kind === 'empty' || kind === 'missing') return 'waiting';
+  }
+  return (await playsDirect(upstream)) ? 'ours' : 'unknown';
+}
+
+function retryLater(delay) {
+  clearInterval(checkTimer);
+  setTimeout(() => {
+    if (monitoring) {
+      if (hls) { hls.destroy(); hls = null; }
+      loadStream(elUrl.value.trim());
+    }
+  }, delay * 1000);
+}
+
+async function handleStreamError(msg) {
+  if (!monitoring || diagnosing) return; // hls.js and <video> can both report the same failure
+  diagnosing = true;
+  const url = elUrl.value.trim();
+  const diagnosis = await diagnose(url);
+  diagnosing = false;
+  if (!monitoring || elUrl.value.trim() !== url) return;
+  const changed = diagnosis !== lastDiagnosis;
+  lastDiagnosis = diagnosis;
+  document.getElementById('btn-open-url').classList.toggle('attention', diagnosis === 'ours');
+
+  // Not started yet: no error, no retry count, check again until it starts
+  if (diagnosis === 'waiting') {
+    if (changed) addLog(t('log.waiting'), 'info');
+    setStatus('idle', '⏳', t('waiting.status'), t('waiting.sub'));
+    retryCount = 0;
+    retryLater(WAITING_RECHECK_S);
+    return;
+  }
   addLog(msg, 'alert');
+  if (diagnosis === 'ours') {
+    if (changed) addLog(t('log.ours'), 'warn');
+    setStatus('warn', '⚠️', t('ours.status'), t('ours.sub'));
+    const link = document.createElement('a');
+    link.className = 'status-link';
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = t('ours.link');
+    statusSub.append(' ', link);
+    retryCount = 0; // keep trying our side; the volunteer meanwhile watches on evideo.bg
+    retryLater(30);
+    return;
+  }
   if (retryCount < MAX_RETRIES) {
     retryCount++;
     const delay = 30;
     addLog(tf('log.retry', { delay, n: retryCount, max: MAX_RETRIES }), 'warn');
     setStatus('warn', '🔄', tf('retry.status', { n: retryCount, max: MAX_RETRIES }), msg);
-    clearInterval(checkTimer);
-    setTimeout(() => {
-      if (monitoring) {
-        if (hls) { hls.destroy(); hls = null; }
-        loadStream(elUrl.value.trim());
-      }
-    }, delay * 1000);
+    retryLater(delay);
   } else {
     setStatus('error', '❌', t('unavailable'), msg);
     addLog(t('log.maxretry'), 'alert');

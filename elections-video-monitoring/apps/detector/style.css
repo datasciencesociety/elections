@@ -126,6 +126,19 @@ button:disabled { opacity: .4; cursor: not-allowed; }
   cursor: pointer;
   line-height: 1;
 }
+.btn-open-url.attention { outline: 3px solid var(--yellow, #f5c518); outline-offset: 2px; }
+.status-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: .35rem;
+  padding: 0 .9rem;
+  border-radius: 6px;
+  background: var(--blue);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
 .video-container {
   position: relative;
 }

@@ -110,7 +110,7 @@ describe('Section number on the volunteer card and the prefilled report form', (
     assert.equal(await v.page.locator('.stream-card.selected').count(), 0);
 
     const href = new URL(await reportHref(v.page));
-    assert.equal(href.origin + href.pathname, 'https://tally.so/r/labENX');
+    assert.equal(href.origin + href.pathname, 'https://tally.so/r/vXMDx0');
     assert.equal(href.searchParams.get('email'), 'volunteer.one@example.org');
     assert.equal(href.searchParams.get('volunteer'), 'volunteer.one@example.org');
     assert.equal(href.searchParams.get('section'), v.section);
