@@ -66,7 +66,7 @@ before(async () => {
   const env = {
     ...process.env, PORT: String(port), DB_PATH: dbPath, ADMIN_USER: 'testadmin', ADMIN_PASS: 'testadminpass',
     COOKIE_SECRET: 'test-secret', PROXY_URL: 'http://127.0.0.1:1', RELEASE: 'ended-test',
-    ENDED_AFTER: new Date(endedAt).toISOString(), AUTOFILL_AFTER: '2020-01-01T00:00:00Z', AUTOFILL_MAX: '5', LOGIN_CARDS: '3',
+    ENDED_MIN_VOTERS: '1', ENDED_AFTER: new Date(endedAt).toISOString(), AUTOFILL_AFTER: '2020-01-01T00:00:00Z', AUTOFILL_MAX: '5', LOGIN_CARDS: '3',
   };
   delete env.TOPUP_AFTER;
   child = spawn(process.execPath, [path.join(__dirname, 'server.js')], { env, stdio: ['ignore', 'pipe', 'pipe'] });

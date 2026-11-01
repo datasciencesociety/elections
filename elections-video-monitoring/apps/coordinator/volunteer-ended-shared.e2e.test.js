@@ -57,6 +57,7 @@ before(async () => {
     COOKIE_SECRET: 'e2e', PROXY_URL: '/hls', TEST_CLOCK_OFFSET_MS: String(SERVER_NOW - Date.now()),
   };
   delete env.ENDED_AFTER; // the default, 21:00 Sofia, on server and page
+  env.ENDED_MIN_VOTERS = '1'; // one page's end is shared at once here; ended-votes.test.js covers the 2-volunteer rule
   delete env.TOPUP_AFTER;
   delete env.AUTOFILL_AFTER;
   child = spawn(process.execPath, ['-r', preload, path.join(__dirname, 'server.js')], { env, stdio: ['ignore', 'pipe', 'pipe'] });

@@ -115,6 +115,13 @@ try { db.exec('ALTER TABLE sessions ADD COLUMN user_id TEXT'); } catch {}
 try { db.exec('ALTER TABLE streams ADD COLUMN ended_at INTEGER'); } catch {}
 // When that page's playlist first went empty (ms): the time every page shows ("Не излъчва от HH:MM")
 try { db.exec('ALTER TABLE streams ADD COLUMN stopped_at INTEGER'); } catch {}
+// One 'ended' vote per volunteer and section. The shared state (ended_at) is set only once
+// ENDED_MIN_VOTERS different volunteers have voted; 'live'/'ok' or a new link wipes the votes.
+db.exec(`CREATE TABLE IF NOT EXISTS ended_votes (
+  stream_id INTEGER NOT NULL, username TEXT NOT NULL, stopped_at INTEGER NOT NULL, at INTEGER NOT NULL,
+  PRIMARY KEY (stream_id, username))`);
+db.exec(`CREATE TRIGGER IF NOT EXISTS ended_votes_new_link AFTER UPDATE OF url ON streams
+  WHEN NEW.url != OLD.url BEGIN DELETE FROM ended_votes WHERE stream_id = NEW.id; END`);
 
 // ── Prepared statements ───────────────────────────────────────────────────────
 
@@ -288,6 +295,10 @@ const stmt = {
   // Ended state per section, set and cleared by reports (txReport)
   setEnded:          db.prepare("UPDATE streams SET ended_at = ?, stopped_at = ? WHERE id = ? AND url != '' AND (ended_at IS NULL OR ended_at < ?)"),
   clearEnded:        db.prepare('UPDATE streams SET ended_at = NULL, stopped_at = NULL WHERE id = ? AND ended_at IS NOT NULL'),
+  voteEnded:         db.prepare(`INSERT INTO ended_votes (stream_id, username, stopped_at, at) VALUES (?, ?, ?, ?)
+    ON CONFLICT(stream_id, username) DO UPDATE SET stopped_at = MIN(stopped_at, excluded.stopped_at), at = excluded.at`),
+  endedVotes:        db.prepare('SELECT COUNT(*) AS n, MIN(stopped_at) AS stopped FROM ended_votes WHERE stream_id = ? AND at >= ?'),
+  clearVotes:        db.prepare('DELETE FROM ended_votes WHERE stream_id = ?'),
   sessionEnded:      db.prepare(`
     SELECT s.id, s.stopped_at FROM streams s JOIN assignments a ON a.stream_id = s.id
     WHERE a.session_id = ? AND s.ended_at >= ?
@@ -318,7 +329,7 @@ function txCreateSession(sessionId, streams, userId = null) {
 }
 
 // Returns the results it stored
-function txReport(sessionId, results, now) {
+function txReport(sessionId, results, now, username) {
   const accepted = [];
   transaction(() => {
     for (let r of results) {
@@ -332,8 +343,15 @@ function txReport(sessionId, results, now) {
       // Shared ended state: 'ended' sets it (only from ENDED_AFTER on); 'live' (the page saw segments
       // again) or 'ok' (moving, bright frames) clears it. frozen, dark and covered do not: a stalled
       // video after the end reads as frozen or dark.
-      if (r.status === 'ended') { const since = endedSince(now); if (now >= since) stmt.setEnded.run(now, stoppedAt(r.stopped_at, now), r.stream_id, since); }
-      else if (r.status === 'live' || r.status === 'ok') stmt.clearEnded.run(r.stream_id);
+      // Shared only once ENDED_MIN_VOTERS different volunteers say so; the earliest stop time is shown.
+      if (r.status === 'ended') {
+        const since = endedSince(now);
+        if (now >= since) {
+          stmt.voteEnded.run(r.stream_id, username, stoppedAt(r.stopped_at, now), now);
+          const v = stmt.endedVotes.get(r.stream_id, since);
+          if (v.n >= ENDED_MIN_VOTERS) stmt.setEnded.run(now, v.stopped, r.stream_id, since);
+        }
+      } else if (r.status === 'live' || r.status === 'ok') { stmt.clearVotes.run(r.stream_id); stmt.clearEnded.run(r.stream_id); }
       accepted.push(r);
     }
   });
@@ -383,6 +401,7 @@ function txBulkUpload(streams) {
     db.exec('DELETE FROM reports');
     db.exec('DELETE FROM assignments');
     db.exec('DELETE FROM sessions');
+    db.exec('DELETE FROM ended_votes');
     db.exec('DELETE FROM streams');
     for (const s of streams) {
       const section = s.section || extractSection(s.url) || String(s.label);
@@ -484,6 +503,8 @@ const topUpOn = (now) => Number.isNaN(TOPUP_AFTER) || now >= TOPUP_AFTER;
 // A section counts as ended only with ended_at at or after it: before it nothing is ended.
 const ENDED_AFTER = process.env.ENDED_AFTER || '';
 const endedSince = (now) => endedAfterMs(ENDED_AFTER, now);
+// Different volunteers who must report a section ended before every page and distribution treat it so
+const ENDED_MIN_VOTERS = Math.max(1, parseInt(process.env.ENDED_MIN_VOTERS, 10) || 2);
 
 // Release this process serves, read once at startup; the page reloads when a heartbeat reports another
 const RELEASE = readRelease();
@@ -635,7 +656,7 @@ async function handleReport(req, res) {
   if (!stmt.sessionOwned.get(session_id, req.user.username)) {
     json(res, 400, { error: 'unknown session', reinit: true }); return;
   }
-  auditReports(req, session_id, txReport(session_id, results, Date.now()));
+  auditReports(req, session_id, txReport(session_id, results, Date.now(), req.user.username));
   json(res, 200, { ok: true });
 }
 
@@ -1075,5 +1096,5 @@ const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || undefined;
 initUserStore(db);
 if (!process.env.COOKIE_SECRET) console.warn('COOKIE_SECRET not set — all logins are invalidated on every restart');
-console.log(`release ${RELEASE}; ended from ${new Date(endedSince(Date.now())).toISOString()}; distribution by risk ${Number.isNaN(TOPUP_AFTER) ? 'always on' : 'from ' + new Date(TOPUP_AFTER).toISOString()}`);
+console.log(`release ${RELEASE}; ended from ${new Date(endedSince(Date.now())).toISOString()} by ${ENDED_MIN_VOTERS} volunteers; distribution by risk ${Number.isNaN(TOPUP_AFTER) ? 'always on' : 'from ' + new Date(TOPUP_AFTER).toISOString()}`);
 server.listen(PORT, HOST, () => console.log(`Election monitor: http://${HOST || 'localhost'}:${PORT}`));

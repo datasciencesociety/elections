@@ -1044,7 +1044,10 @@ function applyServerEnded(ended, now = Date.now()) {
         if (s.transition) continue;
         s.endedConfirmed = true;
         // Every page shows the time the server keeps
-        if (stoppedAt && stoppedAt !== s.stoppedAt) { s.stoppedAt = stoppedAt; updateCard(s); }
+        if (stoppedAt && stoppedAt !== s.stoppedAt) {
+          s.stoppedAt = stoppedAt; updateCard(s);
+          if (s.thumbCtx && !s.thumbPainted) drawThumbPlaceholder(s.thumbCtx, 192, 108, endedText(s));
+        }
         continue;
       }
       if (now < endedAfterMs(now) || s.transition === 'live' || now - (s.liveAt || 0) < ENDED_RECHECK_MS) continue;
@@ -1066,12 +1069,35 @@ function applyServerEnded(ended, now = Date.now()) {
 function markEnded(state, stoppedAt) {
   state.status = 'ended';
   state.stoppedAt = stoppedAt || null;
+  if (state.thumbCtx && !state.thumbPainted) drawThumbPlaceholder(state.thumbCtx, 192, 108, endedText(state));
   state.endedProbeAt = Date.now();
   if (state.video) {
     // removeAttribute + load() aborts the download without an 'error' event (src = '' fires one)
     try { state.video.pause(); state.video.removeAttribute('src'); state.video.load(); } catch (_) {}
   }
   updateCard(state);
+}
+
+function endedText(state) {
+  return state.stoppedAt ? tf('status.ended.since', { time: sofiaHHMM(state.stoppedAt) }) : t('status.ended');
+}
+
+// The dark card picture with a camera and a label, shown until a real frame arrives
+function drawThumbPlaceholder(ctx, w, h, label) {
+  ctx.fillStyle = '#111';
+  ctx.fillRect(0, 0, w, h);
+  const cx = w / 2, cy = h / 2 - 6;
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(cx - 22, cy - 12, 44, 26);
+  ctx.beginPath();
+  ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = '#555';
+  ctx.font = '10px system-ui';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(label, cx, cy + 20);
 }
 
 // Segments are back: play again and restart detection (from a clean slate) and reporting
@@ -1208,25 +1234,7 @@ function setupStream(stream) {
     state.thumbCtx    = state.thumbCanvas.getContext('2d', { willReadFrequently: true });
 
     // Draw placeholder until first real video frame arrives
-    (function(ctx, w, h, label) {
-      ctx.fillStyle = '#111';
-      ctx.fillRect(0, 0, w, h);
-      const cx = w / 2, cy = h / 2 - 6;
-      // Camera body
-      ctx.strokeStyle = '#666';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(cx - 22, cy - 12, 44, 26);
-      // Lens
-      ctx.beginPath();
-      ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-      ctx.stroke();
-      // Label
-      ctx.fillStyle = '#555';
-      ctx.font = '10px system-ui';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText(label, cx, cy + 20);
-    })(state.thumbCtx, 192, 108, state.status === 'waiting' ? t('status.waiting') : 'waiting for stream…');
+    drawThumbPlaceholder(state.thumbCtx, 192, 108, state.status === 'waiting' ? t('status.waiting') : 'waiting for stream…');
   } else {
     // Seed status from last-seen metrics so the iframe card isn't blank-statused.
     applyMetricsToCard(state);
@@ -1297,6 +1305,7 @@ function updateThumbnails() {
     if (state.video.readyState < 2) continue;
     try {
       state.thumbCtx.drawImage(state.video, 0, 0, 192, 108);
+      state.thumbPainted = true;
     } catch (e) { /* ignore taint or decode errors */ }
   }
 }
