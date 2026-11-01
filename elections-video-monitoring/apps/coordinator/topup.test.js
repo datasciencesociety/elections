@@ -116,10 +116,15 @@ describe('Test card for everyone, sections by risk from TOPUP_AFTER', () => {
     beforeTopup();
   });
 
-  it('the test card is not offered in the section picker', async () => {
+  it('before TOPUP_AFTER the section picker is empty and adding a section adds nothing', async () => {
+    beforeTopup();
     const list = (await request('GET', '/api/streams/available', { cookie: early1Cookie })).body.streams;
-    assert.ok(list.length > 0);
-    assert.ok(!list.some((s) => s.id === ids['Test card']));
+    assert.deepEqual(list, []);
+    const add = await request('POST', '/api/session/streams', { cookie: early1Cookie, body: { session_id: early1.session_id, stream_ids: [ids.R5] } });
+    assert.equal(add.status, 200);
+    assert.deepEqual(add.body.added, []);
+    assert.deepEqual(labels((await resume(early1Cookie, early1.session_id)).streams), ['Test card']);
+    beforeTopup();
   });
 
   it('before TOPUP_AFTER with the test card disabled: an empty session, no random cards', async () => {
@@ -132,6 +137,13 @@ describe('Test card for everyone, sections by risk from TOPUP_AFTER', () => {
     assert.deepEqual(hb.body.assigned_streams, []);
     beforeTopup();
     assert.equal((await toggle(ids['Test card'], 1)).status, 200);
+  });
+
+  it('after TOPUP_AFTER the section picker lists sections, never the test card', async () => {
+    await new Promise((r) => setTimeout(r, Math.max(0, topupAt - Date.now() + 200)));
+    const list = (await request('GET', '/api/streams/available', { cookie: early1Cookie })).body.streams;
+    assert.ok(list.length > 0);
+    assert.ok(!list.some((s) => s.id === ids['Test card']));
   });
 
   it('after TOPUP_AFTER a heartbeat adds the 3 highest-risk sections next to the test card', async () => {
@@ -186,5 +198,21 @@ describe('Test card for everyone, sections by risk from TOPUP_AFTER', () => {
   it('the page is served with its release', async () => {
     const html = (await request('GET', '/', { cookie: early1Cookie })).body;
     assert.match(html, /window\.RELEASE = "topup-test"/);
+  });
+});
+
+describe('An unparsable TOPUP_AFTER', () => {
+  it('stops the server at startup instead of handing out sections early', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'coord-topup-bad-'));
+    const bad = spawn(process.execPath, [path.join(__dirname, 'server.js')], {
+      env: { ...process.env, PORT: String(await freePort()), DB_PATH: path.join(tmpDir, 'test.db'), ALLOW_NEW_DB: '1',
+        COOKIE_SECRET: 'x', TOPUP_AFTER: '2026-11-01 16.00' },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let err = '';
+    bad.stderr.on('data', (d) => { err += d; });
+    const code = await new Promise((resolve) => bad.on('exit', resolve));
+    assert.equal(code, 1);
+    assert.match(err, /TOPUP_AFTER=.*is not a date/);
   });
 });

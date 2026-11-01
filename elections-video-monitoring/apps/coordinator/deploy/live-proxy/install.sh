@@ -54,7 +54,7 @@ trap on_exit EXIT
 
 step 1 "preconditions"
 [ "$(id -u)" = 0 ] || die "run with sudo"
-for c in nginx curl sha256sum systemctl pgrep df; do command -v "$c" >/dev/null || die "$c not found"; done
+for c in nginx curl sha256sum systemctl pgrep df ip; do command -v "$c" >/dev/null || die "$c not found"; done
 [ -s /run/nginx.pid ] || die "nginx is not running (/run/nginx.pid missing)"
 build=$(nginx -V 2>&1)
 [[ $build == *--with-http_slice_module* ]] || die "this nginx is built without http_slice_module"
@@ -145,7 +145,7 @@ code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 -X OPTIONS "$PROXY/ar
 [ "$code" = 204 ] || die "archive preflight answered $code, want 204"
 echo "ok: archive preflight 204"
 # From a non-loopback address the proxy must refuse everything (answered by nginx itself, never forwarded)
-EXT=$(ip -4 -o addr show scope global | awk '{print $4}' | cut -d/ -f1 | head -1)
+EXT=$(ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1 || true)
 if [ -n "$EXT" ]; then
   body=$(curl -s --max-time 5 "http://$EXT:8666/healthz")
   [ "$body" = "local only" ] || die "proxy answered '$body' from $EXT, want 'local only'"

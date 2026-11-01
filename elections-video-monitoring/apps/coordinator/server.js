@@ -435,9 +435,12 @@ const DEFAULT_EYES = 1;    // watchers a section needs when the priority list do
 const LOGIN_CARDS = parseInt(process.env.LOGIN_CARDS, 10) || 3; // sessions are kept filled to this many cards
 // Distribution by risk starts at TOPUP_AFTER (ISO time, e.g. 2026-11-01T16:00:00+02:00). Before it, volunteers get
 // only their own and '*' sections, and the first heartbeat after it fills open pages without a reload.
-// Unset or unparsable: always on.
+// Unset: always on. Unparsable: the server refuses to start, so a typo cannot hand out sections early.
 const TOPUP_AFTER = process.env.TOPUP_AFTER ? Date.parse(process.env.TOPUP_AFTER) : NaN;
-if (process.env.TOPUP_AFTER && Number.isNaN(TOPUP_AFTER)) console.warn(`TOPUP_AFTER=${JSON.stringify(process.env.TOPUP_AFTER)} is not a date; distribution by risk is always on`);
+if (process.env.TOPUP_AFTER && Number.isNaN(TOPUP_AFTER)) {
+  console.error(`TOPUP_AFTER=${JSON.stringify(process.env.TOPUP_AFTER)} is not a date (use e.g. 2026-11-01T16:00:00+02:00); not starting`);
+  process.exit(1);
+}
 const topUpOn = (now) => Number.isNaN(TOPUP_AFTER) || now >= TOPUP_AFTER;
 
 // Release this process serves, read once at startup; the page reloads when a heartbeat reports another
@@ -648,6 +651,8 @@ function handleStreamsList(req, res) {
 }
 
 function handleAvailableStreams(req, res) {
+  // The section picker waits for TOPUP_AFTER too: before it volunteers have only the test card
+  if (!topUpOn(Date.now())) { json(res, 200, { streams: [] }); return; }
   const cutoff = Date.now() - 120_000;
   const rows = stmt.availableStreams.all(DEFAULT_EYES, cutoff, DEFAULT_EYES);
   json(res, 200, { streams: rows });
@@ -677,6 +682,7 @@ async function handleAddStreams(req, res) {
     json(res, 404, { error: 'session not found' }); return;
   }
   const now = Date.now();
+  if (!topUpOn(now)) { json(res, 200, { added: [] }); return; } // nothing to add before TOPUP_AFTER
   const cutoff = now - 120_000;
   const added = [];
   transaction(() => {
