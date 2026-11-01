@@ -188,11 +188,18 @@ describe('Volunteer card for a stream that has ended', () => {
       assert.equal(fit.clipped, false, `the thank-you text wraps instead of being cut at ${w}x${h}`);
     }
 
+    // Detection stops; the playlist is rechecked only every 2 min, and stays ended while empty
     const after = v.hls.length;
-    await v.page.clock.setFixedTime(sofia('21:40'));
+    await v.page.clock.setFixedTime(sofia('21:22'));
     await v.runChecks();
-    await v.probeAt(sofia('21:45'));
-    assert.equal(v.hls.length, after, 'no more requests for an ended card');
+    await v.probeAt(sofia('21:22', '59'));
+    assert.equal(v.hls.length, after, 'no request within 2 min of ending');
+    await v.probeAt(sofia('21:23'));
+    assert.equal(v.hls.length, after + 1, 'one recheck after 2 min');
+    await v.probeAt(sofia('21:24'));
+    assert.equal(v.hls.length, after + 1, 'and the next only 2 min later');
+    assert.equal((await v.state()).status, 'ended');
+    assert.equal((await v.state()).src, null);
 
     v.reports.length = 0;
     await v.page.evaluate(() => sendReport());
@@ -218,6 +225,45 @@ describe('Volunteer card for a stream that has ended', () => {
     await v.probeAt(sofia('21:31'));
     assert.notEqual((await v.state()).status, 'ended', '25 min since the first empty, 14 since the segment');
     await v.probeAt(sofia('21:32'));
+    assert.equal((await v.state()).status, 'ended');
+    await v.page.close();
+  });
+
+  it('ended is not final: a segment after the end plays the card again and reports resume', async () => {
+    let body = LIVE;
+    const v = await openVolunteer(sofia('20:55'), () => ({ body }));
+    body = EMPTY_BODY;
+    await v.probeAt(sofia('21:00'));
+    await v.probeAt(sofia('21:15'));
+    assert.equal((await v.state()).status, 'ended');
+    v.reports.length = 0;
+    await v.page.evaluate(() => sendReport());
+    assert.deepEqual(v.reports[0].results, [], 'no reports while ended');
+
+    body = LIVE;
+    const mediaBefore = v.hls.filter((r) => r.type === 'media').length;
+    await v.probeAt(sofia('21:20'));
+    const s = await v.state();
+    assert.notEqual(s.status, 'ended');
+    assert.equal(s.emptySince, null);
+    assert.match(s.src || '', /^\/hls\/live-0001\.evideo\.bg\/pvr2026\/\d+\/index\.m3u8$/, 'video source set again');
+    assert.notEqual(s.text, ENDED_BG);
+    await new Promise((r) => setTimeout(r, 300));
+    assert.ok(v.hls.filter((r) => r.type === 'media').length > mediaBefore, 'the video requests the playlist again');
+
+    await v.page.evaluate(() => checkAllStreams()); // detection runs again
+    assert.equal((await v.state()).status, 'loading');
+    v.reports.length = 0;
+    await v.page.evaluate(() => sendReport());
+    assert.equal(v.reports[0].results.length, 1, 'reports resume');
+    assert.equal(v.reports[0].results[0].status, 'loading');
+
+    // And it can end again: a fresh 15 min of empty playlists
+    body = EMPTY_BODY;
+    await v.probeAt(sofia('21:21'));
+    await v.probeAt(sofia('21:35'));
+    assert.notEqual((await v.state()).status, 'ended');
+    await v.probeAt(sofia('21:36'));
     assert.equal((await v.state()).status, 'ended');
     await v.page.close();
   });

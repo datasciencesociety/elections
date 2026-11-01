@@ -916,8 +916,11 @@ async function probeWaiting(state) {
 // A card is ended once its playlist (and variant) has been empty for ENDED_EMPTY_MS after it
 // listed segments on this page, and only from endedAfterMs() on. Earlier gaps are restarts.
 // Errors (429, 5xx, network) are no evidence either way: they neither start nor reset the timer.
+// Ended is not final: feeds drop and resume mid-count, so an ended card is still probed every
+// ENDED_RECHECK_MS and goes back to live on the first segment.
 const ENDED_EMPTY_MS = 15 * 60_000;
 const ENDED_PROBE_MS = 60_000;
+const ENDED_RECHECK_MS = 2 * 60_000;
 
 // Wall-clock parts in Sofia for an instant
 function sofiaParts(ms) {
@@ -963,24 +966,45 @@ function checkEndedAll() {
 }
 
 async function probeEnded(state, now = Date.now()) {
-  if (state.status === 'ended' || state.fallback || !state.hadSegments || state.endProbing || !state.proxiedUrl) return;
+  if (state.fallback || !state.hadSegments || state.endProbing || !state.proxiedUrl) return;
+  const wasEnded = state.status === 'ended';
+  if (wasEnded && now - (state.endedProbeAt || 0) < ENDED_RECHECK_MS) return;
   state.endProbing = true;
+  if (wasEnded) state.endedProbeAt = now;
   const r = await readPlaylist(state.url, state.variantUrl);
   state.endProbing = false;
-  if (!streamStates.includes(state) || state.status === 'ended' || state.fallback) return;
+  if (!streamStates.includes(state) || state.fallback || (state.status === 'ended') !== wasEnded) return;
   if (r.variant) state.variantUrl = r.variant;
-  if (r.kind === 'segments') { state.emptySince = null; return; }
+  if (r.kind === 'segments') { state.emptySince = null; if (wasEnded) resumeEnded(state); return; }
+  if (wasEnded) return;
   if (r.kind !== 'empty') return;
   if (!state.emptySince) state.emptySince = now;
   if (now >= endedAfterMs(now) && now - state.emptySince >= ENDED_EMPTY_MS) markEnded(state);
 }
 
-// Stops the video and every check for the card; the card itself stays on the page
+// Stops the video, detection and reports; the card stays on the page and is rechecked every
+// ENDED_RECHECK_MS (probeEnded) in case the feed resumes
 function markEnded(state) {
   state.status = 'ended';
+  state.endedProbeAt = Date.now();
   if (state.video) {
     // removeAttribute + load() aborts the download without an 'error' event (src = '' fires one)
     try { state.video.pause(); state.video.removeAttribute('src'); state.video.load(); } catch (_) {}
+  }
+  updateCard(state);
+}
+
+// Segments are back: play again and restart detection (from a clean slate) and reporting
+function resumeEnded(state) {
+  state.emptySince = null;
+  state.endedProbeAt = null;
+  state.lastFrameData = null;
+  state.lastChangeTime = null;
+  state.coverStartTime = null;
+  state.status = 'loading';
+  if (state.video) {
+    state.video.src = state.proxiedUrl;
+    if (!autoplayBlocked) state.video.play().catch(() => {});
   }
   updateCard(state);
 }
