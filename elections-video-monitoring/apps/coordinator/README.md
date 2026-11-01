@@ -181,7 +181,7 @@ Follow [deploy/RUNBOOK.md](deploy/RUNBOOK.md): it probes and preserves the runni
 `deploy/deploy.sh` ships the committed `coordinator/` and `detector/` to a server and installs them as the systemd service `election-coordinator` behind nginx (`deploy/nginx-site.conf`).
 
 ```sh
-DEPLOY_HOST=ji@10.10.10.1 DOMAIN=stork-ai.com apps/coordinator/deploy/deploy.sh
+DEPLOY_HOST=<user>@<server> DOMAIN=<domain> apps/coordinator/deploy/deploy.sh
 ```
 
 Once per server: create `/etc/election-coordinator.env` from `deploy/election-coordinator.env.example` and a certificate for the domain.

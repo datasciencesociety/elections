@@ -1,6 +1,6 @@
 # Coordinator deploy runbook
 
-For whoever deploys the coordinator to the live server. Placeholders: `<live-domain>` (the volunteer site), `<server>` (SSH target over the WireGuard tunnel), `<commit>` (the reviewed commit). Never write the live domain into the repo.
+For whoever deploys the coordinator to the live server. Placeholders: `<live-domain>` (the volunteer site), `<server>` (SSH target over the VPN tunnel), `<commit>` (the reviewed commit). Never write the live domain into the repo.
 
 Local commands run from `elections-video-monitoring/` in your checkout. Every step ends with a check. If a check fails, stop and read **If something goes wrong** before going on.
 

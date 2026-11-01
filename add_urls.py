@@ -12,15 +12,16 @@ Usage:
   python3 add_urls.py <streams.json> [combined_sections] [seed_output]
 
   streams.json:     scraper output  (section, url, label)
-  combined_sections defaults to /home/stork/combined-sections.json
+  combined_sections defaults to ~/combined-sections.json
   seed_output       defaults to combined-seed.json (coordinator format)
 """
 
 import json
+import os
 import sys
 
 STREAMS  = sys.argv[1]
-COMBINED = sys.argv[2] if len(sys.argv) > 2 else "/home/stork/combined-sections.json"
+COMBINED = sys.argv[2] if len(sys.argv) > 2 else os.path.expanduser("~/combined-sections.json")
 SEED_OUT = sys.argv[3] if len(sys.argv) > 3 else "combined-seed.json"
 
 with open(STREAMS, encoding="utf-8") as f:

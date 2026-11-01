@@ -5,10 +5,11 @@ Output: sections that have both a valid section ID and at least one assigned use
 """
 
 import json
+import os
 import sys
 
-HIGHRISK = sys.argv[1] if len(sys.argv) > 1 else "/home/stork/highrisk-sections.json"
-VOLUNTEERS = sys.argv[2] if len(sys.argv) > 2 else "/home/stork/sections-with-volunteers.json"
+HIGHRISK = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/highrisk-sections.json")
+VOLUNTEERS = sys.argv[2] if len(sys.argv) > 2 else os.path.expanduser("~/sections-with-volunteers.json")
 OUTPUT = sys.argv[3] if len(sys.argv) > 3 else "combined-sections.json"
 
 VALID_SECTION_RE = None  # sections starting with digits only

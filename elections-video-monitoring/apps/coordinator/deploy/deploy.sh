@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Deploy the coordinator over SSH: run tests, upload a release, install it with remote-install.sh.
-# Usage: DEPLOY_HOST=ji@10.10.10.1 DOMAIN=stork-ai.com [DEPLOY_PORT=22] ./deploy.sh
+# Usage: DEPLOY_HOST=<user>@<server> DOMAIN=<domain> [DEPLOY_PORT=22] ./deploy.sh
 # Passed through to the server: APP_DIR SERVICE_USER NODE_BIN ALLOW_NEW_DB ADOPT_NGINX
 set -euo pipefail
 
-: "${DEPLOY_HOST:?set DEPLOY_HOST, e.g. ji@10.10.10.1 (stork is reached over WireGuard)}"
+: "${DEPLOY_HOST:?set DEPLOY_HOST, e.g. <user>@<server> (reached over the VPN tunnel)}"
 # No default: the site, certificate and checks all follow DOMAIN
-: "${DOMAIN:?set DOMAIN to the site this server serves, e.g. stork-ai.com}"
+: "${DOMAIN:?set DOMAIN to the site this server serves, e.g. example.org}"
 SSH_PORT=${DEPLOY_PORT:-22}
 APPS=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$APPS"
