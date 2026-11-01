@@ -131,7 +131,9 @@ check "empty playlist not cached (2 → 2)" "$(origin_hits /live-1.evideo.bg/e/i
 for _ in 1 2 3; do code $P/live-1.evideo.bg/n/index.m3u8 >/dev/null; done
 check "playlist cached (3 → 1)"         "$(origin_hits /live-1.evideo.bg/n/index.m3u8)" 1
 code $P/live-1.evideo.bg/m/index.m3u8 >/dev/null
-sleep 2.5
+# nginx keeps "2s" until the clock passes the stored second + 2, so 2-3 s in practice;
+# 3.5 s is past that and far below the origin's 30 s
+sleep 3.5
 hdr=$(req "curl -s -D - -o /dev/null $P/live-1.evideo.bg/m/index.m3u8")
 check "origin max-age=30 does not stretch 2 s (→ 2 origin requests)" "$(origin_hits /live-1.evideo.bg/m/index.m3u8)" 2
 check "playlist: one Cache-Control"     "$(echo "$hdr" | grep -ci '^cache-control:' || true)" 1
