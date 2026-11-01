@@ -10,3 +10,10 @@ proxy_http_version 1.1;
 proxy_hide_header Content-Security-Policy;
 proxy_hide_header X-Frame-Options;
 proxy_hide_header Strict-Transport-Security;
+
+# We add our own CORS headers (_cors_headers.inc); drop the origin's so each
+# response carries one copy
+proxy_hide_header Access-Control-Allow-Origin;
+proxy_hide_header Access-Control-Allow-Methods;
+proxy_hide_header Access-Control-Allow-Headers;
+proxy_hide_header Access-Control-Expose-Headers;
