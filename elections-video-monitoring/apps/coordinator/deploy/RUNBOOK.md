@@ -144,8 +144,9 @@ Only when all of this passes, stop the old app so it no longer writes to the DB 
 
 ## 7. Data for the night
 
-- Stubs, if the live DB still has test or old streams. This wipes sessions and reports:
-  `COORDINATOR_URL=https://<live-domain> SEED_USER=… SEED_PASS=… node scripts/seed.js <sections.json> --stubs --replace --force`
+- Stubs, if the live DB still has test or old streams. This wipes streams, sessions, reports and assignments; it keeps users, contacts and risk:
+  `COORDINATOR_URL=https://<live-domain> SEED_USER=… SEED_PASS=… node scripts/seed.js <sections.json> --stubs --replace --force --batch-size=500`
+  Keep `--batch-size=500`: nginx refuses a body over 1 MB (413), and all sections in one request are about 2.25 MB. The first 500 rows go in the replace request and the rest are upserted 500 at a time; the result is the same as one replace. seed.js checks the file (no section twice, every row labelled) before it wipes anything. If it stops after the replace with "row(s) … not sent", rerun the same command.
 - Users and contacts: admin page uploads, from private files that are never in the repo.
 - Risk order for "Добави секция" (highest first, sections with fewer than 2 watchers), from the risk sheet exported as CSV, never in the repo. Try `--dry-run` first:
   `COORDINATOR_URL=https://<live-domain> SEED_USER=… SEED_PASS=… node scripts/load-risk.js <risk.csv>`

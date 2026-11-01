@@ -18,7 +18,7 @@ Volunteers keep the page open for hours, so a page-only deploy (`volunteer.html`
 - Cap the cards per volunteer.
 - Reshuffle by risk: volunteers who logged in before the high-risk sections were loaded keep lower-risk cards, because cards are never taken away. Offer them a swap ("по-рискова секция без наблюдател") instead of removing anything.
 - Backup cover (`AUTOFILL_AFTER`) is built and tested but switched off. For the 1 Nov runoff it stayed off: sections went out only by automatic distribution by risk. Decide after the runoff whether to keep it.
-- `seed.js --replace` sends every row in one request. The site's nginx keeps the 1 MB default body limit, so 11,732 stubs (2.25 MB) got a 413. On 1 Nov the workaround was a replace with one row, then `--batch-size=500`. Either let replace send batches (a replace call followed by upserts) or raise `client_max_body_size` for `/api/streams` only.
+- Done: `seed.js --replace --batch-size=500` sends a replace with the first 500 rows, then upserts the rest (RUNBOOK §7). Before, it sent every row in one request, and the site's nginx (1 MB default body limit) answered 11,732 stubs (2.25 MB) with a 413. Raising `client_max_body_size` for `/api/streams` is no longer needed.
 
 ## Playback and detection
 

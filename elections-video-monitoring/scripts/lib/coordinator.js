@@ -5,6 +5,21 @@
 
 const base = (process.env.COORDINATOR_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, '');
 
+/**
+ * Body of a coordinator response as JSON. Anything else (an error status, or an HTML page from
+ * nginx such as 413 Request Entity Too Large) throws with the status and the start of the body.
+ */
+async function readJson(res, what) {
+  const text = await res.text();
+  const type = res.headers.get('content-type') || '';
+  if (res.ok && /application\/json/i.test(type)) {
+    try { return JSON.parse(text); } catch { /* reported below */ }
+  }
+  const head = text.slice(0, 200).replace(/\s+/g, ' ').trim();
+  const status = [res.status, res.statusText].filter(Boolean).join(' ');
+  throw new Error(`${what} → ${status} (${type || 'no content-type'}): ${head || '(empty body)'}`);
+}
+
 async function login() {
   const username = process.env.SEED_USER || process.env.ADMIN_USER;
   const password = process.env.SEED_PASS || process.env.ADMIN_PASS;
@@ -14,10 +29,11 @@ async function login() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
   });
-  if (!res.ok) throw new Error(`Login failed (${res.status})`);
-  const { role } = await res.json();
+  const { role } = await readJson(res, 'Login failed: POST /api/login');
   if (role !== 'admin') throw new Error(`${username} is not an admin`);
-  return res.headers.get('set-cookie').split(';')[0];
+  const setCookie = res.headers.get('set-cookie');
+  if (!setCookie) throw new Error('Login failed: POST /api/login set no cookie');
+  return setCookie.split(';')[0];
 }
 
 /** Session that logs in lazily and retries once after a 401 (expired cookie). */
@@ -32,9 +48,7 @@ function createClient() {
         body: body === undefined ? undefined : (typeof body === 'string' ? body : JSON.stringify(body)),
       });
       if (res.status === 401 && attempt === 0) { cookie = null; continue; }
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(`${method} ${urlPath} → ${res.status} ${data.error || ''}`.trim());
-      return data;
+      return readJson(res, `${method} ${urlPath}`);
     }
   }
   return {
@@ -49,4 +63,4 @@ function createClient() {
   };
 }
 
-module.exports = { base, login, createClient };
+module.exports = { base, login, createClient, readJson };
