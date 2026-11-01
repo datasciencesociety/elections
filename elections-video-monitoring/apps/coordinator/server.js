@@ -223,17 +223,10 @@ const stmt = {
   `),
   streamBySection:   db.prepare('SELECT id, url FROM streams WHERE section = ?'),
   streamById:        db.prepare('SELECT id, url, label, section, assigned_users FROM streams WHERE id = ? AND enabled = 1'),
-  // Other volunteers actively watching a stream
-  otherWatchers:     db.prepare(`
-    SELECT COUNT(DISTINCT se.user_id) AS n FROM assignments a
-    JOIN sessions se ON se.id = a.session_id AND se.last_heartbeat > ?
-    WHERE a.stream_id = ? AND a.session_id != ?
-  `),
   upsertRisk:        db.prepare(`
     INSERT INTO section_risk (section, risk, eyes) VALUES (?, ?, ?)
     ON CONFLICT(section) DO UPDATE SET risk = excluded.risk, eyes = COALESCE(excluded.eyes, section_risk.eyes)
   `),
-  sectionEyes:       db.prepare('SELECT r.eyes FROM streams s JOIN section_risk r ON r.section = s.section WHERE s.id = ?'),
   deleteOneAssignment: db.prepare('DELETE FROM assignments WHERE session_id = ? AND stream_id = ?'),
   // Cards that count toward LOGIN_CARDS and AUTOFILL_MAX: a '*' card (for everyone) takes no slot
   sessionStreamCount: db.prepare(`
@@ -276,7 +269,8 @@ const stmt = {
     ORDER BY (r.risk IS NULL), r.risk DESC, COALESCE(w.n, 0), s.section
     LIMIT ?
   `),
-  // Sections with fewer active volunteers than they need (eyes; DEFAULT_EYES when not listed):
+  // Section picker: every enabled section that has not ended. Those with fewer active volunteers
+  // than they need (eyes; DEFAULT_EYES when not listed) come first, full ones after; within each,
   // highest risk first, then the least watched; sections without a risk score last
   availableStreams: db.prepare(`
     SELECT s.id, s.section, s.label, r.risk, COALESCE(r.eyes, ?) AS eyes, COALESCE(w.n, 0) AS watchers
@@ -287,10 +281,10 @@ const stmt = {
       JOIN sessions se ON se.id = a.session_id AND se.last_heartbeat > ?
       GROUP BY a.stream_id
     ) w ON w.stream_id = s.id
-    WHERE s.enabled = 1 AND COALESCE(w.n, 0) < COALESCE(r.eyes, ?)
+    WHERE s.enabled = 1
       AND COALESCE(s.assigned_users, '') != '*'
       AND (s.ended_at IS NULL OR s.ended_at < ?)
-    ORDER BY (r.risk IS NULL), r.risk DESC, watchers, s.section
+    ORDER BY (COALESCE(w.n, 0) >= COALESCE(r.eyes, ?)), (r.risk IS NULL), r.risk DESC, watchers, s.section
   `),
   // Ended state per section, set and cleared by reports (txReport)
   setEnded:          db.prepare("UPDATE streams SET ended_at = ?, stopped_at = ? WHERE id = ? AND url != '' AND (ended_at IS NULL OR ended_at < ?)"),
@@ -720,7 +714,7 @@ function handleAvailableStreams(req, res) {
   // The section picker waits for TOPUP_AFTER too: before it volunteers have only the test card
   if (!topUpOn(Date.now())) { json(res, 200, { streams: [] }); return; }
   const cutoff = Date.now() - 120_000;
-  const rows = stmt.availableStreams.all(DEFAULT_EYES, cutoff, DEFAULT_EYES, endedSince(Date.now()));
+  const rows = stmt.availableStreams.all(DEFAULT_EYES, cutoff, endedSince(Date.now()), DEFAULT_EYES);
   json(res, 200, { streams: rows });
 }
 
@@ -749,15 +743,12 @@ async function handleAddStreams(req, res) {
   }
   const now = Date.now();
   if (!topUpOn(now)) { json(res, 200, { added: [] }); return; } // nothing to add before TOPUP_AFTER
-  const cutoff = now - 120_000;
   const added = [];
   transaction(() => {
     for (const sid of stream_ids) {
       const stream = stmt.streamById.get(sid);
       if (!stream) continue;
-      // Skip if enough other volunteers already watch it
-      const eyes = stmt.sectionEyes.get(stream.id)?.eyes ?? DEFAULT_EYES;
-      if (stmt.otherWatchers.get(cutoff, stream.id, session_id).n >= eyes) continue;
+      // A volunteer may add a section others already watch: only the automatic handout keeps to eyes
       stmt.insertAssignment.run(session_id, stream.id, now);
       added.push(enrichWithContacts([stream])[0]);
     }

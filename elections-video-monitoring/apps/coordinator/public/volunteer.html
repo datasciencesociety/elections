@@ -1747,6 +1747,7 @@ document.addEventListener('fullscreenchange', () => {
   const countEl  = document.getElementById('section-selected-count');
   let available = [];
   let selected = new Set();
+  const PICKER_ROWS = 300;
 
   function renderList(query) {
     const q = (query || '').toLowerCase();
@@ -1758,7 +1759,8 @@ document.addEventListener('fullscreenchange', () => {
       list.innerHTML = `<div class="section-empty">${t('modal.empty')}</div>`;
       return;
     }
-    for (const s of filtered) {
+    // Every section is listed (needing volunteers first); a phone draws only the first rows
+    for (const s of filtered.slice(0, PICKER_ROWS)) {
       const item = document.createElement('label');
       item.className = 'section-item';
       item.innerHTML = `
@@ -1773,6 +1775,12 @@ document.addEventListener('fullscreenchange', () => {
         updateCount();
       });
       list.appendChild(item);
+    }
+    if (filtered.length > PICKER_ROWS) {
+      const more = document.createElement('div');
+      more.className = 'section-empty';
+      more.textContent = tf('modal.more', { n: PICKER_ROWS, total: filtered.length });
+      list.appendChild(more);
     }
   }
 

@@ -445,7 +445,7 @@ describe('Section picker: risk order and two watchers', () => {
     assert.equal(last.risk, null);
   });
 
-  it('a section needing 2 takes a second volunteer, then leaves the list', async () => {
+  it('a section needing 2 takes a second volunteer, then moves behind the sections still needing one', async () => {
     for (const u of ['risk1', 'risk2']) {
       sessions[u] = (await request('POST', '/api/session', { cookie: cookies[u], body: {} })).body.session_id;
       const add = await request('POST', '/api/session/streams', {
@@ -454,14 +454,16 @@ describe('Section picker: risk order and two watchers', () => {
       assert.deepEqual(add.body.added.map((s) => s.id), [ids['R high']], `${u} can add it`);
       const list = (await request('GET', '/api/streams/available', { cookie: cookies.risk3 })).body.streams;
       const row = list.find((s) => s.id === ids['R high']);
-      if (u === 'risk1') assert.equal(row.watchers, 1, 'still offered with one watcher');
-      else assert.equal(row, undefined, 'gone with two watchers');
+      assert.equal(row.watchers, u === 'risk1' ? 1 : 2);
+      const needing = list.filter((s) => s.watchers < s.eyes);
+      if (u === 'risk1') assert.equal(list[0].id, ids['R high'], 'still first with one of two');
+      else assert.ok(list.indexOf(row) >= needing.length, 'full: listed after every section that needs a volunteer');
     }
     sessions.risk3 = (await request('POST', '/api/session', { cookie: cookies.risk3, body: {} })).body.session_id;
     const third = await request('POST', '/api/session/streams', {
       cookie: cookies.risk3, body: { session_id: sessions.risk3, stream_ids: [ids['R high']] },
     });
-    assert.deepEqual(third.body.added, []);
+    assert.deepEqual(third.body.added.map((s) => s.id), [ids['R high']], 'a volunteer may still add it by hand');
   });
 });
 
@@ -486,7 +488,7 @@ describe('Reports on a section without a link', () => {
 });
 
 describe('Section picker: a section needing one watcher', () => {
-  it('leaves the list once one volunteer watches it, and refuses a second', async () => {
+  it('stays in the list, after the sections needing a volunteer, and a second volunteer may add it', async () => {
     const cookies = {};
     for (const u of ['eye1', 'eye2']) {
       await request('POST', '/api/users', { cookie: adminCookie, body: { username: u, password: 'volpass123', role: 'volunteer' } });
@@ -498,10 +500,14 @@ describe('Section picker: a section needing one watcher', () => {
     const a1 = await request('POST', '/api/session/streams', { cookie: cookies.eye1, body: { session_id: s1, stream_ids: [id] } });
     assert.deepEqual(a1.body.added.map((s) => s.id), [id]);
     const list = (await request('GET', '/api/streams/available', { cookie: cookies.eye2 })).body.streams;
-    assert.ok(!list.some((s) => s.id === id));
+    const row = list.find((s) => s.id === id);
+    assert.ok(row, 'still listed');
+    assert.equal(row.watchers, 1);
+    const firstFull = list.findIndex((s) => s.watchers >= s.eyes);
+    assert.ok(list.slice(firstFull).every((s) => s.watchers >= s.eyes), 'no section needing a volunteer after a full one');
     const s2 = (await request('POST', '/api/session', { cookie: cookies.eye2, body: {} })).body.session_id;
     const a2 = await request('POST', '/api/session/streams', { cookie: cookies.eye2, body: { session_id: s2, stream_ids: [id] } });
-    assert.ok(!a2.body.added.some((s) => s.id === id));
+    assert.deepEqual(a2.body.added.map((s) => s.id), [id]);
   });
 });
 

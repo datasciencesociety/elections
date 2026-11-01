@@ -14,6 +14,7 @@ Built on 1 Nov 2026. Volunteers keep the page open for hours, so a page-only dep
 
 ## Test card and distribution time (1 Nov 2026)
 
+- The section picker lists every enabled section that has not ended: those with fewer active volunteers than `eyes` first (by risk), full ones after. A volunteer may add a full section by hand; only the automatic handout (login, top-up) keeps to `eyes`. The page draws the first 300 rows; the search finds the rest.
 - `assigned_users = '*'` gives a section to every volunteer (the test card, section 999000001). It takes no slot of `LOGIN_CARDS`, is never a backup-cover section and is not listed in the section picker.
 - `TOPUP_AFTER`: before it a volunteer gets only own and `*` sections, or an empty session with "Още нямате секции" (no random cards). From it on, the next heartbeat (60–90 s) adds 3 sections by risk to open pages.
 - Disabling the test card (`enabled = 0`): the next heartbeat leaves it out and the page removes the card and its assignment; the slot was never counted, so no 4th section comes in its place. Its URL in the heartbeat reads `''`, so a page loaded before this release, which cannot remove it, turns the card into "not yet started" and stops playing it. A resume (reload) drops it too. Enabling it again hands it back on the next heartbeat.
