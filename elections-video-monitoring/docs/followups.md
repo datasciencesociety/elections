@@ -17,7 +17,8 @@ Volunteers keep the page open for hours, so a page-only deploy (`volunteer.html`
 - Order by risk and by watchers still missing, so a section that needs 3 watchers but has a low risk score is not left empty.
 - Cap the cards per volunteer.
 - Reshuffle by risk: volunteers who logged in before the high-risk sections were loaded keep lower-risk cards, because cards are never taken away. Offer them a swap ("по-рискова секция без наблюдател") instead of removing anything.
-- Backup cover (`AUTOFILL_AFTER`) is built and tested but switched off. Decide whether to use it.
+- Backup cover (`AUTOFILL_AFTER`) is built and tested but switched off. For the 1 Nov runoff it stayed off: sections went out only by automatic distribution by risk. Decide after the runoff whether to keep it.
+- `seed.js --replace` sends every row in one request. The site's nginx keeps the 1 MB default body limit, so 11,732 stubs (2.25 MB) got a 413. On 1 Nov the workaround was a replace with one row, then `--batch-size=500`. Either let replace send batches (a replace call followed by upserts) or raise `client_max_body_size` for `/api/streams` only.
 
 ## Playback and detection
 
@@ -63,6 +64,7 @@ never started → live → stalled (no new segment for 2 min) → ended
 ## Operations
 
 - Scraper: a region page sometimes fails with "Target page, context or browser has been closed" in headed Chrome. The next pass recovers it; find the cause.
-- Plan the server reboot for the pending kernel and libc updates outside election days.
+- Plan the server reboot for the pending kernel and libc updates outside election days. Still pending on 1 Nov.
+- The server's root disk was 96% full on 1 Nov (3.8 GB free). Find what fills it (backups, nginx cache, logs) and free space before the next election.
 - Remove the test accounts and test streams.
 - Admin page: the flagged list keeps polling after the login expires and fills the console with 401 errors.
