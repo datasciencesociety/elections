@@ -21,7 +21,7 @@ import DesignSystem from "./pages/design-system.js";
 // Whenever a newer one ships, bump this; the "/" and "/live" redirects
 // both point here so election-night visitors and bookmark-holders of
 // the retired `/live` page land on the same place.
-const LATEST_RESULTS_PATH = "/20/results";
+const LATEST_RESULTS_PATH = "/21/results";
 
 const queryClient = new QueryClient({
   defaultOptions: {

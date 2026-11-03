@@ -39,8 +39,8 @@ beforeAll(() => {
 });
 
 describe("API smoke tests — every election", () => {
-  it("DB has the 20 expected elections", () => {
-    expect(elections.length).toBe(20);
+  it("DB has the 21 expected elections", () => {
+    expect(elections.length).toBe(21);
   });
 
   // Build the test cases from the live DB so adding/removing elections is
